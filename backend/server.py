@@ -112,6 +112,13 @@ def serialize_app(doc: dict) -> dict:
     return doc
 
 
+def to_object_id(app_id: str) -> ObjectId:
+    try:
+        return ObjectId(app_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid app id")
+
+
 # ---------------------------------------------------------------------------
 # Auth helpers
 # ---------------------------------------------------------------------------
@@ -206,7 +213,7 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
 
 @api_router.get("/apps/{app_id}")
 async def get_app(app_id: str):
-    doc = await db.apps.find_one({"_id": ObjectId(app_id)})
+    doc = await db.apps.find_one({"_id": to_object_id(app_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
     return serialize_app(doc)
@@ -214,10 +221,10 @@ async def get_app(app_id: str):
 
 @api_router.get("/apps/{app_id}/download")
 async def download_app(app_id: str):
-    doc = await db.apps.find_one({"_id": ObjectId(app_id)})
+    doc = await db.apps.find_one({"_id": to_object_id(app_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
-    await db.apps.update_one({"_id": ObjectId(app_id)}, {"$inc": {"downloads": 1}})
+    await db.apps.update_one({"_id": to_object_id(app_id)}, {"$inc": {"downloads": 1}})
     apk_url = doc.get("apk_url", "")
     if not apk_url:
         raise HTTPException(status_code=404, detail="No APK file available")
@@ -266,16 +273,16 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
     updates = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
-    result = await db.apps.update_one({"_id": ObjectId(app_id)}, {"$set": updates})
+    result = await db.apps.update_one({"_id": to_object_id(app_id)}, {"$set": updates})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="App not found")
-    doc = await db.apps.find_one({"_id": ObjectId(app_id)})
+    doc = await db.apps.find_one({"_id": to_object_id(app_id)})
     return serialize_app(doc)
 
 
 @api_router.delete("/admin/apps/{app_id}")
 async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
-    result = await db.apps.delete_one({"_id": ObjectId(app_id)})
+    result = await db.apps.delete_one({"_id": to_object_id(app_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="App not found")
     return {"success": True}

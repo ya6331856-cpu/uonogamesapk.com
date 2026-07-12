@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -219,12 +219,18 @@ export default function AdminDashboard() {
               data-testid={`admin-app-${app.id}`}
               className="flex items-center gap-3 rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_6px_20px_rgba(0,0,0,0.03)]"
             >
-              <img
-                src={resolveUrl(app.icon_url)}
-                alt={app.name}
-                className="h-12 w-12 shrink-0 rounded-[12px] object-cover ring-1 ring-black/5"
-                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
-              />
+              {app.icon_url ? (
+                <img
+                  src={resolveUrl(app.icon_url)}
+                  alt={app.name}
+                  className="h-12 w-12 shrink-0 rounded-[12px] object-cover ring-1 ring-black/5"
+                  onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                />
+              ) : (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-br from-[#FFC107] to-[#FFB300] font-display text-lg font-bold text-white ring-1 ring-black/5">
+                  {app.name?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <h3 className="truncate font-display text-sm font-semibold text-[#111111]">{app.name}</h3>
@@ -269,6 +275,9 @@ export default function AdminDashboard() {
             <DialogTitle className="font-display text-[#111111]">
               {editingId ? "Edit App" : "Add New App"}
             </DialogTitle>
+            <DialogDescription className="text-xs text-[#777777]">
+              Fill in the app details. Upload an icon and APK file, or paste URLs.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">

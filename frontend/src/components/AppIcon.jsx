@@ -10,8 +10,8 @@ export const AppIcon = ({ src, alt, className }) => {
 
   return (
     <div className={cn("relative overflow-hidden bg-[#f1f2f4]", className)}>
-      {!loaded && !error && <div className="shimmer absolute inset-0" />}
-      {error ? (
+      {!loaded && !error && src && <div className="shimmer absolute inset-0" />}
+      {error || !src ? (
         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#FFC107] to-[#FFB300] text-white">
           <span className="font-display text-lg font-bold">
             {(alt || "?").charAt(0).toUpperCase()}

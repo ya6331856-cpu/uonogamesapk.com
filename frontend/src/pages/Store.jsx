@@ -47,7 +47,8 @@ export default function Store() {
 
   const filtered = useMemo(() => {
     if (!data) return [];
-    let list = data.apps;
+    const hasFilter = category !== "All" || search.trim();
+    let list = hasFilter ? [...data.featured, ...data.apps] : data.apps;
     if (category !== "All") list = list.filter((a) => a.category === category);
     if (search.trim()) {
       const q = search.toLowerCase();
