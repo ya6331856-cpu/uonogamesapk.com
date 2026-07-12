@@ -832,3 +832,230 @@ class TestAppNewFields:
         finally:
             api_session.delete(f"{API}/admin/apps/{aid}", headers=admin_headers)
 
+
+# ---------------------------------------------------------------------------
+# Iteration 5: Blog CRUD + public list/detail
+# ---------------------------------------------------------------------------
+class TestBlog:
+    def test_blog_admin_endpoints_require_auth(self, api_session):
+        assert api_session.get(f"{API}/admin/blog").status_code == 401
+        assert api_session.post(f"{API}/admin/blog", json={"title": "x"}).status_code == 401
+        assert api_session.put(f"{API}/admin/blog/507f1f77bcf86cd799439011",
+                               json={"title": "x"}).status_code == 401
+        assert api_session.delete(f"{API}/admin/blog/507f1f77bcf86cd799439011").status_code == 401
+
+    def test_public_blog_list_empty_or_lists(self, api_session):
+        r = api_session.get(f"{API}/blog")
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+
+    def test_blog_crud_and_public_view(self, api_session, admin_headers):
+        # Create
+        payload = {"title": "TEST_Blog_Post One", "excerpt": "excerpt", "content": "<p>hello</p>", "published": True}
+        c = api_session.post(f"{API}/admin/blog", json=payload, headers=admin_headers)
+        assert c.status_code == 200, c.text
+        created = c.json()
+        assert created["title"] == payload["title"]
+        assert created["slug"], "slug not auto-generated"
+        assert "_id" not in created
+        assert "id" in created
+        bid = created["id"]
+        slug = created["slug"]
+
+        # Admin list includes it
+        adm = api_session.get(f"{API}/admin/blog", headers=admin_headers)
+        assert adm.status_code == 200
+        assert any(b["id"] == bid for b in adm.json())
+
+        # Public list includes it (published)
+        pub = api_session.get(f"{API}/blog").json()
+        assert any(b["id"] == bid for b in pub)
+
+        # Public detail by slug
+        detail = api_session.get(f"{API}/blog/{slug}")
+        assert detail.status_code == 200
+        assert detail.json()["title"] == payload["title"]
+
+        # Update — unpublish, verify hidden from public
+        u = api_session.put(f"{API}/admin/blog/{bid}", json={"published": False, "title": "TEST_Blog_Updated"}, headers=admin_headers)
+        assert u.status_code == 200
+        assert u.json()["title"] == "TEST_Blog_Updated"
+        pub2 = api_session.get(f"{API}/blog").json()
+        assert all(b["id"] != bid for b in pub2), "unpublished blog leaked in public list"
+        # Admin still sees
+        adm2 = api_session.get(f"{API}/admin/blog", headers=admin_headers).json()
+        assert any(b["id"] == bid for b in adm2)
+
+        # Delete
+        d = api_session.delete(f"{API}/admin/blog/{bid}", headers=admin_headers)
+        assert d.status_code == 200
+
+        # 404 on nonexistent slug
+        r = api_session.get(f"{API}/blog/does-not-exist-slug-xyz")
+        assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Iteration 5: Media Library
+# ---------------------------------------------------------------------------
+class TestMediaLibrary:
+    def test_media_endpoints_require_auth(self, api_session):
+        assert api_session.get(f"{API}/admin/media").status_code == 401
+        assert api_session.delete(f"{API}/admin/media/nofile.png").status_code == 401
+
+    def test_upload_list_delete(self, api_session, admin_headers):
+        png = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xcf"
+            b"\xc0\x00\x00\x00\x03\x00\x01\xdd\x8a\xdb\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        files = {"file": ("test-media.png", png, "image/png")}
+        up = api_session.post(f"{API}/admin/upload", files=files, headers=admin_headers)
+        assert up.status_code == 200
+        url = up.json()["url"]
+        filename = url.split("/")[-1]
+
+        # List includes uploaded file
+        lst = api_session.get(f"{API}/admin/media", headers=admin_headers)
+        assert lst.status_code == 200
+        entries = lst.json()
+        assert isinstance(entries, list)
+        found = [e for e in entries if e["filename"] == filename]
+        assert found, f"uploaded file {filename} not in media list"
+        assert found[0]["url"] == url
+        assert isinstance(found[0]["size"], int)
+
+        # Delete
+        d = api_session.delete(f"{API}/admin/media/{filename}", headers=admin_headers)
+        assert d.status_code == 200
+        assert d.json().get("success") is True
+
+        # Verify gone
+        lst2 = api_session.get(f"{API}/admin/media", headers=admin_headers).json()
+        assert all(e["filename"] != filename for e in lst2)
+
+    def test_delete_missing_media_returns_404(self, api_session, admin_headers):
+        r = api_session.delete(f"{API}/admin/media/DOES_NOT_EXIST_123.png", headers=admin_headers)
+        assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Iteration 5: Users list
+# ---------------------------------------------------------------------------
+class TestAdminUsers:
+    def test_users_requires_auth(self, api_session):
+        assert api_session.get(f"{API}/admin/users").status_code == 401
+
+    def test_list_users_shape(self, api_session, admin_headers):
+        r = api_session.get(f"{API}/admin/users", headers=admin_headers)
+        assert r.status_code == 200
+        users = r.json()
+        assert isinstance(users, list)
+        assert len(users) >= 1
+        me = next((u for u in users if u["email"] == ADMIN_EMAIL), None)
+        assert me is not None, "admin user missing from list"
+        assert "id" in me
+        assert me["role"] == "admin"
+        # sensitive fields must NOT leak
+        for u in users:
+            assert "password_hash" not in u
+            assert "_id" not in u
+
+
+# ---------------------------------------------------------------------------
+# Iteration 5: Change password
+# ---------------------------------------------------------------------------
+class TestChangePassword:
+    def test_requires_auth(self, api_session):
+        r = api_session.put(f"{API}/admin/password", json={"current": "x", "new": "y"})
+        assert r.status_code == 401
+
+    def test_rejects_short_password(self, api_session, admin_headers):
+        r = api_session.put(f"{API}/admin/password", json={"current": ADMIN_PASSWORD, "new": "abc"}, headers=admin_headers)
+        assert r.status_code == 400
+        assert "6" in r.json().get("detail", "")
+
+    def test_rejects_wrong_current(self, api_session, admin_headers):
+        r = api_session.put(f"{API}/admin/password", json={"current": "wrong-current-pw", "new": "abcdef1"}, headers=admin_headers)
+        assert r.status_code == 400
+        assert "current" in r.json().get("detail", "").lower()
+
+    def test_change_and_restore(self, api_session, admin_headers):
+        temp = "TempPass_9999!"
+        # Change to temp
+        r = api_session.put(f"{API}/admin/password", json={"current": ADMIN_PASSWORD, "new": temp}, headers=admin_headers)
+        assert r.status_code == 200, r.text
+        # Login with new password works
+        login_new = api_session.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": temp})
+        assert login_new.status_code == 200
+        new_token = login_new.json()["token"]
+        new_headers = {"Authorization": f"Bearer {new_token}"}
+        # Old password no longer works
+        login_old = api_session.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+        assert login_old.status_code == 401
+        # Restore
+        r2 = api_session.put(f"{API}/admin/password", json={"current": temp, "new": ADMIN_PASSWORD}, headers=new_headers)
+        assert r2.status_code == 200
+        # Original login works again
+        login_orig = api_session.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+        assert login_orig.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Iteration 5: Backup export / restore + settings.categories
+# ---------------------------------------------------------------------------
+class TestBackupAndCategories:
+    def test_backup_requires_auth(self, api_session):
+        assert api_session.get(f"{API}/admin/backup").status_code == 401
+        assert api_session.post(f"{API}/admin/backup/restore", json={}).status_code == 401
+
+    def test_backup_export_returns_all_collections(self, api_session, admin_headers):
+        r = api_session.get(f"{API}/admin/backup", headers=admin_headers)
+        assert r.status_code == 200
+        d = r.json()
+        for key in ("apps", "faqs", "reviews", "winners", "codes", "blog", "settings", "exported_at"):
+            assert key in d, f"backup missing key {key}"
+        assert isinstance(d["apps"], list)
+        assert isinstance(d["settings"], dict)
+        # settings should include categories per iteration 5
+        assert "categories" in d["settings"], "settings.categories missing from backup"
+        assert isinstance(d["settings"]["categories"], list)
+        # sample-sanity: apps should not be empty (seeded)
+        assert len(d["apps"]) >= 3
+
+    def test_settings_includes_categories_array(self, api_session):
+        r = api_session.get(f"{API}/settings")
+        assert r.status_code == 200
+        s = r.json()
+        assert "categories" in s
+        assert isinstance(s["categories"], list)
+
+    def test_update_settings_categories_persists(self, api_session, admin_headers):
+        original = api_session.get(f"{API}/settings").json()
+        original_cats = list(original.get("categories") or [])
+        try:
+            new_cats = original_cats + ["TEST_CategoryZZ"]
+            u = api_session.put(f"{API}/admin/settings", json={"categories": new_cats}, headers=admin_headers)
+            assert u.status_code == 200
+            assert "TEST_CategoryZZ" in u.json()["categories"]
+            # GET reflects
+            g = api_session.get(f"{API}/settings").json()
+            assert "TEST_CategoryZZ" in g["categories"]
+        finally:
+            api_session.put(f"{API}/admin/settings", json={"categories": original_cats}, headers=admin_headers)
+
+    def test_backup_restore_roundtrip_faqs(self, api_session, admin_headers):
+        """Verify restore replaces a collection with provided data. Round-trip on a small collection."""
+        # Snapshot current faqs from backup
+        snap = api_session.get(f"{API}/admin/backup", headers=admin_headers).json()
+        original_faqs = snap["faqs"]
+        # Restore with the same data — must return success
+        payload = {"faqs": [{k: v for k, v in f.items() if k != "_id"} for f in original_faqs]}
+        r = api_session.post(f"{API}/admin/backup/restore", json=payload, headers=admin_headers)
+        assert r.status_code == 200
+        assert r.json().get("success") is True
+        # Public FAQ list still returns >= original count (parallel tests may create/delete faqs)
+        pub = api_session.get(f"{API}/faqs").json()
+        assert len(pub) >= len(original_faqs) - 2, f"faq count dropped significantly after roundtrip restore ({len(pub)} vs {len(original_faqs)})"
+
+

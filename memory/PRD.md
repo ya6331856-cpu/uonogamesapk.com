@@ -41,9 +41,21 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 - Security: seed() purges stale admins so rotated credentials invalidate old ones
 - Tested: backend 31/31, all frontend flows
 
-## Backlog / Next
-- P1: Real Telegram channel link (currently t.me/ placeholder)
-- P1: Category/screenshot management UX polish; app ratings/reviews
-- P2: Persistent object storage for uploads (survives redeploys)
-- P2: PWA install prompt; pagination for large catalogs
+## Implemented — CMS (Iteration 4)
+- **Admin CMS (7 tabs)**: Apps, FAQs, Content(site settings), Reviews, Winners, Codes, Analytics
+- **Site Settings singleton** (`/api/settings`): branding (name/logo/footer/copyright), contact + socials, hero (banner/headline/subtitle/toggle), stats (editable + auto values), telegram (link/cta/members/toggle), announcement bar, theme colors, homepage **section order + enable/disable**, SEO (title/desc/keywords/OG — applied live), ads (AdSense/custom banner), winners ticker config, editable Legal pages
+- **Storefront is now data-driven**: hero/stats/telegram/sections/announcement/theme/SEO all come from settings; Header/Footer dynamic
+- **Reviews** (approve/hide + CRUD), **Live Winners** auto-scroll ticker (CRUD), **Redeem Codes** (CRUD + public /api/redeem with expiry & usage limits), **Analytics** dashboard (downloads/apps/reviews/codes + by-category + top apps)
+- **App boxes now show tags/badges** (Hot/New/Popular/Trending — admin-selectable or auto)
+- **Expanded APK fields**: badge, trending, hidden (hide/show), features[], requirements, permissions[] — surfaced on detail page
+- Tested: backend 52/52; frontend 100% (fixed: admin list now includes hidden apps via include_hidden)
+
+## Deferred (enterprise subsystems — not yet built)
+- Real per-visitor analytics tracking (visitors/countries/devices/traffic sources) — current analytics aggregates catalog data
+- Push notifications, popup message scheduler
+- Database backup/restore/export/import UI
+- Multi-admin users, roles & permissions, login history, activity logs
+- Auto sitemap.xml / robots.txt generation, schema markup builder
+- Drag-and-drop section builder + custom section creation (current: reorder + enable/disable of fixed sections)
+
 

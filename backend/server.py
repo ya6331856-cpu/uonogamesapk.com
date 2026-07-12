@@ -344,6 +344,166 @@ async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
     return {"success": True}
 
 
+# ---------------------------------------------------------------------------
+# Blog
+# ---------------------------------------------------------------------------
+class BlogCreate(BaseModel):
+    title: str
+    slug: str = ""
+    excerpt: str = ""
+    content: str = ""
+    cover_url: str = ""
+    published: bool = True
+
+
+class BlogUpdate(BaseModel):
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    excerpt: Optional[str] = None
+    content: Optional[str] = None
+    cover_url: Optional[str] = None
+    published: Optional[bool] = None
+
+
+def slugify(text: str) -> str:
+    return "".join(c if c.isalnum() else "-" for c in text.lower()).strip("-")
+
+
+@api_router.get("/blog")
+async def list_blog():
+    docs = await db.blog.find({"published": True}).sort("created_at", -1).to_list(200)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.get("/blog/{slug}")
+async def get_blog(slug: str):
+    doc = await db.blog.find_one({"slug": slug})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return serialize_doc(doc)
+
+
+@api_router.get("/admin/blog")
+async def admin_list_blog(admin: dict = Depends(get_current_admin)):
+    docs = await db.blog.find().sort("created_at", -1).to_list(500)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.post("/admin/blog")
+async def create_blog(payload: BlogCreate, admin: dict = Depends(get_current_admin)):
+    doc = payload.model_dump()
+    doc["slug"] = slugify(doc["slug"] or doc["title"])
+    doc["created_at"] = now_iso()
+    res = await db.blog.insert_one(doc)
+    return serialize_doc(await db.blog.find_one({"_id": res.inserted_id}))
+
+
+@api_router.put("/admin/blog/{bid}")
+async def update_blog(bid: str, payload: BlogUpdate, admin: dict = Depends(get_current_admin)):
+    updates = payload.model_dump(exclude_unset=True)
+    if updates.get("slug"):
+        updates["slug"] = slugify(updates["slug"])
+    r = await db.blog.update_one({"_id": to_object_id(bid)}, {"$set": updates})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return serialize_doc(await db.blog.find_one({"_id": to_object_id(bid)}))
+
+
+@api_router.delete("/admin/blog/{bid}")
+async def delete_blog(bid: str, admin: dict = Depends(get_current_admin)):
+    r = await db.blog.delete_one({"_id": to_object_id(bid)})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Media Library
+# ---------------------------------------------------------------------------
+@api_router.get("/admin/media")
+async def list_media(admin: dict = Depends(get_current_admin)):
+    files = []
+    for f in sorted(UPLOAD_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+        if f.is_file():
+            files.append({
+                "filename": f.name,
+                "url": f"/api/uploads/{f.name}",
+                "size": f.stat().st_size,
+                "modified": datetime.fromtimestamp(f.stat().st_mtime, timezone.utc).isoformat(),
+            })
+    return files
+
+
+@api_router.delete("/admin/media/{filename}")
+async def delete_media(filename: str, admin: dict = Depends(get_current_admin)):
+    fp = UPLOAD_DIR / filename
+    if fp.exists() and fp.is_file():
+        fp.unlink()
+        return {"success": True}
+    raise HTTPException(status_code=404, detail="File not found")
+
+
+# ---------------------------------------------------------------------------
+# Users / Security
+# ---------------------------------------------------------------------------
+@api_router.get("/admin/users")
+async def list_users(admin: dict = Depends(get_current_admin)):
+    docs = await db.users.find().to_list(100)
+    return [{"id": str(u["_id"]), "email": u["email"], "name": u.get("name", ""), "role": u.get("role", "admin"), "created_at": u.get("created_at", "")} for u in docs]
+
+
+@api_router.put("/admin/password")
+async def change_password(payload: dict, admin: dict = Depends(get_current_admin)):
+    current = payload.get("current", "")
+    new = payload.get("new", "")
+    if len(new) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    user = await db.users.find_one({"_id": ObjectId(admin.get("id") or admin.get("_id"))})
+    if not user or not verify_password(current, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    await db.users.update_one({"_id": user["_id"]}, {"$set": {"password_hash": hash_password(new)}})
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Backup (export / import)
+# ---------------------------------------------------------------------------
+BACKUP_COLLECTIONS = ["apps", "faqs", "reviews", "winners", "codes", "blog"]
+
+
+@api_router.get("/admin/backup")
+async def export_backup(admin: dict = Depends(get_current_admin)):
+    data = {}
+    for coll in BACKUP_COLLECTIONS:
+        docs = await db[coll].find().to_list(5000)
+        for d in docs:
+            d["_id"] = str(d["_id"])
+        data[coll] = docs
+    settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
+    settings.pop("_id", None)
+    data["settings"] = settings
+    data["exported_at"] = now_iso()
+    return data
+
+
+@api_router.post("/admin/backup/restore")
+async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)):
+    for coll in BACKUP_COLLECTIONS:
+        if coll in payload and isinstance(payload[coll], list):
+            await db[coll].delete_many({})
+            docs = []
+            for d in payload[coll]:
+                d.pop("_id", None)
+                docs.append(d)
+            if docs:
+                await db[coll].insert_many(docs)
+    if "settings" in payload and isinstance(payload["settings"], dict):
+        s = dict(payload["settings"])
+        s.pop("_id", None)
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": s}, upsert=True)
+    return {"success": True}
+
+
 @api_router.get("/")
 async def root():
     return {"message": "Uonogamesapk API"}
@@ -396,6 +556,7 @@ def default_settings() -> dict:
             {"id": "faq", "label": "FAQ", "enabled": True},
             {"id": "legal", "label": "Legal", "enabled": True},
         ],
+        "categories": ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"],
         "seo": {
             "meta_title": "Uonogamesapk.com | Premium APK Store",
             "meta_description": "Download premium APK games. Fast, safe & verified.",
@@ -825,6 +986,12 @@ async def seed():
 
     # Initialize settings singleton
     await get_settings_doc()
+    # Backfill any newly added default keys (e.g. iteration 5: categories) so existing sites get them
+    defaults = default_settings()
+    current_settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
+    to_add = {k: v for k, v in defaults.items() if k not in current_settings}
+    if to_add:
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
 
     # Seed sample reviews
     if await db.reviews.count_documents({}) == 0:

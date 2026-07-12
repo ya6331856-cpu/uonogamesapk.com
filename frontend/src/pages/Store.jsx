@@ -263,8 +263,8 @@ export default function Store() {
         ) : (
           <>
             {isDefaultView && <AdSlot ads={settings?.ads} />}
-            {isDefaultView && en("winners") && <RedeemBox />}
             {finalOrder.map((id) => renderers[id]).filter(Boolean)}
+            {isDefaultView && en("winners") && <RedeemBox />}
           </>
         )}
       </main>

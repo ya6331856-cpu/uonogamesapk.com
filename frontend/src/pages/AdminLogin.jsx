@@ -30,7 +30,7 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/admin");
+      navigate("/admin/dashboard");
     } catch (err) {
       setError(formatApiErrorDetail(err.response?.data?.detail) || err.message);
     } finally {

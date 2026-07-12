@@ -104,7 +104,7 @@ export default function AdminDashboard() {
 
   const fetchApps = async () => {
     try {
-      const { data } = await api.get("/apps");
+      const { data } = await api.get("/apps", { params: { include_hidden: true } });
       setApps([...data.featured, ...data.apps]);
     } catch (e) {
       toast.error("Failed to load apps");
@@ -267,6 +267,9 @@ export default function AdminDashboard() {
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-[#FFF8E1] px-1.5 py-0.5 text-[10px] font-bold text-[#FFB300]">
                       <Crown className="h-2.5 w-2.5" />#{app.featured_order}
                     </span>
+                  )}
+                  {app.hidden && (
+                    <span className="rounded-full bg-[#FEF2F2] px-1.5 py-0.5 text-[10px] font-bold text-red-500">Hidden</span>
                   )}
                 </div>
                 <p className="text-[11px] text-[#777777]">v{app.version} • {app.size} • {app.category}</p>
