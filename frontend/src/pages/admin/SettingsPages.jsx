@@ -125,14 +125,38 @@ export function SeoPage() {
 export function AdsPage() {
   const { s, set, save, saving, ready } = useSettingsEditor();
   if (!ready) return <Spinner />;
+  const ads = s.ads || {};
   return (
     <div>
       <PageHeader title="Advertisements" desc="Google AdSense or custom banner ads on the storefront." action={<SaveBar onSave={save} saving={saving} testId="save-ads" />} />
-      <Card className="space-y-4">
-        <Toggle label="Enable Ads" checked={s.ads?.enabled} onChange={(v) => set("ads.enabled", v)} testId="toggle-ads" />
-        <Field label="AdSense Client ID" testId="ads-client" value={s.ads?.adsense_client} onChange={(v) => set("ads.adsense_client", v)} placeholder="ca-pub-xxxx" />
-        <Area label="Custom Banner HTML" testId="ads-html" value={s.ads?.banner_html} onChange={(v) => set("ads.banner_html", v)} rows={3} />
-      </Card>
+      <div className="space-y-4">
+        <Card className="space-y-4">
+          <Toggle label="Enable Ads" checked={ads.enabled} onChange={(v) => set("ads.enabled", v)} testId="toggle-ads" />
+          <Field label="AdSense Client ID (Publisher ID)" testId="ads-client" value={ads.adsense_client} onChange={(v) => set("ads.adsense_client", v)} placeholder="ca-pub-5669686743285209" />
+          <Field label="Ad Slot ID (from your AdSense ad unit)" testId="ads-slot" value={ads.adsense_slot} onChange={(v) => set("ads.adsense_slot", v)} placeholder="e.g. 1234567890" />
+          <p className="rounded-xl bg-[#F0F9FF] px-3 py-2 text-xs leading-relaxed text-[#0369A1]">
+            Client ID enables the ad. Leave the Slot ID empty to use responsive <b>Auto Ads</b>. To place a specific ad unit, create a Display ad unit in AdSense and paste its <b>Ad Slot ID</b> here.
+          </p>
+          <Area label="Custom Banner HTML (optional — overrides AdSense)" testId="ads-html" value={ads.banner_html} onChange={(v) => set("ads.banner_html", v)} rows={3} />
+        </Card>
+
+        <Card className="space-y-2">
+          <h3 className="font-display text-sm font-bold text-[#111111]">Live Placeholder Preview</h3>
+          <p className="text-xs text-[#777777]">This is how the ad slot appears on your storefront. Real ads fill this box once AdSense approves your live domain.</p>
+          {ads.enabled ? (
+            ads.banner_html ? (
+              <div className="overflow-hidden rounded-[16px] border border-[#E5E7EB] bg-white" data-testid="ads-preview-html" dangerouslySetInnerHTML={{ __html: ads.banner_html }} />
+            ) : (
+              <div data-testid="ads-preview-box" className="flex h-24 flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-[#E5E7EB] bg-[#F8F9FA] text-center">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#B0B0B0]">Advertisement</span>
+                <span className="mt-1 text-xs text-[#999999]">{ads.adsense_client ? `AdSense • ${ads.adsense_client}${ads.adsense_slot ? " • slot " + ads.adsense_slot : " • Auto Ads"}` : "Add a Client ID to activate"}</span>
+              </div>
+            )
+          ) : (
+            <div className="flex h-24 items-center justify-center rounded-[16px] border-2 border-dashed border-[#E5E7EB] bg-[#F8F9FA] text-xs text-[#999999]" data-testid="ads-preview-disabled">Ads are disabled</div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

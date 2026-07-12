@@ -574,7 +574,7 @@ def default_settings() -> dict:
             "keywords": "apk, rummy, games, download, android",
             "og_image": "/hero-banner.png",
         },
-        "ads": {"enabled": False, "adsense_client": "", "banner_html": ""},
+        "ads": {"enabled": False, "adsense_client": "", "adsense_slot": "", "banner_html": ""},
         "winners_config": {"enabled": True, "scroll_speed": 40},
         "legal": {},  # populated from LEGAL_DEFAULTS on seed
     }
