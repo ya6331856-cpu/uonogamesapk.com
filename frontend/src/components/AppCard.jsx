@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BadgeCheck, Download } from "lucide-react";
+import { Star, BadgeCheck, Download, Gift } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
@@ -70,6 +70,21 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
         <p className="mt-0.5 text-[11px] text-[#999999]">
           {formatCount(app.downloads)} downloads
         </p>
+
+        {(app.signup_bonus || app.min_withdraw) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5" data-testid={`app-rewards-${app.id}`}>
+            {app.signup_bonus && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FF9800] px-2 py-0.5 text-[10px] font-extrabold text-white shadow-sm">
+                <Gift className="h-3 w-3" /> Bonus {app.signup_bonus}
+              </span>
+            )}
+            {app.min_withdraw && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[10px] font-bold text-[#16A34A]">
+                Min W/D {app.min_withdraw}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <RippleButton

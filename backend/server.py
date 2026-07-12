@@ -84,6 +84,8 @@ class AppModel(BaseModel):
     requirements: str = ""
     permissions: List[str] = Field(default_factory=list)
     badge: str = "Auto"
+    signup_bonus: str = ""
+    min_withdraw: str = ""
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -111,6 +113,8 @@ class AppCreate(BaseModel):
     requirements: str = ""
     permissions: List[str] = Field(default_factory=list)
     badge: str = "Auto"
+    signup_bonus: str = ""
+    min_withdraw: str = ""
 
 
 class AppUpdate(BaseModel):
@@ -137,6 +141,8 @@ class AppUpdate(BaseModel):
     requirements: Optional[str] = None
     permissions: Optional[List[str]] = None
     badge: Optional[str] = None
+    signup_bonus: Optional[str] = None
+    min_withdraw: Optional[str] = None
 
 
 class LoginInput(BaseModel):

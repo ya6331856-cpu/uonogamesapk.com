@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
   ShieldCheck, HardDrive, Tag, Smartphone, Building2, Sparkles,
-  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock,
+  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -151,6 +151,34 @@ export default function AppDetail() {
           <Stat icon={Smartphone} label="Requires" value={(app.min_android || "").replace("Android ", "")} />
         </div>
 
+        {/* Rummy rewards highlight */}
+        {(app.signup_bonus || app.min_withdraw) && (
+          <div className="flex gap-2" data-testid="detail-rewards">
+            {app.signup_bonus && (
+              <div className="flex flex-1 items-center gap-2.5 rounded-[16px] border border-[#FFE082] bg-gradient-to-br from-[#FFF8E1] to-[#FFFBEB] px-3 py-3 shadow-[0_6px_20px_rgba(255,193,7,0.12)]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FFC107] to-[#FF9800] shadow-sm">
+                  <Gift className="h-4 w-4 text-white" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-[#B45309]">Sign-up Bonus</p>
+                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{app.signup_bonus}</p>
+                </div>
+              </div>
+            )}
+            {app.min_withdraw && (
+              <div className="flex flex-1 items-center gap-2.5 rounded-[16px] border border-[#BBF7D0] bg-gradient-to-br from-[#F0FDF4] to-white px-3 py-3 shadow-[0_6px_20px_rgba(34,197,94,0.1)]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16A34A] shadow-sm">
+                  <Wallet className="h-4 w-4 text-white" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-[#15803D]">Min. Withdraw</p>
+                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{app.min_withdraw}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Download button */}
         <RippleButton
           onClick={handleDownload}
@@ -228,6 +256,8 @@ export default function AppDetail() {
               ["Package", app.package_name || "—"],
               ["Updated", (app.created_at || "").slice(0, 10) || "—"],
               ["Requirements", app.requirements || "—"],
+              ["Sign-up Bonus", app.signup_bonus || "—"],
+              ["Min. Withdraw", app.min_withdraw || "—"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between py-2.5 text-sm">
                 <span className="text-[#777777]">{k}</span>

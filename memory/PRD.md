@@ -70,6 +70,11 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 ## Welcome animation (2026-02)
 - New component /app/frontend/src/components/WelcomeTypewriter.jsx — looping typewriter "Welcome to the UONOGAMESAPK.COM" (brand part gold gradient + blinking cursor). Rendered in Store.jsx after Header.
 
+## Rummy rewards fields (2026-02)
+- New per-app fields: signup_bonus + min_withdraw (strings, e.g. "₹51" / "₹100"). Added to AppModel/AppCreate/AppUpdate in server.py.
+- Admin "Add New App" form (AppsManager.jsx): prominent gold "Rummy Rewards" box at top for signup_bonus & min_withdraw. EMPTY defaults pre-filled with rummy-ready values (rating 4.8, downloads 500000, size 45MB, developer, description, features, requirements, permissions, badge Hot, trending true) so admin only sets name + logo + bonus + min-withdraw.
+- Display: AppCard shows gold "Bonus" chip + green "Min W/D" chip; AppDetail shows two reward highlight cards (gift/wallet) above download button + rows in Additional Information. Verified end-to-end on detail page.
+
 ## Deploy caveats to note
 - Uploaded icons/APKs are stored on local disk (/app/backend/uploads) — NOT persistent across redeploys. For production use, move to object storage (S3/GCS).
 - Seeded sample apps use example.com placeholder APK URLs — replace with real download links/files via the admin APK Manager.

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Pencil, Trash2, Star, BadgeCheck, Crown, Upload, Loader2, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, BadgeCheck, Crown, Upload, Loader2, Package, Gift } from "lucide-react";
 import { toast } from "sonner";
 import api, { resolveUrl } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
@@ -16,11 +16,19 @@ import RippleButton from "@/components/RippleButton";
 
 const BADGES = ["Auto", "Hot", "New", "Popular", "Trending", "None"];
 const EMPTY = {
-  name: "", version: "1.0.0", size: "0 MB", rating: 4.5, downloads: 0,
-  verified: true, category: "Games", description: "", icon_url: "", apk_url: "",
-  featured: false, featured_order: null, developer: "", package_name: "",
-  min_android: "Android 6.0+", whats_new: "", badge: "Auto", trending: false,
-  hidden: false, features: [], requirements: "", permissions: [],
+  name: "", version: "1.0.0", size: "45 MB", rating: 4.8, downloads: 500000,
+  verified: true, category: "Games",
+  description: "India's most trusted rummy & gaming platform. Play Points Rummy, Pool Rummy and Deals Rummy, join real-cash tournaments and win big. Enjoy instant withdrawals, 100% safe & secure gameplay, 24/7 support and exciting daily bonuses.",
+  icon_url: "", apk_url: "",
+  featured: false, featured_order: null, developer: "Uonogamesapk", package_name: "",
+  min_android: "Android 5.0+",
+  whats_new: "Performance improvements, new tournaments and a smoother, faster gaming experience.",
+  badge: "Hot", trending: true,
+  hidden: false,
+  features: ["Real Cash Games", "Instant Withdrawal", "24/7 Support", "100% Safe & Secure", "Daily Bonus", "Refer & Earn"],
+  requirements: "Android 5.0 and above, 100 MB free space, active internet connection",
+  permissions: ["Storage", "Network access", "Phone state"],
+  signup_bonus: "₹51", min_withdraw: "₹100",
 };
 
 function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
@@ -134,6 +142,13 @@ export default function AppsManager({ featuredOnly = false }) {
           <DialogHeader><DialogTitle>{editingId ? "Edit App" : "Add New App"}</DialogTitle><DialogDescription className="text-xs text-[#777777]">Upload an icon and APK, or paste URLs.</DialogDescription></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">App Name</Label><Input data-testid="form-name" value={form.name} onChange={(e) => setField("name", e.target.value)} className="rounded-xl" /></div>
+            <div className="rounded-2xl border border-[#FFE082] bg-[#FFFBEB] p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-[#B45309]"><Gift className="h-3.5 w-3.5" /> Rummy Rewards (shown on the app)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Sign-up Bonus</Label><Input data-testid="form-signup-bonus" value={form.signup_bonus} onChange={(e) => setField("signup_bonus", e.target.value)} placeholder="e.g. ₹51" className="rounded-xl bg-white" /></div>
+                <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Min. Withdraw</Label><Input data-testid="form-min-withdraw" value={form.min_withdraw} onChange={(e) => setField("min_withdraw", e.target.value)} placeholder="e.g. ₹100" className="rounded-xl bg-white" /></div>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Version</Label><Input data-testid="form-version" value={form.version} onChange={(e) => setField("version", e.target.value)} className="rounded-xl" /></div>
               <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Size</Label><Input data-testid="form-size" value={form.size} onChange={(e) => setField("size", e.target.value)} className="rounded-xl" /></div>
