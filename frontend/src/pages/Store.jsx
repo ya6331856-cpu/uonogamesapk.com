@@ -6,6 +6,7 @@ import api, { API } from "@/lib/api";
 import Header from "@/components/Header";
 import FeaturedApps from "@/components/FeaturedApps";
 import AppCard from "@/components/AppCard";
+import TrendingRow from "@/components/TrendingRow";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { StoreSkeleton } from "@/components/Skeletons";
 import FaqSection from "@/components/FaqSection";
@@ -77,6 +78,18 @@ export default function Store() {
     if (!data) return 0;
     return [...data.featured, ...data.apps].reduce((s, a) => s + (a.downloads || 0), 0);
   }, [data]);
+
+  // Trending = top downloaded across all apps (used for the mid-list layout break)
+  const trending = useMemo(() => {
+    if (!data) return [];
+    return [...data.featured, ...data.apps]
+      .slice()
+      .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
+      .slice(0, 8);
+  }, [data]);
+
+  // Only break the straight list with the Trending row on the default unfiltered view with enough items
+  const showTrendingBreak = !search.trim() && category === "All" && filtered.length > 4;
 
   return (
     <div className="app-shell pb-10">
@@ -214,6 +227,22 @@ export default function Store() {
                   className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-10 text-center"
                 >
                   <p className="text-sm text-[#777777]">No apps found</p>
+                </div>
+              ) : showTrendingBreak ? (
+                <div className="space-y-5">
+                  <div className="space-y-3">
+                    {filtered.slice(0, 3).map((app, i) => (
+                      <AppCard key={app.id} app={app} index={i} onDownload={handleDownload} />
+                    ))}
+                  </div>
+
+                  <TrendingRow apps={trending} onDownload={handleDownload} />
+
+                  <div className="space-y-3">
+                    {filtered.slice(3).map((app, i) => (
+                      <AppCard key={app.id} app={app} index={i + 3} onDownload={handleDownload} />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">

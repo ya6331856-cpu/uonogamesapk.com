@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
   ShieldCheck, HardDrive, Tag, Smartphone, Building2, Sparkles,
+  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -14,6 +15,15 @@ import LegalSection from "@/components/LegalSection";
 import LegalDialog from "@/components/LegalDialog";
 import SiteFooter from "@/components/SiteFooter";
 import { formatCount, formatFull } from "@/lib/format";
+
+const GAME_HIGHLIGHTS = [
+  { icon: Zap, title: "Smooth 60 FPS", desc: "Optimized for buttery-smooth gameplay on all devices." },
+  { icon: Wifi, title: "Online & Offline", desc: "Play anywhere, with or without an internet connection." },
+  { icon: RefreshCw, title: "Regular Updates", desc: "Fresh content, levels and improvements added often." },
+  { icon: Trophy, title: "Rewards & Leaderboards", desc: "Compete, earn rewards and climb the rankings." },
+  { icon: Lock, title: "Safe & Secure", desc: "Malware-scanned and verified for a worry-free install." },
+  { icon: Gamepad2, title: "Easy Controls", desc: "Intuitive touch controls that are simple to master." },
+];
 
 const Stat = ({ icon: Icon, label, value }) => (
   <div className="flex min-w-0 flex-1 flex-col items-center rounded-[16px] border border-[#E5E7EB] bg-white px-2 py-3 text-center shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
@@ -85,8 +95,6 @@ export default function AppDetail() {
     );
   }
 
-  const screenshots = app.screenshots || [];
-
   return (
     <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
       {/* Header */}
@@ -157,25 +165,35 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* Screenshots */}
-        {screenshots.length > 0 && (
-          <section className="space-y-2.5">
-            <h2 className="font-display text-base font-bold text-[#111111]">Screenshots</h2>
-            <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-              {screenshots.map((s, i) => (
-                <img
-                  key={i}
-                  src={resolveUrl(s)}
-                  alt={`${app.name} screenshot ${i + 1}`}
-                  loading="lazy"
-                  decoding="async"
-                  data-testid={`detail-screenshot-${i}`}
-                  className="h-52 w-72 shrink-0 rounded-[18px] border border-[#E5E7EB] object-cover shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Game Highlights (replaces screenshots) */}
+        <section className="space-y-2.5" data-testid="game-highlights">
+          <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
+            <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
+          </h2>
+          <p className="text-sm leading-relaxed text-[#555555]">
+            {app.name} is a premium {app.category?.toLowerCase()} experience built for smooth, lag-free
+            play on Android. Enjoy stunning visuals, responsive controls and hours of engaging gameplay —
+            all in a lightweight {app.size} package that installs in seconds. Whether you are a casual
+            player or a hardcore gamer, {app.name} delivers a polished, addictive experience you will keep
+            coming back to.
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {GAME_HIGHLIGHTS.map((h) => (
+              <div
+                key={h.title}
+                className="flex items-start gap-2.5 rounded-[16px] border border-[#E5E7EB] bg-white p-3 shadow-[0_6px_20px_rgba(0,0,0,0.03)]"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#FFF8E1]">
+                  <h.icon className="h-4 w-4 text-[#FFB300]" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-[13px] font-semibold leading-tight text-[#111111]">{h.title}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-[#777777]">{h.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Description */}
         {app.description && (

@@ -382,35 +382,6 @@ export default function AdminDashboard() {
               <Textarea data-testid="form-whats-new" value={form.whats_new} onChange={(e) => setField("whats_new", e.target.value)} rows={2} placeholder="Latest changes in this version" className="rounded-xl" />
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#555555]">Screenshots</Label>
-              {form.screenshots.length > 0 && (
-                <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-                  {form.screenshots.map((s, i) => (
-                    <div key={i} className="relative shrink-0">
-                      <img src={resolveUrl(s)} alt={`shot ${i}`} className="h-20 w-32 rounded-[12px] object-cover ring-1 ring-black/5" />
-                      <button
-                        type="button"
-                        data-testid={`remove-screenshot-${i}`}
-                        onClick={() => setField("screenshots", form.screenshots.filter((_, idx) => idx !== i))}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <FileUpload
-                label="Screenshot"
-                testId="upload-screenshot"
-                accept="image/*"
-                value=""
-                isImage={false}
-                onUploaded={(url) => setField("screenshots", [...form.screenshots, url])}
-              />
-            </div>
-
             <div className="flex items-center justify-between rounded-xl bg-[#F8F9FA] px-3 py-2.5">
               <Label className="text-xs font-semibold text-[#555555]">Verified Badge</Label>
               <Switch data-testid="form-verified" checked={form.verified} onCheckedChange={(v) => setField("verified", v)} />
