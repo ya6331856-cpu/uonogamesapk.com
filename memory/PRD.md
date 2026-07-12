@@ -30,11 +30,20 @@ FastAPI + React + MongoDB. JWT admin auth. Local file uploads (icons + APKs).
 - Tested: backend 19/19, frontend all critical flows
 
 ## Credentials
-admin@uonogamesapk.com / Admin@12345 (see test_credentials.md)
+arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_credentials.md
+
+## Implemented (updated)
+- MANDATORY sections: FAQ (10 seeded, admin-editable accordion), Legal (10 policy cards w/ dialogs), enhanced Footer (legal links, Telegram, back-to-top, auto year)
+- Sort control (Most Downloaded / Top Rated / Newest)
+- Admin FAQ management (add/edit/delete/reorder) via Tabs (Apps | FAQs)
+- SECOND PAGE: App Detail `/app/:id` — clicking any card opens full page (icon, developer, stats, screenshots gallery, description, what's new, additional info, sticky Download bar, share)
+- Admin app form extended: developer, package_name, min_android, whats_new, multi-screenshot upload
+- Security: seed() purges stale admins so rotated credentials invalidate old ones
+- Tested: backend 31/31, all frontend flows
 
 ## Backlog / Next
-- P1: Pagination + lazy-load for large catalogs; app detail page with screenshots
 - P1: Real Telegram channel link (currently t.me/ placeholder)
-- P2: Categories management from admin; drag-to-reorder featured
+- P1: Category/screenshot management UX polish; app ratings/reviews
 - P2: Persistent object storage for uploads (survives redeploys)
-- P2: PWA install prompt for true "native app" install
+- P2: PWA install prompt; pagination for large catalogs
+

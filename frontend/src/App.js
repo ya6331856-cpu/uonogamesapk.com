@@ -19,7 +19,7 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </BrowserRouter>
-        <Toaster position="top-center" richColors />
+        <Toaster position="bottom-center" offset={80} richColors />
       </AuthProvider>
     </div>
   );
