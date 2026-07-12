@@ -5,6 +5,7 @@ import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
 import { formatCount } from "@/lib/format";
+import { getBadge } from "@/lib/badge";
 
 /**
  * Horizontal-scroll "Trending" poster cards — breaks the straight vertical
@@ -42,6 +43,11 @@ export const TrendingRow = ({ apps, onDownload }) => {
               alt={app.name}
               className="h-16 w-16 rounded-[16px] ring-1 ring-black/5"
             />
+            {getBadge(app) && (
+              <span data-testid={`app-badge-${app.id}`} className="absolute left-2 top-2 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold leading-none shadow-sm" style={{ color: getBadge(app).color, backgroundColor: getBadge(app).bg }}>
+                {getBadge(app).label}
+              </span>
+            )}
             <h3 className="mt-2.5 line-clamp-1 font-display text-sm font-semibold text-[#111111]">{app.name}</h3>
             <div className="mt-1 flex items-center gap-2 text-[11px] text-[#777777]">
               <span className="inline-flex items-center gap-0.5">

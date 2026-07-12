@@ -73,6 +73,12 @@ class AppModel(BaseModel):
     min_android: str = "Android 6.0+"
     whats_new: str = ""
     screenshots: List[str] = Field(default_factory=list)
+    trending: bool = False
+    hidden: bool = False
+    features: List[str] = Field(default_factory=list)
+    requirements: str = ""
+    permissions: List[str] = Field(default_factory=list)
+    badge: str = "Auto"
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -94,6 +100,12 @@ class AppCreate(BaseModel):
     min_android: str = "Android 6.0+"
     whats_new: str = ""
     screenshots: List[str] = Field(default_factory=list)
+    trending: bool = False
+    hidden: bool = False
+    features: List[str] = Field(default_factory=list)
+    requirements: str = ""
+    permissions: List[str] = Field(default_factory=list)
+    badge: str = "Auto"
 
 
 class AppUpdate(BaseModel):
@@ -114,6 +126,12 @@ class AppUpdate(BaseModel):
     min_android: Optional[str] = None
     whats_new: Optional[str] = None
     screenshots: Optional[List[str]] = None
+    trending: Optional[bool] = None
+    hidden: Optional[bool] = None
+    features: Optional[List[str]] = None
+    requirements: Optional[str] = None
+    permissions: Optional[List[str]] = None
+    badge: Optional[str] = None
 
 
 class LoginInput(BaseModel):
@@ -220,8 +238,10 @@ async def me(admin: dict = Depends(get_current_admin)):
 # Public app routes
 # ---------------------------------------------------------------------------
 @api_router.get("/apps")
-async def list_apps(search: Optional[str] = None, category: Optional[str] = None):
+async def list_apps(search: Optional[str] = None, category: Optional[str] = None, include_hidden: bool = False):
     query: dict = {}
+    if not include_hidden:
+        query["hidden"] = {"$ne": True}
     if search:
         query["name"] = {"$regex": search, "$options": "i"}
     if category and category != "All":
@@ -239,7 +259,12 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
         key=lambda a: a.get("created_at", ""),
         reverse=True,
     )
-    return {"featured": featured, "apps": regular, "total": len(apps)}
+    trending = sorted(
+        [a for a in apps if a.get("trending")],
+        key=lambda a: a.get("downloads", 0),
+        reverse=True,
+    )
+    return {"featured": featured, "apps": regular, "trending": trending, "total": len(apps)}
 
 
 @api_router.get("/apps/{app_id}")
@@ -322,6 +347,291 @@ async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
 @api_router.get("/")
 async def root():
     return {"message": "Uonogamesapk API"}
+
+
+# ---------------------------------------------------------------------------
+# Site Settings (single CMS document) — controls branding, hero, theme,
+# sections, telegram, seo, ads, announcement, legal pages.
+# ---------------------------------------------------------------------------
+SETTINGS_ID = "site"
+
+
+def default_settings() -> dict:
+    return {
+        "branding": {
+            "site_name": "Uonogamesapk.com",
+            "logo_text": "Uonogamesapk",
+            "logo_url": "",
+            "favicon_url": "",
+            "footer_text": "Premium APK store for safe, verified Android games and apps.",
+            "copyright": "Uonogamesapk.com",
+        },
+        "contact": {"email": "support@uonogamesapk.com", "whatsapp": "", "instagram": "", "youtube": "", "twitter": ""},
+        "hero": {
+            "enabled": True,
+            "banner_url": "/hero-banner.png",
+            "headline": "Download Premium APK Games",
+            "subtitle": "Fast, safe & verified downloads",
+            "button_text": "Browse Apps",
+            "button_link": "#apps",
+        },
+        "stats": {
+            "enabled": True,
+            "items": [
+                {"label": "Downloads", "value": "10M", "suffix": "+"},
+                {"label": "Verified", "value": "auto", "suffix": ""},
+                {"label": "Rating", "value": "4.8", "suffix": ""},
+            ],
+        },
+        "telegram": {"enabled": True, "link": "https://t.me/", "cta_text": "Join our Telegram", "sub_text": "Get instant updates & new APK releases", "member_count": ""},
+        "announcement": {"enabled": False, "text": "Welcome to Uonogamesapk.com!", "link": ""},
+        "theme": {"primary": "#FFC107", "secondary": "#FFB300", "radius": 20},
+        "sections": [
+            {"id": "featured", "label": "Featured Apps", "enabled": True},
+            {"id": "rummy", "label": "Rummy Features", "enabled": True},
+            {"id": "telegram", "label": "Telegram CTA", "enabled": True},
+            {"id": "winners", "label": "Live Winners", "enabled": True},
+            {"id": "apps", "label": "App List", "enabled": True},
+            {"id": "reviews", "label": "Reviews", "enabled": True},
+            {"id": "faq", "label": "FAQ", "enabled": True},
+            {"id": "legal", "label": "Legal", "enabled": True},
+        ],
+        "seo": {
+            "meta_title": "Uonogamesapk.com | Premium APK Store",
+            "meta_description": "Download premium APK games. Fast, safe & verified.",
+            "keywords": "apk, rummy, games, download, android",
+            "og_image": "/hero-banner.png",
+        },
+        "ads": {"enabled": False, "adsense_client": "", "banner_html": ""},
+        "winners_config": {"enabled": True, "scroll_speed": 40},
+        "legal": {},  # populated from LEGAL_DEFAULTS on seed
+    }
+
+
+async def get_settings_doc() -> dict:
+    doc = await db.settings.find_one({"_id": SETTINGS_ID})
+    if not doc:
+        doc = {"_id": SETTINGS_ID, **default_settings()}
+        await db.settings.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/settings")
+async def get_settings():
+    return await get_settings_doc()
+
+
+@api_router.put("/admin/settings")
+async def update_settings(payload: dict, admin: dict = Depends(get_current_admin)):
+    payload.pop("_id", None)
+    await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": payload}, upsert=True)
+    return await get_settings_doc()
+
+
+# ---------------------------------------------------------------------------
+# Reviews
+# ---------------------------------------------------------------------------
+def serialize_doc(doc: dict) -> dict:
+    doc = dict(doc)
+    doc["id"] = str(doc.pop("_id"))
+    return doc
+
+
+class ReviewCreate(BaseModel):
+    name: str
+    rating: int = 5
+    text: str = ""
+    photo_url: str = ""
+    approved: bool = True
+
+
+class ReviewUpdate(BaseModel):
+    name: Optional[str] = None
+    rating: Optional[int] = None
+    text: Optional[str] = None
+    photo_url: Optional[str] = None
+    approved: Optional[bool] = None
+
+
+@api_router.get("/reviews")
+async def list_reviews():
+    docs = await db.reviews.find({"approved": True}).sort("created_at", -1).to_list(200)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.get("/admin/reviews")
+async def admin_list_reviews(admin: dict = Depends(get_current_admin)):
+    docs = await db.reviews.find().sort("created_at", -1).to_list(500)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.post("/admin/reviews")
+async def create_review(payload: ReviewCreate, admin: dict = Depends(get_current_admin)):
+    doc = payload.model_dump()
+    doc["created_at"] = now_iso()
+    res = await db.reviews.insert_one(doc)
+    return serialize_doc(await db.reviews.find_one({"_id": res.inserted_id}))
+
+
+@api_router.put("/admin/reviews/{rid}")
+async def update_review(rid: str, payload: ReviewUpdate, admin: dict = Depends(get_current_admin)):
+    updates = payload.model_dump(exclude_unset=True)
+    r = await db.reviews.update_one({"_id": to_object_id(rid)}, {"$set": updates})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return serialize_doc(await db.reviews.find_one({"_id": to_object_id(rid)}))
+
+
+@api_router.delete("/admin/reviews/{rid}")
+async def delete_review(rid: str, admin: dict = Depends(get_current_admin)):
+    r = await db.reviews.delete_one({"_id": to_object_id(rid)})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Live Winners
+# ---------------------------------------------------------------------------
+class WinnerCreate(BaseModel):
+    name: str
+    amount: str = ""
+    game: str = ""
+
+
+class WinnerUpdate(BaseModel):
+    name: Optional[str] = None
+    amount: Optional[str] = None
+    game: Optional[str] = None
+
+
+@api_router.get("/winners")
+async def list_winners():
+    docs = await db.winners.find().sort("created_at", -1).to_list(100)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.post("/admin/winners")
+async def create_winner(payload: WinnerCreate, admin: dict = Depends(get_current_admin)):
+    doc = payload.model_dump()
+    doc["created_at"] = now_iso()
+    res = await db.winners.insert_one(doc)
+    return serialize_doc(await db.winners.find_one({"_id": res.inserted_id}))
+
+
+@api_router.put("/admin/winners/{wid}")
+async def update_winner(wid: str, payload: WinnerUpdate, admin: dict = Depends(get_current_admin)):
+    updates = payload.model_dump(exclude_unset=True)
+    r = await db.winners.update_one({"_id": to_object_id(wid)}, {"$set": updates})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Winner not found")
+    return serialize_doc(await db.winners.find_one({"_id": to_object_id(wid)}))
+
+
+@api_router.delete("/admin/winners/{wid}")
+async def delete_winner(wid: str, admin: dict = Depends(get_current_admin)):
+    r = await db.winners.delete_one({"_id": to_object_id(wid)})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Winner not found")
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Redeem Codes
+# ---------------------------------------------------------------------------
+class CodeCreate(BaseModel):
+    code: str
+    reward: str = ""
+    expiry: str = ""  # ISO date string, optional
+    usage_limit: int = 0  # 0 = unlimited
+    active: bool = True
+
+
+class CodeUpdate(BaseModel):
+    code: Optional[str] = None
+    reward: Optional[str] = None
+    expiry: Optional[str] = None
+    usage_limit: Optional[int] = None
+    active: Optional[bool] = None
+
+
+@api_router.get("/admin/codes")
+async def list_codes(admin: dict = Depends(get_current_admin)):
+    docs = await db.codes.find().sort("created_at", -1).to_list(500)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.post("/admin/codes")
+async def create_code(payload: CodeCreate, admin: dict = Depends(get_current_admin)):
+    doc = payload.model_dump()
+    doc["code"] = doc["code"].upper().strip()
+    doc["used_count"] = 0
+    doc["created_at"] = now_iso()
+    res = await db.codes.insert_one(doc)
+    return serialize_doc(await db.codes.find_one({"_id": res.inserted_id}))
+
+
+@api_router.put("/admin/codes/{cid}")
+async def update_code(cid: str, payload: CodeUpdate, admin: dict = Depends(get_current_admin)):
+    updates = payload.model_dump(exclude_unset=True)
+    if "code" in updates:
+        updates["code"] = updates["code"].upper().strip()
+    r = await db.codes.update_one({"_id": to_object_id(cid)}, {"$set": updates})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Code not found")
+    return serialize_doc(await db.codes.find_one({"_id": to_object_id(cid)}))
+
+
+@api_router.delete("/admin/codes/{cid}")
+async def delete_code(cid: str, admin: dict = Depends(get_current_admin)):
+    r = await db.codes.delete_one({"_id": to_object_id(cid)})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Code not found")
+    return {"success": True}
+
+
+@api_router.post("/redeem")
+async def redeem_code(payload: dict):
+    code = (payload.get("code") or "").upper().strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Enter a code")
+    doc = await db.codes.find_one({"code": code})
+    if not doc or not doc.get("active", True):
+        raise HTTPException(status_code=404, detail="Invalid or inactive code")
+    if doc.get("expiry"):
+        try:
+            if datetime.fromisoformat(doc["expiry"]).date() < datetime.now(timezone.utc).date():
+                raise HTTPException(status_code=400, detail="This code has expired")
+        except ValueError:
+            pass
+    limit = doc.get("usage_limit", 0)
+    if limit and doc.get("used_count", 0) >= limit:
+        raise HTTPException(status_code=400, detail="This code has reached its usage limit")
+    await db.codes.update_one({"_id": doc["_id"]}, {"$inc": {"used_count": 1}})
+    return {"success": True, "reward": doc.get("reward", "Reward unlocked!")}
+
+
+# ---------------------------------------------------------------------------
+# Basic analytics (aggregate from existing data)
+# ---------------------------------------------------------------------------
+@api_router.get("/admin/analytics")
+async def analytics(admin: dict = Depends(get_current_admin)):
+    apps = await db.apps.find().to_list(1000)
+    total_downloads = sum(a.get("downloads", 0) for a in apps)
+    by_category: dict = {}
+    for a in apps:
+        by_category[a.get("category", "Other")] = by_category.get(a.get("category", "Other"), 0) + a.get("downloads", 0)
+    top = sorted(apps, key=lambda a: a.get("downloads", 0), reverse=True)[:5]
+    return {
+        "total_apps": len(apps),
+        "total_downloads": total_downloads,
+        "total_reviews": await db.reviews.count_documents({}),
+        "total_faqs": await db.faqs.count_documents({}),
+        "total_codes": await db.codes.count_documents({}),
+        "by_category": by_category,
+        "top_apps": [{"name": a.get("name"), "downloads": a.get("downloads", 0)} for a in top],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -506,6 +816,36 @@ async def seed():
         faq_docs = [{**f, "order": i, "created_at": now_iso()} for i, f in enumerate(DEFAULT_FAQS)]
         await db.faqs.insert_many(faq_docs)
         logger.info("Seeded %d FAQs", len(faq_docs))
+
+    # Mark first two non-featured apps as trending if none set
+    if await db.apps.count_documents({"trending": True}) == 0:
+        cursor = db.apps.find({"featured": {"$ne": True}}).sort("downloads", -1).limit(4)
+        async for a in cursor:
+            await db.apps.update_one({"_id": a["_id"]}, {"$set": {"trending": True}})
+
+    # Initialize settings singleton
+    await get_settings_doc()
+
+    # Seed sample reviews
+    if await db.reviews.count_documents({}) == 0:
+        await db.reviews.insert_many([
+            {"name": "Rahul S.", "rating": 5, "text": "Super fast downloads and totally safe. Best APK store!", "photo_url": "", "approved": True, "created_at": now_iso()},
+            {"name": "Priya M.", "rating": 5, "text": "Won real cash on rummy and withdrawal was instant. Loved it.", "photo_url": "", "approved": True, "created_at": now_iso()},
+            {"name": "Aman K.", "rating": 4, "text": "Great collection of games, easy to install. Recommended.", "photo_url": "", "approved": True, "created_at": now_iso()},
+        ])
+
+    # Seed sample winners
+    if await db.winners.count_documents({}) == 0:
+        await db.winners.insert_many([
+            {"name": "Vikram", "amount": "₹12,500", "game": "Points Rummy", "created_at": now_iso()},
+            {"name": "Sneha", "amount": "₹8,200", "game": "Pool Rummy", "created_at": now_iso()},
+            {"name": "Arjun", "amount": "₹25,000", "game": "Deals Rummy", "created_at": now_iso()},
+            {"name": "Neha", "amount": "₹5,750", "game": "Points Rummy", "created_at": now_iso()},
+        ])
+
+    # Seed a sample redeem code
+    if await db.codes.count_documents({}) == 0:
+        await db.codes.insert_one({"code": "WELCOME100", "reward": "₹100 bonus on first deposit", "expiry": "", "usage_limit": 0, "used_count": 0, "active": True, "created_at": now_iso()})
 
 
 @app.on_event("startup")

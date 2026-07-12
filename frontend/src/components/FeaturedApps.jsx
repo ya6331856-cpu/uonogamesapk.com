@@ -5,9 +5,11 @@ import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
 import { formatCount } from "@/lib/format";
+import { getBadge } from "@/lib/badge";
 
 const FeaturedMain = ({ app, onDownload }) => {
   const navigate = useNavigate();
+  const badge = getBadge(app);
   return (
   <motion.div
     initial={{ opacity: 0, y: 18 }}
@@ -24,11 +26,18 @@ const FeaturedMain = ({ app, onDownload }) => {
       FEATURED #1
     </div>
     <div className="flex items-center gap-4">
-      <AppIcon
-        src={resolveUrl(app.icon_url)}
-        alt={app.name}
-        className="h-[72px] w-[72px] shrink-0 rounded-[18px] ring-1 ring-black/5"
-      />
+      <div className="relative shrink-0">
+        <AppIcon
+          src={resolveUrl(app.icon_url)}
+          alt={app.name}
+          className="h-[72px] w-[72px] rounded-[18px] ring-1 ring-black/5"
+        />
+        {badge && (
+          <span data-testid={`app-badge-${app.id}`} className="absolute -left-1 -top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold leading-none shadow-sm" style={{ color: badge.color, backgroundColor: badge.bg }}>
+            {badge.label}
+          </span>
+        )}
+      </div>
       <div className="min-w-0 flex-1">
         <h2 className="line-clamp-2 font-display text-lg font-bold leading-tight text-[#111111]">
           {app.name}
@@ -62,6 +71,7 @@ const FeaturedMain = ({ app, onDownload }) => {
 
 const FeaturedSecondary = ({ app, onDownload, delay }) => {
   const navigate = useNavigate();
+  const badge = getBadge(app);
   return (
   <motion.div
     initial={{ opacity: 0, y: 18 }}
@@ -73,11 +83,18 @@ const FeaturedSecondary = ({ app, onDownload, delay }) => {
     className="flex cursor-pointer flex-col rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)]"
   >
     <div className="flex items-start justify-between">
-      <AppIcon
-        src={resolveUrl(app.icon_url)}
-        alt={app.name}
-        className="h-12 w-12 shrink-0 rounded-[14px] ring-1 ring-black/5"
-      />
+      <div className="relative">
+        <AppIcon
+          src={resolveUrl(app.icon_url)}
+          alt={app.name}
+          className="h-12 w-12 rounded-[14px] ring-1 ring-black/5"
+        />
+        {badge && (
+          <span data-testid={`app-badge-${app.id}`} className="absolute -left-1 -top-1.5 rounded-full px-1 py-0.5 text-[8px] font-extrabold leading-none shadow-sm" style={{ color: badge.color, backgroundColor: badge.bg }}>
+            {badge.label}
+          </span>
+        )}
+      </div>
       <div className="flex items-center gap-0.5 rounded-full bg-[#FFF8E1] px-1.5 py-0.5">
         <Star className="h-3 w-3 fill-[#FFC107] text-[#FFC107]" />
         <span className="text-[11px] font-semibold text-[#111111]">{app.rating?.toFixed(1)}</span>

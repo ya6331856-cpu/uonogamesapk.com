@@ -25,6 +25,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import RippleButton from "@/components/RippleButton";
 import AdminFaqs from "@/components/AdminFaqs";
+import AdminSettings from "@/components/admin/AdminSettings";
+import AdminReviews from "@/components/admin/AdminReviews";
+import AdminWinners from "@/components/admin/AdminWinners";
+import AdminCodes from "@/components/admin/AdminCodes";
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const CATEGORIES = ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"];
@@ -33,8 +38,12 @@ const EMPTY = {
   name: "", version: "1.0.0", size: "0 MB", rating: 4.5, downloads: 0,
   verified: true, category: "Games", description: "", icon_url: "", apk_url: "",
   featured: false, featured_order: null,
-  developer: "", package_name: "", min_android: "Android 6.0+", whats_new: "", screenshots: [],
+  developer: "", package_name: "", min_android: "Android 6.0+", whats_new: "",
+  screenshots: [], badge: "Auto", trending: false, hidden: false,
+  features: [], requirements: "", permissions: [],
 };
+
+const BADGES = ["Auto", "Hot", "New", "Popular", "Trending", "None"];
 
 function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
   const [uploading, setUploading] = useState(false);
@@ -133,6 +142,8 @@ export default function AdminDashboard() {
       rating: parseFloat(form.rating) || 0,
       downloads: parseInt(form.downloads) || 0,
       featured_order: form.featured ? (parseInt(form.featured_order) || 1) : null,
+      features: Array.isArray(form.features) ? form.features : String(form.features || "").split(",").map((x) => x.trim()).filter(Boolean),
+      permissions: Array.isArray(form.permissions) ? form.permissions : String(form.permissions || "").split(",").map((x) => x.trim()).filter(Boolean),
     };
     try {
       if (editingId) {
@@ -195,14 +206,16 @@ export default function AdminDashboard() {
       </header>
 
       <Tabs defaultValue="apps" className="w-full">
-        <div className="px-4 pt-4">
-          <TabsList className="grid w-full grid-cols-2 rounded-full bg-[#F1F2F4] p-1">
-            <TabsTrigger value="apps" data-testid="tab-apps" className="rounded-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[#111111] data-[state=active]:shadow-sm">
-              Apps
-            </TabsTrigger>
-            <TabsTrigger value="faqs" data-testid="tab-faqs" className="rounded-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[#111111] data-[state=active]:shadow-sm">
-              FAQs
-            </TabsTrigger>
+        <div className="sticky top-[57px] z-20 bg-[#F8F9FA]/95 px-4 py-3 backdrop-blur-md">
+          <TabsList className="no-scrollbar flex w-full justify-start gap-1 overflow-x-auto rounded-full bg-[#F1F2F4] p-1">
+            {[
+              ["apps", "Apps"], ["faqs", "FAQs"], ["content", "Content"],
+              ["reviews", "Reviews"], ["winners", "Winners"], ["codes", "Codes"], ["analytics", "Analytics"],
+            ].map(([v, label]) => (
+              <TabsTrigger key={v} value={v} data-testid={`tab-${v}`} className="shrink-0 rounded-full px-3.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[#111111] data-[state=active]:shadow-sm">
+                {label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
 
@@ -288,6 +301,36 @@ export default function AdminDashboard() {
         <TabsContent value="faqs" className="mt-0">
           <div className="px-4 pt-4">
             <AdminFaqs />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="content" className="mt-0">
+          <div className="px-4 pt-4">
+            <AdminSettings />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reviews" className="mt-0">
+          <div className="px-4 pt-4">
+            <AdminReviews />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="winners" className="mt-0">
+          <div className="px-4 pt-4">
+            <AdminWinners />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="codes" className="mt-0">
+          <div className="px-4 pt-4">
+            <AdminCodes />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-0">
+          <div className="px-4 pt-4">
+            <AdminAnalytics />
           </div>
         </TabsContent>
       </Tabs>
@@ -378,8 +421,44 @@ export default function AdminDashboard() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#555555]">What's New</Label>
+              <Label className="text-xs font-semibold text-[#555555]">What&apos;s New</Label>
               <Textarea data-testid="form-whats-new" value={form.whats_new} onChange={(e) => setField("whats_new", e.target.value)} rows={2} placeholder="Latest changes in this version" className="rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#555555]">Badge / Tag</Label>
+              <Select value={form.badge} onValueChange={(v) => setField("badge", v)}>
+                <SelectTrigger data-testid="form-badge" className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {BADGES.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#555555]">Key Features (comma separated)</Label>
+              <Textarea data-testid="form-features" value={Array.isArray(form.features) ? form.features.join(", ") : form.features} onChange={(e) => setField("features", e.target.value.split(",").map((x) => x.trim()).filter(Boolean))} rows={2} placeholder="Multiplayer, Offline mode, HD graphics" className="rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#555555]">Requirements</Label>
+              <Input data-testid="form-requirements" value={form.requirements} onChange={(e) => setField("requirements", e.target.value)} placeholder="2GB RAM, 200MB free space" className="rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#555555]">Permissions (comma separated)</Label>
+              <Textarea data-testid="form-permissions" value={Array.isArray(form.permissions) ? form.permissions.join(", ") : form.permissions} onChange={(e) => setField("permissions", e.target.value.split(",").map((x) => x.trim()).filter(Boolean))} rows={2} placeholder="Storage, Internet, Location" className="rounded-xl" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center justify-between rounded-xl bg-[#FFF3ED] px-3 py-2.5">
+                <Label className="text-xs font-semibold text-[#FF6B35]">Trending</Label>
+                <Switch data-testid="form-trending" checked={form.trending} onCheckedChange={(v) => setField("trending", v)} />
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-[#F8F9FA] px-3 py-2.5">
+                <Label className="text-xs font-semibold text-[#555555]">Hidden</Label>
+                <Switch data-testid="form-hidden" checked={form.hidden} onCheckedChange={(v) => setField("hidden", v)} />
+              </div>
             </div>
 
             <div className="flex items-center justify-between rounded-xl bg-[#F8F9FA] px-3 py-2.5">

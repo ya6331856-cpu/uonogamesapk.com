@@ -484,3 +484,351 @@ class TestAppDetailFields:
         # Cleanup
         api_session.delete(f"{API}/admin/apps/{app_id}", headers=admin_headers)
 
+
+# ---------------------------------------------------------------------------
+# Iteration 4: Site Settings (CMS singleton)
+# ---------------------------------------------------------------------------
+class TestSiteSettings:
+    def test_get_settings_returns_singleton(self, api_session):
+        r = api_session.get(f"{API}/settings")
+        assert r.status_code == 200
+        data = r.json()
+        # Required top-level keys
+        for key in ("branding", "hero", "stats", "telegram", "announcement",
+                    "theme", "sections", "seo", "ads", "winners_config", "legal"):
+            assert key in data, f"missing settings key: {key}"
+        assert isinstance(data["sections"], list)
+        assert len(data["sections"]) >= 1
+        # No leaked _id
+        assert "_id" not in data
+        # Branding defaults
+        assert data["branding"]["site_name"]
+
+    def test_update_settings_requires_auth(self, api_session):
+        r = api_session.put(f"{API}/admin/settings", json={"branding": {"site_name": "Hack"}})
+        assert r.status_code == 401
+
+    def test_update_settings_persists(self, api_session, admin_headers):
+        # Snapshot
+        original = api_session.get(f"{API}/settings").json()
+        original_name = original["branding"]["site_name"]
+        original_headline = original["hero"]["headline"]
+
+        # Update site_name + hero.headline
+        payload = {
+            "branding": {**original["branding"], "site_name": "TEST_CMS_Name"},
+            "hero": {**original["hero"], "headline": "TEST_CMS_Headline"},
+        }
+        u = api_session.put(f"{API}/admin/settings", json=payload, headers=admin_headers)
+        assert u.status_code == 200
+        updated = u.json()
+        assert updated["branding"]["site_name"] == "TEST_CMS_Name"
+        assert updated["hero"]["headline"] == "TEST_CMS_Headline"
+
+        # Public GET reflects update
+        g = api_session.get(f"{API}/settings").json()
+        assert g["branding"]["site_name"] == "TEST_CMS_Name"
+        assert g["hero"]["headline"] == "TEST_CMS_Headline"
+
+        # Restore
+        restore = {
+            "branding": {**updated["branding"], "site_name": original_name},
+            "hero": {**updated["hero"], "headline": original_headline},
+        }
+        api_session.put(f"{API}/admin/settings", json=restore, headers=admin_headers)
+
+
+# ---------------------------------------------------------------------------
+# Iteration 4: Reviews
+# ---------------------------------------------------------------------------
+class TestReviews:
+    def test_public_reviews_only_approved(self, api_session, admin_headers):
+        # Create an unapproved review
+        c = api_session.post(f"{API}/admin/reviews", json={
+            "name": "TEST_HiddenReviewer", "rating": 3, "text": "hidden", "approved": False,
+        }, headers=admin_headers)
+        assert c.status_code == 200
+        rid = c.json()["id"]
+
+        # Public list must NOT contain it
+        pub = api_session.get(f"{API}/reviews")
+        assert pub.status_code == 200
+        assert all(r["id"] != rid for r in pub.json()), "unapproved review leaked in public list"
+
+        # Admin list DOES contain it
+        adm = api_session.get(f"{API}/admin/reviews", headers=admin_headers)
+        assert adm.status_code == 200
+        assert any(r["id"] == rid for r in adm.json())
+        # No _id leak
+        for r in adm.json():
+            assert "_id" not in r
+
+        # Toggle approve
+        u = api_session.put(f"{API}/admin/reviews/{rid}", json={"approved": True}, headers=admin_headers)
+        assert u.status_code == 200
+        assert u.json()["approved"] is True
+        pub2 = api_session.get(f"{API}/reviews").json()
+        assert any(r["id"] == rid for r in pub2), "approved review not visible publicly"
+
+        # Toggle back off — must disappear
+        api_session.put(f"{API}/admin/reviews/{rid}", json={"approved": False}, headers=admin_headers)
+        pub3 = api_session.get(f"{API}/reviews").json()
+        assert all(r["id"] != rid for r in pub3)
+
+        # Delete cleanup
+        d = api_session.delete(f"{API}/admin/reviews/{rid}", headers=admin_headers)
+        assert d.status_code == 200
+
+    def test_reviews_admin_endpoints_require_auth(self, api_session):
+        assert api_session.get(f"{API}/admin/reviews").status_code == 401
+        assert api_session.post(f"{API}/admin/reviews", json={"name": "x"}).status_code == 401
+        assert api_session.put(f"{API}/admin/reviews/507f1f77bcf86cd799439011",
+                               json={"name": "x"}).status_code == 401
+        assert api_session.delete(f"{API}/admin/reviews/507f1f77bcf86cd799439011").status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Iteration 4: Winners
+# ---------------------------------------------------------------------------
+class TestWinners:
+    def test_winners_public_list(self, api_session):
+        r = api_session.get(f"{API}/winners")
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+        # Seed provides at least 3 winners
+        for w in r.json():
+            assert "id" in w and "_id" not in w
+
+    def test_winners_admin_auth(self, api_session):
+        assert api_session.post(f"{API}/admin/winners", json={"name": "x"}).status_code == 401
+        assert api_session.put(f"{API}/admin/winners/507f1f77bcf86cd799439011",
+                               json={"name": "x"}).status_code == 401
+        assert api_session.delete(f"{API}/admin/winners/507f1f77bcf86cd799439011").status_code == 401
+
+    def test_winner_crud_flow(self, api_session, admin_headers):
+        c = api_session.post(f"{API}/admin/winners",
+                             json={"name": "TEST_Winner", "amount": "₹999", "game": "Test Rummy"},
+                             headers=admin_headers)
+        assert c.status_code == 200
+        wid = c.json()["id"]
+        assert c.json()["name"] == "TEST_Winner"
+
+        # Public listing contains it
+        assert any(w["id"] == wid for w in api_session.get(f"{API}/winners").json())
+
+        # Update
+        u = api_session.put(f"{API}/admin/winners/{wid}",
+                            json={"amount": "₹1234"}, headers=admin_headers)
+        assert u.status_code == 200 and u.json()["amount"] == "₹1234"
+        assert u.json()["name"] == "TEST_Winner"  # unchanged
+
+        # Delete
+        d = api_session.delete(f"{API}/admin/winners/{wid}", headers=admin_headers)
+        assert d.status_code == 200
+        assert all(w["id"] != wid for w in api_session.get(f"{API}/winners").json())
+
+
+# ---------------------------------------------------------------------------
+# Iteration 4: Redeem Codes
+# ---------------------------------------------------------------------------
+class TestCodes:
+    def test_codes_admin_auth(self, api_session):
+        assert api_session.get(f"{API}/admin/codes").status_code == 401
+        assert api_session.post(f"{API}/admin/codes", json={"code": "X"}).status_code == 401
+        assert api_session.put(f"{API}/admin/codes/507f1f77bcf86cd799439011",
+                               json={"code": "X"}).status_code == 401
+        assert api_session.delete(f"{API}/admin/codes/507f1f77bcf86cd799439011").status_code == 401
+
+    def test_redeem_seeded_welcome100(self, api_session):
+        # Public endpoint; seed inserts WELCOME100 (unlimited, no expiry)
+        r = api_session.post(f"{API}/redeem", json={"code": "WELCOME100"})
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["success"] is True
+        assert isinstance(data.get("reward", ""), str) and data["reward"]
+
+        # Lowercase / whitespace normalization
+        r2 = api_session.post(f"{API}/redeem", json={"code": " welcome100 "})
+        assert r2.status_code == 200
+
+    def test_redeem_invalid_code(self, api_session):
+        r = api_session.post(f"{API}/redeem", json={"code": "DOES_NOT_EXIST_XYZ"})
+        assert r.status_code == 404
+        assert "detail" in r.json()
+
+    def test_redeem_empty_code(self, api_session):
+        r = api_session.post(f"{API}/redeem", json={"code": ""})
+        assert r.status_code == 400
+
+    def test_redeem_inactive_returns_404(self, api_session, admin_headers):
+        c = api_session.post(f"{API}/admin/codes",
+                             json={"code": "TEST_INACTIVE_CODE", "reward": "n/a",
+                                   "expiry": "", "usage_limit": 0, "active": False},
+                             headers=admin_headers)
+        assert c.status_code == 200
+        cid = c.json()["id"]
+        try:
+            r = api_session.post(f"{API}/redeem", json={"code": "TEST_INACTIVE_CODE"})
+            assert r.status_code == 404
+        finally:
+            api_session.delete(f"{API}/admin/codes/{cid}", headers=admin_headers)
+
+    def test_redeem_expired_returns_400(self, api_session, admin_headers):
+        c = api_session.post(f"{API}/admin/codes",
+                             json={"code": "TEST_EXPIRED", "reward": "old",
+                                   "expiry": "2020-01-01", "usage_limit": 0, "active": True},
+                             headers=admin_headers)
+        assert c.status_code == 200
+        cid = c.json()["id"]
+        try:
+            r = api_session.post(f"{API}/redeem", json={"code": "TEST_EXPIRED"})
+            assert r.status_code == 400
+            assert "expired" in r.json().get("detail", "").lower()
+        finally:
+            api_session.delete(f"{API}/admin/codes/{cid}", headers=admin_headers)
+
+    def test_redeem_usage_limit_exceeded(self, api_session, admin_headers):
+        c = api_session.post(f"{API}/admin/codes",
+                             json={"code": "TEST_ONCE", "reward": "one shot",
+                                   "expiry": "", "usage_limit": 1, "active": True},
+                             headers=admin_headers)
+        assert c.status_code == 200
+        cid = c.json()["id"]
+        try:
+            r1 = api_session.post(f"{API}/redeem", json={"code": "TEST_ONCE"})
+            assert r1.status_code == 200
+            r2 = api_session.post(f"{API}/redeem", json={"code": "TEST_ONCE"})
+            assert r2.status_code == 400
+            assert "limit" in r2.json().get("detail", "").lower()
+        finally:
+            api_session.delete(f"{API}/admin/codes/{cid}", headers=admin_headers)
+
+    def test_code_crud_and_list(self, api_session, admin_headers):
+        c = api_session.post(f"{API}/admin/codes",
+                             json={"code": "test_lowercase", "reward": "r",
+                                   "expiry": "", "usage_limit": 0, "active": True},
+                             headers=admin_headers)
+        assert c.status_code == 200
+        # Backend uppercases codes
+        assert c.json()["code"] == "TEST_LOWERCASE"
+        cid = c.json()["id"]
+
+        lst = api_session.get(f"{API}/admin/codes", headers=admin_headers)
+        assert lst.status_code == 200
+        assert any(x["id"] == cid for x in lst.json())
+
+        # Update reward
+        u = api_session.put(f"{API}/admin/codes/{cid}",
+                            json={"reward": "updated"}, headers=admin_headers)
+        assert u.status_code == 200 and u.json()["reward"] == "updated"
+        assert u.json()["code"] == "TEST_LOWERCASE"
+
+        d = api_session.delete(f"{API}/admin/codes/{cid}", headers=admin_headers)
+        assert d.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Iteration 4: Analytics
+# ---------------------------------------------------------------------------
+class TestAnalytics:
+    def test_analytics_requires_auth(self, api_session):
+        r = api_session.get(f"{API}/admin/analytics")
+        assert r.status_code == 401
+
+    def test_analytics_shape(self, api_session, admin_headers):
+        r = api_session.get(f"{API}/admin/analytics", headers=admin_headers)
+        assert r.status_code == 200
+        d = r.json()
+        for key in ("total_apps", "total_downloads", "total_reviews",
+                    "by_category", "top_apps"):
+            assert key in d, f"missing analytics key {key}"
+        assert isinstance(d["total_apps"], int)
+        assert isinstance(d["total_downloads"], int)
+        assert isinstance(d["by_category"], dict)
+        assert isinstance(d["top_apps"], list)
+        assert len(d["top_apps"]) <= 5
+        for row in d["top_apps"]:
+            assert "name" in row and "downloads" in row
+
+
+# ---------------------------------------------------------------------------
+# Iteration 4: New AppModel fields + hidden/trending
+# ---------------------------------------------------------------------------
+class TestAppNewFields:
+    def test_create_persists_new_fields(self, api_session, admin_headers):
+        payload = {
+            "name": "TEST_BadgeApp",
+            "apk_url": "https://example.com/x.apk",
+            "badge": "Hot",
+            "trending": True,
+            "hidden": False,
+            "features": ["Multiplayer", "Offline mode"],
+            "requirements": "2GB RAM",
+            "permissions": ["Storage", "Internet"],
+        }
+        c = api_session.post(f"{API}/admin/apps", json=payload, headers=admin_headers)
+        assert c.status_code == 200
+        created = c.json()
+        assert created["badge"] == "Hot"
+        assert created["trending"] is True
+        assert created["features"] == ["Multiplayer", "Offline mode"]
+        assert created["requirements"] == "2GB RAM"
+        assert created["permissions"] == ["Storage", "Internet"]
+        aid = created["id"]
+
+        # GET reflects
+        g = api_session.get(f"{API}/apps/{aid}").json()
+        assert g["badge"] == "Hot"
+        assert g["trending"] is True
+
+        # Cleanup
+        api_session.delete(f"{API}/admin/apps/{aid}", headers=admin_headers)
+
+    def test_hidden_app_excluded_from_public_list_and_trending_array(self, api_session, admin_headers):
+        # Create a hidden trending app
+        c = api_session.post(f"{API}/admin/apps",
+                             json={"name": "TEST_HiddenApp",
+                                   "apk_url": "https://example.com/h.apk",
+                                   "hidden": True, "trending": True},
+                             headers=admin_headers)
+        assert c.status_code == 200
+        aid = c.json()["id"]
+
+        try:
+            listing = api_session.get(f"{API}/apps").json()
+            assert "trending" in listing, "public list must include trending array"
+            assert isinstance(listing["trending"], list)
+            all_ids = {a["id"] for a in listing["featured"] + listing["apps"]}
+            trend_ids = {a["id"] for a in listing["trending"]}
+            # Hidden app must be absent from featured, apps, and trending (query filters hidden)
+            assert aid not in all_ids, "hidden app leaked in public list"
+            assert aid not in trend_ids, "hidden app leaked in trending"
+
+            # include_hidden=true (admin usage) — should return it
+            adm = api_session.get(f"{API}/apps", params={"include_hidden": "true"}).json()
+            all_adm = {a["id"] for a in adm["featured"] + adm["apps"]}
+            assert aid in all_adm, "include_hidden=true must return hidden apps"
+        finally:
+            api_session.delete(f"{API}/admin/apps/{aid}", headers=admin_headers)
+
+    def test_partial_update_preserves_new_fields(self, api_session, admin_headers):
+        c = api_session.post(f"{API}/admin/apps",
+                             json={"name": "TEST_PartialBadge",
+                                   "apk_url": "https://example.com/y.apk",
+                                   "badge": "New",
+                                   "features": ["A", "B"],
+                                   "permissions": ["Camera"]},
+                             headers=admin_headers)
+        aid = c.json()["id"]
+        try:
+            u = api_session.put(f"{API}/admin/apps/{aid}",
+                                json={"trending": True}, headers=admin_headers)
+            assert u.status_code == 200
+            data = u.json()
+            assert data["trending"] is True
+            assert data["badge"] == "New", "badge wiped by partial update"
+            assert data["features"] == ["A", "B"], "features wiped"
+            assert data["permissions"] == ["Camera"], "permissions wiped"
+        finally:
+            api_session.delete(f"{API}/admin/apps/{aid}", headers=admin_headers)
+

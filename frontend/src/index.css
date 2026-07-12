@@ -133,6 +133,16 @@ h1, h2, h3, h4, h5, h6,
     will-change: box-shadow;
 }
 
+/* Live winners horizontal auto-scroll */
+@keyframes winners-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
 @layer base {
     * {
         border-color: var(--border-light);

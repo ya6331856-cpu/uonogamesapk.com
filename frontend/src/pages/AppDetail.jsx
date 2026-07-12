@@ -207,7 +207,7 @@ export default function AppDetail() {
         {app.whats_new && (
           <section className="space-y-2">
             <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
-              <Sparkles className="h-4 w-4 text-[#FFC107]" /> What's New
+              <Sparkles className="h-4 w-4 text-[#FFC107]" /> What&apos;s New
             </h2>
             <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 text-sm leading-relaxed text-[#555555] shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
               {app.whats_new}
@@ -227,6 +227,7 @@ export default function AppDetail() {
               ["Developer", app.developer || "—"],
               ["Package", app.package_name || "—"],
               ["Updated", (app.created_at || "").slice(0, 10) || "—"],
+              ["Requirements", app.requirements || "—"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between py-2.5 text-sm">
                 <span className="text-[#777777]">{k}</span>
@@ -235,6 +236,36 @@ export default function AppDetail() {
             ))}
           </div>
         </section>
+
+        {/* Features */}
+        {app.features?.length > 0 && (
+          <section className="space-y-2" data-testid="detail-features">
+            <h2 className="font-display text-base font-bold text-[#111111]">Features</h2>
+            <div className="flex flex-wrap gap-2">
+              {app.features.map((f, i) => (
+                <span key={i} className="rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-medium text-[#555555] shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+                  {f}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Permissions */}
+        {app.permissions?.length > 0 && (
+          <section className="space-y-2" data-testid="detail-permissions">
+            <h2 className="font-display text-base font-bold text-[#111111]">Permissions</h2>
+            <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
+              <ul className="space-y-1.5">
+                {app.permissions.map((p, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-[#555555]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#FFC107]" /> {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
 
         <FaqSection />
         <LegalSection onOpen={setLegalId} />

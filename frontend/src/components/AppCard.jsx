@@ -5,12 +5,14 @@ import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
 import { formatCount } from "@/lib/format";
+import { getBadge } from "@/lib/badge";
 
 /**
  * Compact horizontal APK list card (120-140px feel).
  */
 export const AppCard = ({ app, index = 0, onDownload }) => {
   const navigate = useNavigate();
+  const badge = getBadge(app);
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -22,11 +24,22 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       data-testid={`app-card-${app.id}`}
       className="group flex cursor-pointer items-center gap-3 rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
     >
-      <AppIcon
-        src={resolveUrl(app.icon_url)}
-        alt={app.name}
-        className="h-14 w-14 shrink-0 rounded-[14px] ring-1 ring-black/5"
-      />
+      <div className="relative shrink-0">
+        <AppIcon
+          src={resolveUrl(app.icon_url)}
+          alt={app.name}
+          className="h-14 w-14 rounded-[14px] ring-1 ring-black/5"
+        />
+        {badge && (
+          <span
+            data-testid={`app-badge-${app.id}`}
+            className="absolute -left-1 -top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold leading-none shadow-sm"
+            style={{ color: badge.color, backgroundColor: badge.bg }}
+          >
+            {badge.label}
+          </span>
+        )}
+      </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
