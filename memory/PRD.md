@@ -50,12 +50,25 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 - **Expanded APK fields**: badge, trending, hidden (hide/show), features[], requirements, permissions[] — surfaced on detail page
 - Tested: backend 52/52; frontend 100% (fixed: admin list now includes hidden apps via include_hidden)
 
-## Deferred (enterprise subsystems — not yet built)
-- Real per-visitor analytics tracking (visitors/countries/devices/traffic sources) — current analytics aggregates catalog data
-- Push notifications, popup message scheduler
-- Database backup/restore/export/import UI
-- Multi-admin users, roles & permissions, login history, activity logs
-- Auto sitemap.xml / robots.txt generation, schema markup builder
-- Drag-and-drop section builder + custom section creation (current: reorder + enable/disable of fixed sections)
+## Implemented — Full Admin CMS panel (Iteration 5)
+- Professional multi-route admin at /admin/* with dark collapsible sidebar (grouped nav, icons, active states, animations), top navbar (search, notifications, profile menu, View Site), page transitions
+- Routes: dashboard, apks, featured-apps, categories, hero, homepage, reviews, faq, live-winners, redeem-codes, blog, seo, ads, media-library, notifications, users, settings, security, backup
+- Dashboard: stat cards + recharts bar chart + quick actions + top apps + recently added
+- New backend: blog CRUD, media library (list/delete uploads), users list, change password, backup export/restore, settings.categories
+- Redeem code box moved to bottom of homepage; every app card shows a Hot/New/Popular/Trending tag
+- Tested: backend 69/69, frontend 100%
+- Deployment readiness: PASS (no blockers)
+
+## Deploy caveats to note
+- Uploaded icons/APKs are stored on local disk (/app/backend/uploads) — NOT persistent across redeploys. For production use, move to object storage (S3/GCS).
+- Seeded sample apps use example.com placeholder APK URLs — replace with real download links/files via the admin APK Manager.
+
+## Deferred (enterprise add-ons, not built)
+- Real per-visitor analytics (visitors/countries/devices/sources)
+- Web push notifications
+- Multi-admin roles/permissions, login history, activity logs
+- Auto sitemap.xml/robots.txt, schema markup builder
+- Drag-and-drop custom section builder (current: reorder + enable/disable fixed sections)
+
 
 
