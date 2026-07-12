@@ -75,7 +75,13 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 - Admin "Add New App" form (AppsManager.jsx): prominent gold "Rummy Rewards" box at top for signup_bonus & min_withdraw. EMPTY defaults pre-filled with rummy-ready values (rating 4.8, downloads 500000, size 45MB, developer, description, features, requirements, permissions, badge Hot, trending true) so admin only sets name + logo + bonus + min-withdraw.
 - Display: AppCard shows gold "Bonus" chip + green "Min W/D" chip; AppDetail shows two reward highlight cards (gift/wallet) above download button + rows in Additional Information. FeaturedApps (large + secondary cards) and TrendingRow on the landing page also show bonus/withdraw. Verified end-to-end (testing agent iteration_6: 100%).
 
-## Deploy caveats to note
+## Auth robustness + upload fix (2026-02)
+- Root cause of "Upload failed": user's JWT token was stale/expired → POST /api/admin/upload returned 401 (endpoint itself is fine; verified 60MB APK upload = 200 in ~1.7s via correct URL). User was also on a STALE preview URL (apk-market... → /api 404) instead of the current REACT_APP_BACKEND_URL (smooth-apk-market...).
+- Added a response interceptor in /app/frontend/src/lib/api.js: on any 401 (except the login call), it clears the token and redirects admin routes to /admin/login?expired=1.
+- AdminLogin.jsx shows a "session expired" notice when ?expired=1. FileUpload (AppsManager.jsx) now shows a clear message ("Session expired — please log in again" on 401, otherwise "<label> upload failed").
+- JWT_SECRET is in backend/.env (persistent) — restarts do NOT invalidate tokens.
+
+
 - Uploaded icons/APKs are stored on local disk (/app/backend/uploads) — NOT persistent across redeploys. For production use, move to object storage (S3/GCS).
 - Seeded sample apps use example.com placeholder APK URLs — replace with real download links/files via the admin APK Manager.
 

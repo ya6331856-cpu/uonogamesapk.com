@@ -23,6 +23,7 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const sessionExpired = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("expired") === "1";
 
   const submit = async (e) => {
     e.preventDefault();
@@ -62,6 +63,11 @@ export default function AdminLogin() {
         </div>
 
         <form onSubmit={submit} className="space-y-4 rounded-[22px] border border-[#E5E7EB] bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+          {sessionExpired && (
+            <p data-testid="session-expired-notice" className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+              Your session expired. Please sign in again to continue.
+            </p>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-xs font-semibold text-[#555555]">Email</Label>
             <div className="relative">

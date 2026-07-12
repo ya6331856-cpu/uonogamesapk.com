@@ -43,7 +43,12 @@ function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
       const { data } = await api.post("/admin/upload", fd);
       onUploaded(data.url);
       toast.success(`${label} uploaded`);
-    } catch { toast.error("Upload failed"); } finally { setUploading(false); }
+    } catch (err) {
+      const msg = err?.response?.status === 401
+        ? "Session expired — please log in again"
+        : `${label} upload failed. Please try again.`;
+      toast.error(msg);
+    } finally { setUploading(false); }
   };
   return (
     <div className="space-y-1.5">
