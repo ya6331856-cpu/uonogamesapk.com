@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, Download, Flame } from "lucide-react";
+import { Star, Download, Flame, Gift } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
@@ -56,6 +56,11 @@ export const TrendingRow = ({ apps, onDownload }) => {
               </span>
               <span>{formatCount(app.downloads)}</span>
             </div>
+            {app.signup_bonus && (
+              <span data-testid={`trending-bonus-${app.id}`} className="mt-1.5 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FF9800] px-1.5 py-0.5 text-[9px] font-extrabold text-white">
+                <Gift className="h-2.5 w-2.5" /> Bonus {app.signup_bonus}
+              </span>
+            )}
             <RippleButton
               onClick={(e) => { e.stopPropagation(); onDownload(app); }}
               data-testid={`download-btn-${app.id}`}

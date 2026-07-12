@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BadgeCheck, Download, Crown } from "lucide-react";
+import { Star, BadgeCheck, Download, Crown, Gift, Wallet } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
@@ -58,6 +58,32 @@ const FeaturedMain = ({ app, onDownload }) => {
         <p className="mt-0.5 text-[11px] text-[#999999]">{formatCount(app.downloads)} downloads</p>
       </div>
     </div>
+    {(app.signup_bonus || app.min_withdraw) && (
+      <div className="mt-3 flex gap-2" data-testid={`featured-rewards-${app.id}`}>
+        {app.signup_bonus && (
+          <div className="flex flex-1 items-center gap-2 rounded-[14px] border border-[#FFE082] bg-gradient-to-br from-[#FFF8E1] to-[#FFFBEB] px-3 py-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FFC107] to-[#FF9800]">
+              <Gift className="h-3.5 w-3.5 text-white" />
+            </span>
+            <div className="min-w-0 leading-none">
+              <p className="text-[9px] font-medium uppercase tracking-wide text-[#B45309]">Sign-up Bonus</p>
+              <p className="font-display text-sm font-extrabold text-[#111111]">{app.signup_bonus}</p>
+            </div>
+          </div>
+        )}
+        {app.min_withdraw && (
+          <div className="flex flex-1 items-center gap-2 rounded-[14px] border border-[#BBF7D0] bg-gradient-to-br from-[#F0FDF4] to-white px-3 py-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#16A34A]">
+              <Wallet className="h-3.5 w-3.5 text-white" />
+            </span>
+            <div className="min-w-0 leading-none">
+              <p className="text-[9px] font-medium uppercase tracking-wide text-[#15803D]">Min. Withdraw</p>
+              <p className="font-display text-sm font-extrabold text-[#111111]">{app.min_withdraw}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
     <RippleButton
       onClick={(e) => { e.stopPropagation(); onDownload(app); }}
       data-testid={`download-btn-${app.id}`}
@@ -107,6 +133,20 @@ const FeaturedSecondary = ({ app, onDownload, delay }) => {
       <span>{app.size}</span>
       {app.verified && <BadgeCheck className="h-3 w-3 text-[#22C55E]" />}
     </div>
+    {(app.signup_bonus || app.min_withdraw) && (
+      <div className="mt-1.5 flex flex-wrap items-center gap-1" data-testid={`featured-rewards-${app.id}`}>
+        {app.signup_bonus && (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FF9800] px-1.5 py-0.5 text-[9px] font-extrabold text-white">
+            <Gift className="h-2.5 w-2.5" /> {app.signup_bonus}
+          </span>
+        )}
+        {app.min_withdraw && (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-[#F0FDF4] px-1.5 py-0.5 text-[9px] font-bold text-[#16A34A]">
+            <Wallet className="h-2.5 w-2.5" /> {app.min_withdraw}
+          </span>
+        )}
+      </div>
+    )}
     <RippleButton
       onClick={(e) => { e.stopPropagation(); onDownload(app); }}
       data-testid={`download-btn-${app.id}`}

@@ -61,8 +61,8 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 
 ## Logo (updated 2026-02)
 - Brand logo: dark rummy/casino theme (green felt, poker chips, cards, golden crown + red spade). "UONOGAMES" white + "APK.COM" gold.
-- Files: /app/frontend/public/logo.png (header via branding.logo_url="/logo.png"). Generator script: /app/scripts/gen_logo.py
-- Verified rendering on preview URL (same-origin). Note: localhost:3000 testing shows cross-origin block because resolveUrl prepends BACKEND_URL — expected, not a real bug.
+- Files: /app/frontend/public/logo-v2.png + logo-icon-v2.png (renamed from logo.png to bust browser/CDN cache). branding.logo_url="/logo-v2.png", favicon_url="/logo-icon-v2.png". default_settings() updated too. Generator: /app/scripts/gen_logo.py
+- Verified rendering on preview URL. IMPORTANT: production only shows new logo AFTER a successful redeploy (prior deploys were failing on /health 404, now fixed).
 
 ## Deployment fix (2026-02)
 - Added root `@app.get("/health")` in /app/backend/server.py returning {"status":"healthy"} — fixes K8s health probe 404 that was blocking production deploy. Verified 200 locally.
@@ -73,7 +73,7 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 ## Rummy rewards fields (2026-02)
 - New per-app fields: signup_bonus + min_withdraw (strings, e.g. "₹51" / "₹100"). Added to AppModel/AppCreate/AppUpdate in server.py.
 - Admin "Add New App" form (AppsManager.jsx): prominent gold "Rummy Rewards" box at top for signup_bonus & min_withdraw. EMPTY defaults pre-filled with rummy-ready values (rating 4.8, downloads 500000, size 45MB, developer, description, features, requirements, permissions, badge Hot, trending true) so admin only sets name + logo + bonus + min-withdraw.
-- Display: AppCard shows gold "Bonus" chip + green "Min W/D" chip; AppDetail shows two reward highlight cards (gift/wallet) above download button + rows in Additional Information. Verified end-to-end on detail page.
+- Display: AppCard shows gold "Bonus" chip + green "Min W/D" chip; AppDetail shows two reward highlight cards (gift/wallet) above download button + rows in Additional Information. FeaturedApps (large + secondary cards) and TrendingRow on the landing page also show bonus/withdraw. Verified end-to-end (testing agent iteration_6: 100%).
 
 ## Deploy caveats to note
 - Uploaded icons/APKs are stored on local disk (/app/backend/uploads) — NOT persistent across redeploys. For production use, move to object storage (S3/GCS).

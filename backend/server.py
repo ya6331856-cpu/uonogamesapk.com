@@ -532,8 +532,8 @@ def default_settings() -> dict:
         "branding": {
             "site_name": "Uonogamesapk.com",
             "logo_text": "Uonogamesapk",
-            "logo_url": "",
-            "favicon_url": "",
+            "logo_url": "/logo-v2.png",
+            "favicon_url": "/logo-icon-v2.png",
             "footer_text": "Premium APK store for safe, verified Android games and apps.",
             "copyright": "Uonogamesapk.com",
         },
