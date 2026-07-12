@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
 import { useSettings, sectionEnabled } from "@/context/SettingsContext";
 import Header from "@/components/Header";
+import WelcomeTypewriter from "@/components/WelcomeTypewriter";
 import FeaturedApps from "@/components/FeaturedApps";
 import AppCard from "@/components/AppCard";
 import TrendingRow from "@/components/TrendingRow";
@@ -194,6 +195,7 @@ export default function Store() {
     <div className="app-shell pb-10">
       <AnnouncementBar config={settings?.announcement} />
       <Header />
+      <WelcomeTypewriter />
 
       {/* Hero banner */}
       {hero.enabled !== false && (

@@ -60,9 +60,15 @@ arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_cred
 - Deployment readiness: PASS (no blockers)
 
 ## Logo (updated 2026-02)
-- Brand logo regenerated with dark rummy/casino theme (deep green felt, poker chips, cards, golden crown + red spade). Text "UONOGAMES" white + "APK.COM" gold.
+- Brand logo: dark rummy/casino theme (green felt, poker chips, cards, golden crown + red spade). "UONOGAMES" white + "APK.COM" gold.
 - Files: /app/frontend/public/logo.png (header via branding.logo_url="/logo.png"). Generator script: /app/scripts/gen_logo.py
 - Verified rendering on preview URL (same-origin). Note: localhost:3000 testing shows cross-origin block because resolveUrl prepends BACKEND_URL — expected, not a real bug.
+
+## Deployment fix (2026-02)
+- Added root `@app.get("/health")` in /app/backend/server.py returning {"status":"healthy"} — fixes K8s health probe 404 that was blocking production deploy. Verified 200 locally.
+
+## Welcome animation (2026-02)
+- New component /app/frontend/src/components/WelcomeTypewriter.jsx — looping typewriter "Welcome to the UONOGAMESAPK.COM" (brand part gold gradient + blinking cursor). Rendered in Store.jsx after Header.
 
 ## Deploy caveats to note
 - Uploaded icons/APKs are stored on local disk (/app/backend/uploads) — NOT persistent across redeploys. For production use, move to object storage (S3/GCS).
