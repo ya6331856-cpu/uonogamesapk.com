@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import FeaturedApps from "@/components/FeaturedApps";
 import AppCard from "@/components/AppCard";
 import TrendingRow from "@/components/TrendingRow";
+import RummyFeatures from "@/components/RummyFeatures";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { StoreSkeleton } from "@/components/Skeletons";
 import FaqSection from "@/components/FaqSection";
@@ -174,6 +175,9 @@ export default function Store() {
             {!search.trim() && category === "All" && (
               <FeaturedApps apps={data?.featured} onDownload={handleDownload} />
             )}
+
+            {/* Rummy features (default view only) */}
+            {!search.trim() && category === "All" && <RummyFeatures />}
 
             {/* Telegram CTA */}
             <a
