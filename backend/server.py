@@ -39,6 +39,11 @@ JWT_ALGORITHM = "HS256"
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
