@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 2 full test of Uonogamesapk.com FAQ + Legal + Footer + Sort + rotated admin credentials. Backend pytest: 27/28 passed. Only failure: OLD admin credentials (admin@uonogamesapk.com / Admin@12345) STILL authenticate successfully — seed() only inserts/updates the NEW admin (arfuu9@gmail.com) but never removes the previous admin document from iteration 1, so the login endpoint accepts BOTH accounts. This contradicts the explicit requirement 'old ones should fail'. All other new backend endpoints (GET /api/faqs sorted by order, POST/PUT/DELETE /api/admin/faqs with 401-without-token, PUT /api/admin/faqs/reorder ordering persists, reorder route not shadowed by /{id}) work correctly. Frontend Store: FAQ section renders 10 accordion items and expands on click; Legal section renders 10 cards and opens dialogs; SiteFooter shows year 2026, legal links open dialogs, footer-telegram is present pointing at https://t.me/, back-to-top scrolls Y from 2374→0. Sort control works: 'Most Downloaded' -> Battle Royale (5.4M) first; 'Top Rated' -> Zen Garden Idle (4.7) first among non-featured; 'Newest' also works. Note: sort operates on data.apps only (featured excluded when no filter active) — matches iteration-1 design. Frontend Admin: logged in with NEW creds arfuu9@gmail.com/arfuu7778, both tabs (tab-apps, tab-faqs) rendered; FAQ CRUD end-to-end verified (add TEST_UI_FAQ → edit → reorder up → delete, all persisted via /api/faqs); Apps tab regression pass (create/edit/delete TEST_UI_App2).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "/api/auth/login", "issue": "Old admin credentials 'admin@uonogamesapk.com / Admin@12345' still return 200 with a valid JWT. The credential rotation only added the new admin — the previous admin user document from iteration 1 was never removed or invalidated. Requirement said 'old ones should fail'. Fix: in seed(), delete or disable users whose email != current ADMIN_EMAIL AND role == 'admin', OR run a one-time migration to purge the stale admin.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "/api/apps/{id} (GET) & /api/apps/{id}/download & PUT/DELETE /admin/apps/{id} & /admin/faqs/{id}", "issue": "to_object_id raises HTTPException(400) on malformed id — good. But calling with a valid-format but non-existent 24-char hex hits ObjectId conversion inside update/delete/get code paths that don't wrap DB errors. Currently returns 404 in practice via find_one — acceptable, but no explicit try/except around the ObjectId path in delete_faq/update_faq."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "HIGH: Purge the stale admin@uonogamesapk.com user in seed() so old credentials cannot authenticate. Suggested fix inside seed(): `await db.users.delete_many({'role': 'admin', 'email': {'$ne': admin_email}})` before the insert/update block.",
+    "OPTIONAL: Consider allowing search & category filters to include featured apps (carried over from iteration 1 observation).",
+    "OPTIONAL: Wrap ObjectId conversion in FAQ endpoints (update_faq/delete_faq) with to_object_id() consistently — currently already routed through to_object_id, verified OK."
+  ],
+  "critical_code_review_comments": [
+    "server.py: /api/admin/faqs/reorder is declared BEFORE /api/admin/faqs/{faq_id} — correct order to avoid path collision. Verified by test_reorder_route_not_shadowed_by_id_route (passed).",
+    "server.py: seed() is not idempotent w.r.t. rotating ADMIN_EMAIL. It updates the password of the current ADMIN_EMAIL user but leaves any previous admin account intact — this is the RCA of the old-creds-still-work bug.",
+    "AdminDashboard.jsx line 98: apps state is `[...data.featured, ...data.apps]` — good, both featured+regular editable from admin.",
+    "SiteFooter.jsx: year computed on render via `new Date().getFullYear()` — correct, shows 2026.",
+    "FaqSection.jsx: uses Accordion type='single' collapsible — only one FAQ expanded at a time (design choice, OK)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (extended: new-creds default, old-creds rejection test, TestFaqsPublic/TestFaqsAdminAuth/TestFaqsAdminCRUD classes with reorder-persistence + route-not-shadowed regression)"
+  ],
+  "success_rate": {
+    "backend": "96% (27/28) — only failure is the old-creds-still-work security bug",
+    "frontend": "100% for all newly-added flows (FAQ accordion, Legal cards+dialogs, Footer year/links/telegram/back-to-top, Sort Most-Downloaded/Top-Rated/Newest, Admin tabs, Admin FAQ full CRUD + reorder, Admin App CRUD regression)"
+  },
+  "test_credentials": "arfuu9@gmail.com / arfuu7778 — verified working (both backend /api/auth/login and UI /admin/login).",
+  "seed_data_creation": "Test suite creates and cleans up TEST_-prefixed FAQ (TEST_faq_question?) and TEST_-prefixed App (TEST_NewApp). UI test created + deleted TEST_UI_FAQ and TEST_UI_App2. No orphan test data remains.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest lives at /app/backend/tests/backend_test.py and is fully idempotent. 28 tests total. If the main agent purges the stale admin, re-run pytest to confirm 28/28. All frontend data-testids listed in the review request are present and working: faq-section, faq-item-{id}, legal-section, legal-card-{id}, site-footer, footer-link-{id}, footer-telegram, back-to-top, sort-select, tab-apps, tab-faqs, add-faq-btn, faq-question, faq-answer, save-faq-btn, edit-faq-{id}, delete-faq-{id}, faq-up-{id}, faq-down-{id}, admin-faq-{id}. Sort semantics: applies to data.apps only when no search/category filter active — this is intentional per Store.jsx line 63-64.",
+  "rca_of_the_issue": "OLD credentials still work RCA: server.py seed() at lines 450-464 only checks the CURRENT ADMIN_EMAIL. When ADMIN_EMAIL was changed from 'admin@uonogamesapk.com' to 'arfuu9@gmail.com', the previous admin document (with its bcrypt hash of 'Admin@12345') was left untouched in db.users. login() at line 189 looks up the user by whatever email is posted, so both admins remain valid. Reproduction: `curl -X POST $REACT_APP_BACKEND_URL/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@uonogamesapk.com\",\"password\":\"Admin@12345\"}'` returns 200 with a JWT. Mitigation (one-liner in seed): `await db.users.delete_many({'role': 'admin', 'email': {'$ne': admin_email}})` — or a targeted db.users.delete_one({'email':'admin@uonogamesapk.com'})."
+}

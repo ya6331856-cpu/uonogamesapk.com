@@ -24,6 +24,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import RippleButton from "@/components/RippleButton";
+import AdminFaqs from "@/components/AdminFaqs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const CATEGORIES = ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"];
 
@@ -191,28 +193,41 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="px-4 pt-4">
-        <RippleButton
-          onClick={openNew}
-          data-testid="add-app-btn"
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-3 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]"
-        >
-          <Plus className="h-4 w-4" /> Add New App
-        </RippleButton>
-      </div>
+      <Tabs defaultValue="apps" className="w-full">
+        <div className="px-4 pt-4">
+          <TabsList className="grid w-full grid-cols-2 rounded-full bg-[#F1F2F4] p-1">
+            <TabsTrigger value="apps" data-testid="tab-apps" className="rounded-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[#111111] data-[state=active]:shadow-sm">
+              Apps
+            </TabsTrigger>
+            <TabsTrigger value="faqs" data-testid="tab-faqs" className="rounded-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[#111111] data-[state=active]:shadow-sm">
+              FAQs
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      <main className="space-y-3 px-4 pt-4">
-        {loading ? (
-          <div className="py-16 text-center">
-            <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" />
+        <TabsContent value="apps" className="mt-0">
+          <div className="px-4 pt-4">
+            <RippleButton
+              onClick={openNew}
+              data-testid="add-app-btn"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-3 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]"
+            >
+              <Plus className="h-4 w-4" /> Add New App
+            </RippleButton>
           </div>
-        ) : apps.length === 0 ? (
-          <div className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-14 text-center">
-            <Package className="mx-auto h-8 w-8 text-[#CCCCCC]" />
-            <p className="mt-2 text-sm text-[#777777]">No apps yet. Add your first one.</p>
-          </div>
-        ) : (
-          apps.map((app) => (
+
+          <main className="space-y-3 px-4 pt-4">
+            {loading ? (
+              <div className="py-16 text-center">
+                <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" />
+              </div>
+            ) : apps.length === 0 ? (
+              <div className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-14 text-center">
+                <Package className="mx-auto h-8 w-8 text-[#CCCCCC]" />
+                <p className="mt-2 text-sm text-[#777777]">No apps yet. Add your first one.</p>
+              </div>
+            ) : (
+              apps.map((app) => (
             <motion.div
               key={app.id}
               layout
@@ -263,10 +278,18 @@ export default function AdminDashboard() {
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </motion.div>
-          ))
-        )}
-      </main>
+              </motion.div>
+            ))
+          )}
+          </main>
+        </TabsContent>
+
+        <TabsContent value="faqs" className="mt-0">
+          <div className="px-4 pt-4">
+            <AdminFaqs />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

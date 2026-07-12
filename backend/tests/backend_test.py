@@ -17,8 +17,10 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") if "REACT_APP_BACKEND_URL" in os.environ else "https://smooth-apk-market.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@uonogamesapk.com")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin@12345")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "arfuu9@gmail.com")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "arfuu7778")
+OLD_ADMIN_EMAIL = "admin@uonogamesapk.com"
+OLD_ADMIN_PASSWORD = "Admin@12345"
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +139,11 @@ class TestAuth:
         r = api_session.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": "wrongpass"})
         assert r.status_code == 401
 
+    def test_old_admin_credentials_rejected(self, api_session):
+        """Old admin credentials must NOT grant access (creds rotated to arfuu9@gmail.com)."""
+        r = api_session.post(f"{API}/auth/login", json={"email": OLD_ADMIN_EMAIL, "password": OLD_ADMIN_PASSWORD})
+        assert r.status_code == 401, f"Old creds should be rejected, got {r.status_code} {r.text}"
+
     def test_login_unknown_user(self, api_session):
         r = api_session.post(f"{API}/auth/login", json={"email": "nobody@nowhere.com", "password": "x"})
         assert r.status_code == 401
@@ -251,3 +258,125 @@ class TestFileUpload:
         g = api_session.get(f"{BASE_URL}{data['url']}")
         assert g.status_code == 200
         assert g.content[:8] == png[:8]
+
+
+# ---------------------------------------------------------------------------
+# Public + Admin: /api/faqs
+# ---------------------------------------------------------------------------
+class TestFaqsPublic:
+    def test_list_faqs_seeded(self, api_session):
+        r = api_session.get(f"{API}/faqs")
+        assert r.status_code == 200
+        data = r.json()
+        assert isinstance(data, list)
+        # Seed should provide exactly 10 FAQs
+        assert len(data) >= 10, f"expected >=10 FAQs, got {len(data)}"
+        # sorted by order ascending
+        orders = [f.get("order", 0) for f in data]
+        assert orders == sorted(orders), f"FAQs not sorted by order: {orders}"
+        # each has required fields
+        for f in data:
+            assert "id" in f
+            assert "question" in f and f["question"]
+            assert "answer" in f and f["answer"]
+            assert "_id" not in f  # ObjectId must not leak
+
+
+class TestFaqsAdminAuth:
+    def test_create_faq_without_auth(self, api_session):
+        r = api_session.post(f"{API}/admin/faqs", json={"question": "q", "answer": "a"})
+        assert r.status_code == 401
+
+    def test_update_faq_without_auth(self, api_session):
+        r = api_session.put(f"{API}/admin/faqs/507f1f77bcf86cd799439011", json={"question": "q"})
+        assert r.status_code == 401
+
+    def test_delete_faq_without_auth(self, api_session):
+        r = api_session.delete(f"{API}/admin/faqs/507f1f77bcf86cd799439011")
+        assert r.status_code == 401
+
+    def test_reorder_faqs_without_auth(self, api_session):
+        r = api_session.put(f"{API}/admin/faqs/reorder", json={"ids": []})
+        assert r.status_code == 401
+
+
+class TestFaqsAdminCRUD:
+    def test_faq_full_flow(self, api_session, admin_headers):
+        # Create
+        payload = {"question": "TEST_faq_question?", "answer": "TEST_faq_answer_body"}
+        r = api_session.post(f"{API}/admin/faqs", json=payload, headers=admin_headers)
+        assert r.status_code == 200, r.text
+        created = r.json()
+        assert created["question"] == payload["question"]
+        assert created["answer"] == payload["answer"]
+        assert "id" in created
+        assert isinstance(created["order"], int)
+        faq_id = created["id"]
+
+        # Public GET should list it
+        listing = api_session.get(f"{API}/faqs").json()
+        found = [f for f in listing if f["id"] == faq_id]
+        assert found and found[0]["question"] == payload["question"]
+
+        # Update
+        u = api_session.put(
+            f"{API}/admin/faqs/{faq_id}",
+            json={"answer": "TEST_faq_updated_answer"},
+            headers=admin_headers,
+        )
+        assert u.status_code == 200
+        assert u.json()["answer"] == "TEST_faq_updated_answer"
+        assert u.json()["question"] == payload["question"]  # unchanged
+
+        # Verify via public GET
+        listing2 = api_session.get(f"{API}/faqs").json()
+        row = next(f for f in listing2 if f["id"] == faq_id)
+        assert row["answer"] == "TEST_faq_updated_answer"
+
+        # Delete
+        d = api_session.delete(f"{API}/admin/faqs/{faq_id}", headers=admin_headers)
+        assert d.status_code == 200
+        assert d.json().get("success") is True
+
+        # Verify gone from public GET
+        listing3 = api_session.get(f"{API}/faqs").json()
+        assert not any(f["id"] == faq_id for f in listing3)
+
+    def test_faq_reorder_persists(self, api_session, admin_headers):
+        listing = api_session.get(f"{API}/faqs").json()
+        assert len(listing) >= 2, "need at least 2 FAQs to test reorder"
+
+        original_ids = [f["id"] for f in listing]
+        # Swap first two
+        reordered_ids = [original_ids[1], original_ids[0]] + original_ids[2:]
+
+        r = api_session.put(
+            f"{API}/admin/faqs/reorder",
+            json={"ids": reordered_ids},
+            headers=admin_headers,
+        )
+        assert r.status_code == 200, r.text
+        assert r.json().get("success") is True
+
+        # Re-fetch, must be in the new order
+        listing2 = api_session.get(f"{API}/faqs").json()
+        new_ids = [f["id"] for f in listing2]
+        assert new_ids[:len(reordered_ids)] == reordered_ids, (
+            f"reorder did not persist: {new_ids} vs {reordered_ids}"
+        )
+
+        # Restore original order (cleanup)
+        api_session.put(
+            f"{API}/admin/faqs/reorder",
+            json={"ids": original_ids},
+            headers=admin_headers,
+        )
+
+    def test_reorder_route_not_shadowed_by_id_route(self, api_session, admin_headers):
+        """Regression: PUT /admin/faqs/reorder must not be caught by PUT /admin/faqs/{id}."""
+        listing = api_session.get(f"{API}/faqs").json()
+        ids = [f["id"] for f in listing]
+        r = api_session.put(f"{API}/admin/faqs/reorder", json={"ids": ids}, headers=admin_headers)
+        # Should not be 400 (invalid ObjectId 'reorder') or 404
+        assert r.status_code == 200, f"reorder route shadowed: {r.status_code} {r.text}"
+

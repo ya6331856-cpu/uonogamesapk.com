@@ -106,6 +106,22 @@ class LoginInput(BaseModel):
     password: str
 
 
+class FaqCreate(BaseModel):
+    question: str
+    answer: str
+    order: Optional[int] = None
+
+
+class FaqUpdate(BaseModel):
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    order: Optional[int] = None
+
+
+class ReorderInput(BaseModel):
+    ids: List[str]
+
+
 def serialize_app(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
@@ -294,6 +310,59 @@ async def root():
 
 
 # ---------------------------------------------------------------------------
+# FAQ routes
+# ---------------------------------------------------------------------------
+def serialize_faq(doc: dict) -> dict:
+    doc = dict(doc)
+    doc["id"] = str(doc.pop("_id"))
+    return doc
+
+
+@api_router.get("/faqs")
+async def list_faqs():
+    docs = await db.faqs.find().sort("order", 1).to_list(1000)
+    return [serialize_faq(d) for d in docs]
+
+
+@api_router.post("/admin/faqs")
+async def create_faq(payload: FaqCreate, admin: dict = Depends(get_current_admin)):
+    order = payload.order
+    if order is None:
+        order = await db.faqs.count_documents({})
+    doc = {"question": payload.question, "answer": payload.answer, "order": order, "created_at": now_iso()}
+    result = await db.faqs.insert_one(doc)
+    new_doc = await db.faqs.find_one({"_id": result.inserted_id})
+    return serialize_faq(new_doc)
+
+
+@api_router.put("/admin/faqs/reorder")
+async def reorder_faqs(payload: ReorderInput, admin: dict = Depends(get_current_admin)):
+    for index, faq_id in enumerate(payload.ids):
+        await db.faqs.update_one({"_id": to_object_id(faq_id)}, {"$set": {"order": index}})
+    return {"success": True}
+
+
+@api_router.put("/admin/faqs/{faq_id}")
+async def update_faq(faq_id: str, payload: FaqUpdate, admin: dict = Depends(get_current_admin)):
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = await db.faqs.update_one({"_id": to_object_id(faq_id)}, {"$set": updates})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    doc = await db.faqs.find_one({"_id": to_object_id(faq_id)})
+    return serialize_faq(doc)
+
+
+@api_router.delete("/admin/faqs/{faq_id}")
+async def delete_faq(faq_id: str, admin: dict = Depends(get_current_admin)):
+    result = await db.faqs.delete_one({"_id": to_object_id(faq_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 SAMPLE_APPS = [
@@ -364,6 +433,20 @@ SAMPLE_APPS = [
 ]
 
 
+DEFAULT_FAQS = [
+    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on Uonogamesapk.com is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
+    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly. Once finished, open the file from your notification bar or your device's Downloads folder and tap 'Install'. The entire process usually takes less than a minute on a normal connection."},
+    {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
+    {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
+    {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
+    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
+    {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
+    {"question": "Is registration free?", "answer": "Yes, downloading APKs from Uonogamesapk.com is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
+    {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
+    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
+]
+
+
 async def seed():
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]
@@ -384,6 +467,11 @@ async def seed():
         docs = [{**a, "created_at": now_iso()} for a in SAMPLE_APPS]
         await db.apps.insert_many(docs)
         logger.info("Seeded %d sample apps", len(docs))
+
+    if await db.faqs.count_documents({}) == 0:
+        faq_docs = [{**f, "order": i, "created_at": now_iso()} for i, f in enumerate(DEFAULT_FAQS)]
+        await db.faqs.insert_many(faq_docs)
+        logger.info("Seeded %d FAQs", len(faq_docs))
 
 
 @app.on_event("startup")

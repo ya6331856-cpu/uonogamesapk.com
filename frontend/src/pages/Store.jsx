@@ -1,23 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck } from "lucide-react";
+import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow } from "lucide-react";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import Header from "@/components/Header";
 import FeaturedApps from "@/components/FeaturedApps";
 import AppCard from "@/components/AppCard";
 import AnimatedCounter from "@/components/AnimatedCounter";
-import { StoreSkeleton, AppCardSkeleton } from "@/components/Skeletons";
+import { StoreSkeleton } from "@/components/Skeletons";
+import FaqSection from "@/components/FaqSection";
+import LegalSection from "@/components/LegalSection";
+import LegalDialog from "@/components/LegalDialog";
+import SiteFooter from "@/components/SiteFooter";
 import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const CATEGORIES = ["All", "Games", "Puzzle", "Simulation"];
+const SORTS = [
+  { value: "downloads", label: "Most Downloaded" },
+  { value: "rating", label: "Top Rated" },
+  { value: "newest", label: "Newest" },
+];
 
 export default function Store() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("downloads");
+  const [legalId, setLegalId] = useState(null);
 
   const fetchApps = async () => {
     try {
@@ -48,14 +61,17 @@ export default function Store() {
   const filtered = useMemo(() => {
     if (!data) return [];
     const hasFilter = category !== "All" || search.trim();
-    let list = hasFilter ? [...data.featured, ...data.apps] : data.apps;
+    let list = hasFilter ? [...data.featured, ...data.apps] : [...data.apps];
     if (category !== "All") list = list.filter((a) => a.category === category);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((a) => a.name.toLowerCase().includes(q));
     }
+    if (sort === "downloads") list.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+    else if (sort === "rating") list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    else if (sort === "newest") list.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
     return list;
-  }, [data, category, search]);
+  }, [data, category, search, sort]);
 
   const totalDownloads = useMemo(() => {
     if (!data) return 0;
@@ -172,6 +188,24 @@ export default function Store() {
                   {search.trim() || category !== "All" ? "Results" : "All Apps"}
                 </h2>
                 <span className="text-xs text-[#999999]">({filtered.length})</span>
+                <div className="ml-auto">
+                  <Select value={sort} onValueChange={setSort}>
+                    <SelectTrigger
+                      data-testid="sort-select"
+                      className="h-8 w-auto gap-1 rounded-full border-[#E5E7EB] bg-white px-3 text-xs font-medium text-[#555555] focus:ring-[#FFC107]"
+                    >
+                      <ArrowDownWideNarrow className="h-3.5 w-3.5 text-[#999999]" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORTS.map((s) => (
+                        <SelectItem key={s.value} value={s.value} className="text-xs">
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {filtered.length === 0 ? (
@@ -189,22 +223,18 @@ export default function Store() {
                 </div>
               )}
             </section>
+
+            {/* FAQ */}
+            <FaqSection />
+
+            {/* Legal */}
+            <LegalSection onOpen={setLegalId} />
           </>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="mt-8 border-t border-[#E5E7EB] px-4 py-6 text-center">
-        <p className="font-display text-sm font-bold text-[#111111]">Uonogamesapk.com</p>
-        <p className="mt-1 text-xs text-[#999999]">Premium APK Store • Safe & Verified Downloads</p>
-        <Link
-          to="/admin/login"
-          data-testid="admin-link"
-          className="mt-3 inline-block text-xs font-medium text-[#777777] underline underline-offset-2 hover:text-[#FFB300]"
-        >
-          Admin Panel
-        </Link>
-      </footer>
+      <SiteFooter onOpenLegal={setLegalId} />
+      <LegalDialog openId={legalId} onClose={() => setLegalId(null)} />
     </div>
   );
 }
