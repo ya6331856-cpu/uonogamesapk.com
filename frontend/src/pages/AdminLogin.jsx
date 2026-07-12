@@ -72,7 +72,7 @@ export default function AdminLogin() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@uonogamesapk.com"
+                placeholder="arfuu9@gmail.com"
                 className="h-11 rounded-xl border-[#E5E7EB] pl-10 focus-visible:ring-[#FFC107]"
                 required
               />

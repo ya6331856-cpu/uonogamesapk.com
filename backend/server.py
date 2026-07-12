@@ -992,6 +992,9 @@ async def seed():
     to_add = {k: v for k, v in defaults.items() if k not in current_settings}
     if to_add:
         await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
+    # Ensure categories is never empty
+    if not current_settings.get("categories") and "categories" not in to_add:
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": {"categories": defaults["categories"]}})
 
     # Seed sample reviews
     if await db.reviews.count_documents({}) == 0:
