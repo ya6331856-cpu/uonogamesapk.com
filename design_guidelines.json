@@ -1,0 +1,121 @@
+{
+  "theme": "mobile_app_store",
+  "brand_name": "Uonogamesapk.com",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "DM Sans",
+    "font_weights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl font-bold tracking-tight text-[#111111]",
+      "h2": "text-2xl sm:text-3xl font-semibold tracking-tight text-[#111111]",
+      "h3": "text-xl font-medium tracking-tight text-[#111111]",
+      "h4": "text-lg font-medium text-[#111111]",
+      "body": "text-base text-[#555555] leading-relaxed",
+      "small": "text-sm text-[#777777]"
+    }
+  },
+  "colors": {
+    "primary_background": "#FFFFFF",
+    "secondary_background": "#F8F9FA",
+    "accent_primary": "#FFC107",
+    "accent_secondary": "#FFB300",
+    "success": "#22C55E",
+    "telegram_blue": "#229ED9",
+    "text_main": "#111111",
+    "text_body": "#555555",
+    "text_secondary": "#777777",
+    "border_light": "#E5E7EB"
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "soft_floating": "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+      "hover_lift": "shadow-[0_20px_40px_rgb(0,0,0,0.08)]",
+      "button_glow": "shadow-[0_0_15px_rgba(255,193,7,0.4)]"
+    },
+    "border_radius": {
+      "card": "rounded-[20px]",
+      "button": "rounded-full",
+      "icon": "rounded-[14px]"
+    },
+    "glassmorphism": "backdrop-blur-xl bg-white/70 border border-white/20"
+  },
+  "components": {
+    "featured_app_main": "Full-width horizontal card, 120-140px height, rounded-[20px], soft yellow glow shadow. Pinned at top.",
+    "featured_app_secondary": "Two-column grid for app #2 and #3, compact cards.",
+    "app_list_card": "Compact horizontal list, height 120-140px. Icon 48-56px top-left, Title max 2 lines, Rating top-right. Verified badge included.",
+    "download_button": "Premium Yellow (#FFC107) background, rounded-full, soft glow, ripple animation, transform scale down on click.",
+    "navigation": "Sticky top glassmorphism header with logo and admin login link. Bottom padding on body to ensure content visibility."
+  },
+  "grids": {
+    "main_layout": "max-w-[430px] mx-auto w-full min-h-screen bg-[#F8F9FA] shadow-2xl overflow-hidden relative",
+    "featured_grid": "grid grid-cols-2 gap-4",
+    "app_list": "flex flex-col gap-4"
+  },
+  "motion": {
+    "hover": "transition-transform duration-300 hover:-translate-y-1",
+    "press": "active:scale-95 transition-transform",
+    "fade_up": "initial opacity-0 translate-y-4, animate to opacity-100 translate-y-0",
+    "ripple": "relative overflow-hidden after:absolute after:inset-0 after:bg-white/20 after:opacity-0 active:after:opacity-100 after:transition-opacity",
+    "shimmer": "animate-pulse bg-gray-200"
+  },
+  "accessibility": {
+    "contrast": "Ensure text over yellow button uses #111111 for high contrast.",
+    "focus": "focus-visible:ring-2 focus-visible:ring-[#FFC107] focus-visible:outline-none"
+  },
+  "images": [
+    {
+      "category": "App Icon 1",
+      "url": "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBhcHAlMjBpY29uJTIwZGVzaWdufGVufDB8fHx8MTc4Mzg0MTI4OXww&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "App Icon 2",
+      "url": "https://images.unsplash.com/photo-1685381949388-bb0402fbe133?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBhcHAlMjBpY29uJTIwZGVzaWdufGVufDB8fHx8MTc4Mzg0MTI4OXww&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "App Icon 3",
+      "url": "https://images.unsplash.com/photo-1659885785824-3e72856b8fef?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBhcHAlMjBpY29uJTIwZGVzaWdufGVufDB8fHx8MTc4Mzg0MTI4OXww&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "App Icon 4",
+      "url": "https://images.unsplash.com/photo-1740059030535-a75661748bc8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBhcHAlMjBpY29uJTIwZGVzaWdufGVufDB8fHx8MTc4Mzg0MTI4OXww&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "App Icon 5",
+      "url": "https://images.unsplash.com/photo-1633419461186-7d40a38105ec?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwzfHxzcXVhcmUlMjBsb2dvJTIwaWNvbnxlbnwwfHx8fDE3ODM4NDEzMDB8MA&ixlib=rb-4.1.0&q=85"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "Build a mobile-first UI centered in the viewport for desktop (max-width 430px), resembling a native Android app.",
+    "The body background should be neutral (like #e5e5e5) and the app container itself should be #F8F9FA, centered with shadow-2xl.",
+    "Use framer-motion for 60FPS hardware-accelerated list animations (fade up on scroll, translate, and opacity only).",
+    "App cards MUST have a height around 120-140px, full-width, clean white bg (#FFFFFF), 18-22px border radius, thin #E5E7EB border, and a soft shadow.",
+    "Include an Admin Panel (JWT auth) to manage APKs and feature apps, with file upload capability. Use standard .js files (not .tsx).",
+    "Use Lucide-react icons for verified badges (Success Green #22C55E) and ratings (Yellow #FFC107).",
+    "Implement Shimmer skeleton loaders for the initial data fetch. Do not leave the screen blank on load.",
+    "Telegram CTA should use #229ED9. Feature it visibly.",
+    "Download buttons must have ripple effects, active scale-down, and a soft yellow glow (#FFC107).",
+    "Do NOT use HTML input date or select, use Shadcn. Do not center-align the app container text (no .App { text-align: center }).",
+    "All interactive elements MUST have data-testid attributes."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use transparent backgrounds in headers if content scrolls under them; use backdrop-blur.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "Do not apply universal transition (transition: all). Target specific properties.",
+    "Always use modern button styles (pill-shaped or sharp) with interaction animations.",
+    "Never use AI assistant Emoji characters for icons.",
+    "Add micro-animations to all interactive elements.",
+    "Use generous spacing (p-4 to p-6 inside cards).",
+    "Ensure contrast rules are met. High contrast on text."
+  ],
+  "libraries": {
+    "icons": "lucide-react",
+    "animation": "framer-motion",
+    "components": "shadcn/ui"
+  }
+}
