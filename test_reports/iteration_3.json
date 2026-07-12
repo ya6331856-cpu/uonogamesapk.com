@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 3 full test of Uonogamesapk.com App Detail page + admin new fields + credential rotation retest. Backend pytest: 31/31 passed (28 previous + 3 new detail tests). Old admin credentials (admin@uonogamesapk.com / Admin@12345) now correctly return 401 — seed()'s delete_many({'role':'admin','email':{$ne:admin_email}}) works. New tests verify: (a) every seeded app has developer/package_name/min_android/whats_new/screenshots after backfill, (b) POST /admin/apps persists all 5 new fields end-to-end, (c) PUT /admin/apps/{id} uses exclude_unset — updating only 'developer' does NOT wipe package_name/min_android/whats_new/screenshots; updating only 'screenshots' replaces the array correctly. Frontend: from Store, clicking featured-main and app-card navigates to /app/{id}; download buttons on cards call stopPropagation (verified — URL unchanged after clicking download-btn-{id}). Detail page renders detail-name, detail-description, 3 detail-screenshot-* images, additional info table with Developer/Package/Requires/Version, What's New section, detail-download-btn + detail-download-sticky (both open ${API}/apps/{id}/download and show toast), detail-share, detail-back, detail-back-home on 404. Admin login with new creds arfuu9@gmail.com/arfuu7778 succeeds; Add New App form contains all new testids (form-developer, form-min-android, form-package, form-whats-new, upload-screenshot). Full e2e: created TEST_UI_Detail app with all new fields via admin -> found in store search -> opened its detail page -> confirmed all 5 field values render.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/apps/{id} (invalid ObjectId string)", "issue": "Passing an obviously-invalid id returns 400 with detail 'Invalid app id' (via to_object_id). A syntactically valid but non-existent 24-char ObjectId correctly returns 404. Behavior is fine, just noting."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AppDetail header (detail-back)", "issue": "When sonner toasts are stacked at the top of the screen after clicking download, they visually overlap the sticky header on mobile 390px viewport and can intercept the detail-back click for a couple of seconds until toasts fade. Not a functional blocker (back still works after toast timeout), but consider positioning toasts below the header or using bottom position on the detail page.", "selector": "[data-testid=\"detail-back\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/LOW: Move sonner toaster to bottom on AppDetail page OR raise header z-index above the toast container so detail-back is always tappable while a toast is on-screen."
+  ],
+  "critical_code_review_comments": [
+    "server.py seed(): the delete_many for stale admins runs BEFORE the insert/update block — correct order; verified old creds are now rejected.",
+    "server.py update_app uses model_dump(exclude_unset=True) — partial updates now safe. Verified by test_partial_update_exclude_unset (updating one field preserves the rest, including screenshots array).",
+    "server.py seed() backfills detail fields with update_many({'developer':{'$exists':False}}, ...). Idempotent, only touches legacy docs; new apps created via admin already include the fields via AppCreate defaults. Good.",
+    "AppDetail.jsx handleDownload uses window.open(`${API}/apps/${id}/download`) — this navigates in a new tab and the backend returns 302 to apk_url. Works. downloads state increments locally too.",
+    "AppCard.jsx / FeaturedApps.jsx: download buttons have onClick={(e)=>{e.stopPropagation(); onDownload(app)}} — verified in browser that URL does NOT change after clicking the yellow download pill.",
+    "AdminDashboard.jsx EMPTY constant now includes developer/package_name/min_android/whats_new/screenshots — new-app dialog opens with sensible defaults (min_android='Android 6.0+', screenshots=[]).",
+    "FileUpload inside 'Screenshots' passes value='' so it always shows 'Upload Screenshot' — good; each upload appends via setField('screenshots', [...form.screenshots, url]) and remove-screenshot-{i} buttons work.",
+    "AppDetail.jsx renders Additional Info as an array of [k,v] pairs — Developer & Package fall back to '—' when empty. Handles empty seed correctly.",
+    "detail-share uses navigator.share where available and falls back to navigator.clipboard.writeText — proper progressive enhancement.",
+    "No _id leakage: serialize_app strips _id and returns id string. Verified in test_list_faqs_seeded assertion 'assert \"_id\" not in f' and by all detail responses containing only 'id'.",
+    "server.py is ~530 lines total — still comfortably under the 700-line file-size guideline, no split needed yet.",
+    "Frontend token/auth uses cookies (httpOnly access_token) — localStorage.getItem('token') returned null in my cleanup script; noting for future testing agents that admin API calls from browser rely on the cookie set by the login endpoint (or a bearer stored elsewhere in AuthContext)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (added TestAppDetailFields class with 3 tests: seeded apps have detail fields, create persists all new fields, PUT exclude_unset preserves untouched fields)"
+  ],
+  "success_rate": {
+    "backend": "100% (31/31)",
+    "frontend": "100% for all iteration-3 new flows (card->detail nav, featured->detail nav, download stopPropagation, detail page render, admin new fields form, e2e create+view detail)"
+  },
+  "test_credentials": "arfuu9@gmail.com / arfuu7778 — verified working. Old creds admin@uonogamesapk.com / Admin@12345 now correctly return 401.",
+  "seed_data_creation": "Test suite creates+deletes TEST_DetailApp, TEST_PartialUpdate via pytest; UI test created TEST_UI_Detail_843999 and cleaned up via admin DELETE at end of session. No orphan test data remains in db.apps.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest lives at /app/backend/tests/backend_test.py (31 tests, all passing). New TestAppDetailFields class covers detail-field persistence + partial-update semantics. All frontend data-testids from review request are present and functional: app-detail-page, detail-back, detail-share, detail-name, detail-download-btn, detail-download-sticky, detail-screenshot-{0..2}, detail-description, detail-back-home, app-card-{id} (navigate), featured-main-{id} (navigate), featured-secondary-{id} (navigate), download-btn-{id} (stopPropagation confirmed), form-developer, form-min-android, form-package, form-whats-new, upload-screenshot, remove-screenshot-{i}. Note: admin auth uses httpOnly cookie set by /api/auth/login — for programmatic cleanup after UI runs, prefer calling /api/auth/login from the test with requests to obtain a Bearer token instead of trying to read localStorage.",
+  "rca_of_the_issue": "N/A — no bugs found this iteration. Previous iteration's high-priority bug (old-creds-still-work) is confirmed FIXED: pytest test_old_admin_credentials_rejected returns 401 as required. RCA of the fix: seed() at server.py:469 now runs `await db.users.delete_many({'role':'admin','email':{'$ne':admin_email}})` before the insert/update block, which purges the stale admin@uonogamesapk.com document on every startup, so only the current ADMIN_EMAIL user exists in db.users."
+}

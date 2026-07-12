@@ -1,18 +1,22 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Star, BadgeCheck, Download, Crown } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
 import { formatCount } from "@/lib/format";
 
-const FeaturedMain = ({ app, onDownload }) => (
+const FeaturedMain = ({ app, onDownload }) => {
+  const navigate = useNavigate();
+  return (
   <motion.div
     initial={{ opacity: 0, y: 18 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     whileHover={{ y: -3 }}
+    onClick={() => navigate(`/app/${app.id}`)}
     data-testid={`featured-main-${app.id}`}
-    className="glow-pulse relative overflow-hidden rounded-[22px] border border-[#FFE082] bg-white p-4 shadow-[0_10px_40px_rgba(255,193,7,0.18)]"
+    className="glow-pulse relative cursor-pointer overflow-hidden rounded-[22px] border border-[#FFE082] bg-white p-4 shadow-[0_10px_40px_rgba(255,193,7,0.18)]"
   >
     <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-[#FFC107]/15 blur-2xl" />
     <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] px-2.5 py-1 text-[11px] font-bold text-[#111111]">
@@ -46,23 +50,27 @@ const FeaturedMain = ({ app, onDownload }) => (
       </div>
     </div>
     <RippleButton
-      onClick={() => onDownload(app)}
+      onClick={(e) => { e.stopPropagation(); onDownload(app); }}
       data-testid={`download-btn-${app.id}`}
       className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-3 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]"
     >
       <Download className="h-4 w-4" /> Download APK
     </RippleButton>
   </motion.div>
-);
+  );
+};
 
-const FeaturedSecondary = ({ app, onDownload, delay }) => (
+const FeaturedSecondary = ({ app, onDownload, delay }) => {
+  const navigate = useNavigate();
+  return (
   <motion.div
     initial={{ opacity: 0, y: 18 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
     whileHover={{ y: -3 }}
+    onClick={() => navigate(`/app/${app.id}`)}
     data-testid={`featured-secondary-${app.id}`}
-    className="flex flex-col rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)]"
+    className="flex cursor-pointer flex-col rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)]"
   >
     <div className="flex items-start justify-between">
       <AppIcon
@@ -83,14 +91,15 @@ const FeaturedSecondary = ({ app, onDownload, delay }) => (
       {app.verified && <BadgeCheck className="h-3 w-3 text-[#22C55E]" />}
     </div>
     <RippleButton
-      onClick={() => onDownload(app)}
+      onClick={(e) => { e.stopPropagation(); onDownload(app); }}
       data-testid={`download-btn-${app.id}`}
       className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-full bg-[#FFC107] py-2 text-xs font-bold text-[#111111] shadow-[0_5px_14px_rgba(255,193,7,0.4)] hover:bg-[#FFB300]"
     >
       <Download className="h-3.5 w-3.5" /> Download
     </RippleButton>
   </motion.div>
-);
+  );
+};
 
 export const FeaturedApps = ({ apps, onDownload }) => {
   if (!apps || apps.length === 0) return null;

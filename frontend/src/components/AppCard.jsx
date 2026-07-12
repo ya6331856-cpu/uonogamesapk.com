@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Star, BadgeCheck, Download } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
@@ -9,6 +10,7 @@ import { formatCount } from "@/lib/format";
  * Compact horizontal APK list card (120-140px feel).
  */
 export const AppCard = ({ app, index = 0, onDownload }) => {
+  const navigate = useNavigate();
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -16,8 +18,9 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4), ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
+      onClick={() => navigate(`/app/${app.id}`)}
       data-testid={`app-card-${app.id}`}
-      className="group flex items-center gap-3 rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
+      className="group flex cursor-pointer items-center gap-3 rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
     >
       <AppIcon
         src={resolveUrl(app.icon_url)}
@@ -57,7 +60,7 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       </div>
 
       <RippleButton
-        onClick={() => onDownload(app)}
+        onClick={(e) => { e.stopPropagation(); onDownload(app); }}
         data-testid={`download-btn-${app.id}`}
         className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#FFC107] px-3.5 py-2.5 text-[13px] font-semibold text-[#111111] shadow-[0_6px_16px_rgba(255,193,7,0.4)] hover:bg-[#FFB300]"
       >

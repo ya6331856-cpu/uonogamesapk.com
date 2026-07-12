@@ -68,6 +68,11 @@ class AppModel(BaseModel):
     apk_url: str = ""
     featured: bool = False
     featured_order: Optional[int] = None
+    developer: str = ""
+    package_name: str = ""
+    min_android: str = "Android 6.0+"
+    whats_new: str = ""
+    screenshots: List[str] = Field(default_factory=list)
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -84,6 +89,11 @@ class AppCreate(BaseModel):
     apk_url: str = ""
     featured: bool = False
     featured_order: Optional[int] = None
+    developer: str = ""
+    package_name: str = ""
+    min_android: str = "Android 6.0+"
+    whats_new: str = ""
+    screenshots: List[str] = Field(default_factory=list)
 
 
 class AppUpdate(BaseModel):
@@ -99,6 +109,11 @@ class AppUpdate(BaseModel):
     apk_url: Optional[str] = None
     featured: Optional[bool] = None
     featured_order: Optional[int] = None
+    developer: Optional[str] = None
+    package_name: Optional[str] = None
+    min_android: Optional[str] = None
+    whats_new: Optional[str] = None
+    screenshots: Optional[List[str]] = None
 
 
 class LoginInput(BaseModel):
@@ -286,7 +301,7 @@ async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin
 
 @api_router.put("/admin/apps/{app_id}")
 async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_current_admin)):
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    updates = payload.model_dump(exclude_unset=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
     result = await db.apps.update_one({"_id": to_object_id(app_id)}, {"$set": updates})
@@ -450,6 +465,8 @@ DEFAULT_FAQS = [
 async def seed():
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]
+    # Remove any stale admin accounts (e.g. after rotating ADMIN_EMAIL)
+    await db.users.delete_many({"role": "admin", "email": {"$ne": admin_email}})
     existing = await db.users.find_one({"email": admin_email})
     if existing is None:
         await db.users.insert_one({
@@ -467,6 +484,23 @@ async def seed():
         docs = [{**a, "created_at": now_iso()} for a in SAMPLE_APPS]
         await db.apps.insert_many(docs)
         logger.info("Seeded %d sample apps", len(docs))
+
+    # Backfill detail fields on older app documents so detail pages look complete
+    default_shots = [
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+        "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+    ]
+    await db.apps.update_many(
+        {"developer": {"$exists": False}},
+        {"$set": {
+            "developer": "Uonogames Studios",
+            "package_name": "com.uonogames.app",
+            "min_android": "Android 6.0+",
+            "whats_new": "Performance improvements, new levels and bug fixes for a smoother experience.",
+            "screenshots": default_shots,
+        }},
+    )
 
     if await db.faqs.count_documents({}) == 0:
         faq_docs = [{**f, "order": i, "created_at": now_iso()} for i, f in enumerate(DEFAULT_FAQS)]

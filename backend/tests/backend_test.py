@@ -380,3 +380,107 @@ class TestFaqsAdminCRUD:
         # Should not be 400 (invalid ObjectId 'reorder') or 404
         assert r.status_code == 200, f"reorder route shadowed: {r.status_code} {r.text}"
 
+
+# ---------------------------------------------------------------------------
+# Iteration 3: App Detail fields (developer, package_name, min_android, whats_new, screenshots)
+# ---------------------------------------------------------------------------
+class TestAppDetailFields:
+    def test_seeded_apps_have_detail_fields(self, api_session):
+        listing = api_session.get(f"{API}/apps").json()
+        all_apps = listing["featured"] + listing["apps"]
+        assert len(all_apps) > 0
+        # After seed backfill, every app should have detail fields
+        for app in all_apps:
+            r = api_session.get(f"{API}/apps/{app['id']}")
+            assert r.status_code == 200
+            data = r.json()
+            for field in ("developer", "package_name", "min_android", "whats_new", "screenshots"):
+                assert field in data, f"missing {field} on app {data.get('name')}"
+            assert isinstance(data["screenshots"], list)
+            assert data["min_android"], f"empty min_android on {data.get('name')}"
+            assert len(data["screenshots"]) >= 1, f"screenshots empty on {data.get('name')}"
+
+    def test_create_app_persists_all_new_fields(self, api_session, admin_headers):
+        payload = {
+            "name": "TEST_DetailApp",
+            "version": "1.2.3",
+            "size": "42 MB",
+            "rating": 4.7,
+            "downloads": 555,
+            "category": "Games",
+            "description": "detail test",
+            "apk_url": "https://example.com/apk/detail.apk",
+            "developer": "TEST_DevStudio",
+            "package_name": "com.test.detail",
+            "min_android": "Android 8.0+",
+            "whats_new": "TEST what's new content",
+            "screenshots": [
+                "https://example.com/s1.png",
+                "https://example.com/s2.png",
+                "https://example.com/s3.png",
+            ],
+        }
+        r = api_session.post(f"{API}/admin/apps", json=payload, headers=admin_headers)
+        assert r.status_code == 200, r.text
+        created = r.json()
+        assert created["developer"] == "TEST_DevStudio"
+        assert created["package_name"] == "com.test.detail"
+        assert created["min_android"] == "Android 8.0+"
+        assert created["whats_new"] == "TEST what's new content"
+        assert created["screenshots"] == payload["screenshots"]
+        new_id = created["id"]
+
+        # GET verifies persistence
+        g = api_session.get(f"{API}/apps/{new_id}").json()
+        assert g["developer"] == "TEST_DevStudio"
+        assert g["package_name"] == "com.test.detail"
+        assert g["min_android"] == "Android 8.0+"
+        assert g["whats_new"] == "TEST what's new content"
+        assert g["screenshots"] == payload["screenshots"]
+
+        # Cleanup
+        api_session.delete(f"{API}/admin/apps/{new_id}", headers=admin_headers)
+
+    def test_partial_update_exclude_unset(self, api_session, admin_headers):
+        """PUT should use exclude_unset — unspecified fields must NOT be wiped."""
+        # Create with full payload
+        payload = {
+            "name": "TEST_PartialUpdate",
+            "developer": "OrigDev",
+            "package_name": "com.orig.pkg",
+            "min_android": "Android 7.0+",
+            "whats_new": "orig whats new",
+            "screenshots": ["https://example.com/orig1.png", "https://example.com/orig2.png"],
+        }
+        c = api_session.post(f"{API}/admin/apps", json=payload, headers=admin_headers)
+        assert c.status_code == 200
+        app_id = c.json()["id"]
+
+        # Update ONLY developer — others must remain intact
+        u = api_session.put(
+            f"{API}/admin/apps/{app_id}",
+            json={"developer": "NewDev"},
+            headers=admin_headers,
+        )
+        assert u.status_code == 200
+        u_data = u.json()
+        assert u_data["developer"] == "NewDev"
+        assert u_data["package_name"] == "com.orig.pkg", "package_name was wiped by partial update"
+        assert u_data["min_android"] == "Android 7.0+", "min_android was wiped"
+        assert u_data["whats_new"] == "orig whats new", "whats_new was wiped"
+        assert u_data["screenshots"] == payload["screenshots"], "screenshots array was wiped"
+
+        # Now update ONLY screenshots (replace array)
+        new_shots = ["https://example.com/new1.png"]
+        u2 = api_session.put(
+            f"{API}/admin/apps/{app_id}",
+            json={"screenshots": new_shots},
+            headers=admin_headers,
+        )
+        assert u2.status_code == 200
+        assert u2.json()["screenshots"] == new_shots
+        assert u2.json()["developer"] == "NewDev"  # still intact
+
+        # Cleanup
+        api_session.delete(f"{API}/admin/apps/{app_id}", headers=admin_headers)
+
