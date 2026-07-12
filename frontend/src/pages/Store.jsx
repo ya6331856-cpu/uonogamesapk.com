@@ -264,9 +264,9 @@ export default function Store() {
           <StoreSkeleton />
         ) : (
           <>
-            {isDefaultView && <AdSlot ads={settings?.ads} />}
             {finalOrder.map((id) => renderers[id]).filter(Boolean)}
             {isDefaultView && en("winners") && <RedeemBox />}
+            {isDefaultView && <AdSlot ads={settings?.ads} />}
           </>
         )}
       </main>
