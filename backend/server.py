@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 
 import firebase_service as fbs
 import object_storage as obs
+import image_utils as imu
 
 # ---------------------------------------------------------------------------
 # Database
@@ -414,47 +415,72 @@ def _guess_content_type(filename: str) -> str:
 # Admin app routes
 # ---------------------------------------------------------------------------
 @api_router.post("/admin/upload")
-async def upload_file(file: UploadFile = File(...), admin: dict = Depends(get_current_admin)):
+async def upload_file(
+    file: UploadFile = File(...),
+    kind: str = "auto",
+    admin: dict = Depends(get_current_admin),
+):
     """Upload a file to persistent Emergent Object Storage.
 
-    Falls back to local disk only if object storage is unreachable, so uploads
-    survive container restarts and redeployments.
+    Validates the file by sniffing magic bytes (rejects fake extensions).
+    Large JPEG/PNG images are auto-converted to WebP for size reduction.
+
+    Query params:
+        kind: "image" | "apk" | "auto" — restricts allowed types on this endpoint.
     """
     if not file.filename:
-        raise HTTPException(status_code=400, detail="No filename")
-    ext = Path(file.filename).suffix.lower()
-    unique_name = f"{uuid.uuid4().hex}{ext}"
+        raise HTTPException(status_code=400, detail="No filename provided.")
     content = await file.read()
     if not content:
-        raise HTTPException(status_code=400, detail="Empty file")
-    # Basic size validation (max 100MB for APKs, 10MB for images)
-    max_size = 100 * 1024 * 1024 if ext == ".apk" else 10 * 1024 * 1024
-    if len(content) > max_size:
-        raise HTTPException(status_code=413, detail=f"File exceeds {max_size // (1024*1024)}MB limit")
-    content_type = file.content_type or _guess_content_type(unique_name)
+        raise HTTPException(status_code=400, detail="Empty file — please choose a valid file.")
+
+    # Basic size guard (before mime sniff so we never load massive junk)
+    ext_hint = Path(file.filename).suffix.lower().lstrip(".")
+    max_bytes = 100 * 1024 * 1024 if ext_hint == "apk" else 15 * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File is too large — max {max_bytes // (1024 * 1024)} MB.",
+        )
+
+    # Sniff magic bytes: this is the source of truth for type
+    try:
+        expected = None if kind == "auto" else kind
+        mime, ext = imu.validate_upload(content, file.filename, expected=expected)
+    except ValueError as e:
+        raise HTTPException(status_code=415, detail=str(e))
+
+    # Optimize large raster images to WebP (safe, only if it saves space)
+    if mime in ("image/jpeg", "image/png"):
+        content, mime, ext = imu.optimize_image(content, mime)
+
+    unique_name = f"{uuid.uuid4().hex}.{ext}"
 
     # Try persistent object storage first
     obs_path = obs.build_upload_path(unique_name)
     try:
-        await asyncio.to_thread(obs.put_object, obs_path, content, content_type)
-        # Return proxy URL so frontend keeps a single stable path
+        await asyncio.to_thread(obs.put_object, obs_path, content, mime)
         return {
             "url": f"/api/uploads/{unique_name}",
             "filename": file.filename,
+            "content_type": mime,
+            "size": len(content),
             "storage": "emergent",
         }
     except Exception as e:
         logger.error("Object storage upload failed, falling back to local disk: %s", e)
 
-    # Last-resort fallback (temporary storage; user is warned)
+    # Last-resort fallback (may not survive redeploy — user is warned)
     dest = UPLOAD_DIR / unique_name
     with dest.open("wb") as buffer:
         buffer.write(content)
     return {
         "url": f"/api/uploads/{unique_name}",
         "filename": file.filename,
+        "content_type": mime,
+        "size": len(content),
         "storage": "local",
-        "warning": "Persistent storage unavailable; file may be lost on restart.",
+        "warning": "Persistent storage was unavailable — file saved to local disk and may be lost on redeploy. Please try again.",
     }
 
 
@@ -472,6 +498,24 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
     updates = payload.model_dump(exclude_unset=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
+    # Preserve existing images: never clear icon_url/apk_url/screenshots/og_image
+    # when the caller sends null or an empty value. If admin wants to remove an
+    # image, they must explicitly replace it — this prevents accidental wipes
+    # during partial edits.
+    for field in ("icon_url", "apk_url", "og_image"):
+        if field in updates and not updates[field]:
+            updates.pop(field, None)
+    if "screenshots" in updates:
+        val = updates["screenshots"]
+        if not val or (isinstance(val, list) and all(not s for s in val)):
+            updates.pop("screenshots", None)
+    # If every field the caller sent was an image-clear (which we ignore to
+    # preserve existing images), don't hit Firestore with an empty update.
+    if not updates:
+        existing = await fbs.get_app(app_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="App not found")
+        return existing
     doc = await fbs.update_app(app_id, updates)
     if doc is None:
         raise HTTPException(status_code=404, detail="App not found")
@@ -491,6 +535,103 @@ async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
 @api_router.get("/categories")
 async def list_categories():
     return await fbs.list_categories()
+
+
+# ---------------------------------------------------------------------------
+# Media audit / repair
+# ---------------------------------------------------------------------------
+def _extract_upload_filename(url: str) -> str | None:
+    """Extract the object storage filename from a stored URL, or None if external."""
+    if not url or not isinstance(url, str):
+        return None
+    if url.startswith("http"):
+        # External URLs (e.g. https://images.unsplash.com/…) — trust as-is.
+        return None
+    prefix = "/api/uploads/"
+    if url.startswith(prefix):
+        return url[len(prefix):].split("?")[0]
+    return None
+
+
+async def _check_upload_exists(filename: str) -> bool:
+    obs_path = obs.build_upload_path(filename)
+    try:
+        exists = await asyncio.to_thread(obs.object_exists, obs_path)
+        if exists:
+            return True
+    except Exception:
+        pass
+    # Fallback to local disk
+    return (UPLOAD_DIR / filename).exists()
+
+
+@api_router.get("/admin/media/audit")
+async def media_audit(admin: dict = Depends(get_current_admin)):
+    """Scan all stored image references (apps, blog, settings) and report which
+    ones point to files that no longer exist in persistent storage.
+    """
+    broken: list[dict] = []
+    checked = 0
+
+    apps = await fbs.list_apps()
+    for a in apps:
+        for field in ("icon_url", "apk_url", "og_image"):
+            url = a.get(field)
+            fname = _extract_upload_filename(url) if url else None
+            if fname:
+                checked += 1
+                if not await _check_upload_exists(fname):
+                    broken.append({"kind": "app", "id": a.get("id"), "name": a.get("name"), "field": field, "url": url})
+        for i, shot in enumerate(a.get("screenshots") or []):
+            fname = _extract_upload_filename(shot)
+            if fname:
+                checked += 1
+                if not await _check_upload_exists(fname):
+                    broken.append({"kind": "app", "id": a.get("id"), "name": a.get("name"), "field": f"screenshots[{i}]", "url": shot})
+
+    async for post in db.blog.find({}):
+        url = post.get("cover_url")
+        fname = _extract_upload_filename(url) if url else None
+        if fname:
+            checked += 1
+            if not await _check_upload_exists(fname):
+                broken.append({"kind": "blog", "id": str(post.get("_id")), "name": post.get("title", ""), "field": "cover_url", "url": url})
+
+    settings_doc = await db.settings.find_one({}) or {}
+    for path in [("hero", "banner_url"), ("seo", "og_image")]:
+        val = (settings_doc.get(path[0]) or {}).get(path[1])
+        fname = _extract_upload_filename(val) if val else None
+        if fname:
+            checked += 1
+            if not await _check_upload_exists(fname):
+                broken.append({"kind": "settings", "id": ".".join(path), "name": ".".join(path), "field": path[1], "url": val})
+
+    return {"checked": checked, "broken_count": len(broken), "broken": broken}
+
+
+@api_router.post("/admin/media/repair")
+async def media_repair(admin: dict = Depends(get_current_admin)):
+    """Clear broken image references so the frontend gracefully falls back to a placeholder
+    instead of showing broken image icons. Never touches valid references.
+    """
+    audit = await media_audit(admin=admin)  # type: ignore[arg-type]
+    cleared = 0
+    for issue in audit["broken"]:
+        if issue["kind"] == "app":
+            field = issue["field"]
+            if field.startswith("screenshots["):
+                a = await fbs.get_app(issue["id"])
+                if a:
+                    new_list = [s for s in (a.get("screenshots") or []) if _extract_upload_filename(s) != _extract_upload_filename(issue["url"])]
+                    await fbs.update_app(issue["id"], {"screenshots": new_list})
+                    cleared += 1
+            else:
+                await fbs.update_app(issue["id"], {field: ""})
+                cleared += 1
+        elif issue["kind"] == "blog":
+            await db.blog.update_one({"_id": ObjectId(issue["id"])}, {"$set": {"cover_url": ""}})
+            cleared += 1
+    return {"cleared": cleared, "broken_before": audit["broken_count"]}
 
 
 # ---------------------------------------------------------------------------
@@ -721,6 +862,16 @@ class BlogCreate(BaseModel):
     content: str = ""
     cover_url: str = ""
     published: bool = True
+    category: str = ""
+    tags: List[str] = Field(default_factory=list)
+    author: str = ""
+    scheduled_at: str = ""  # ISO datetime; if in the future, treat as draft
+    seo_title: str = ""
+    meta_description: str = ""
+    keywords: str = ""
+    focus_keyword: str = ""
+    og_image: str = ""
+    noindex: bool = False
 
 
 class BlogUpdate(BaseModel):
@@ -730,22 +881,51 @@ class BlogUpdate(BaseModel):
     content: Optional[str] = None
     cover_url: Optional[str] = None
     published: Optional[bool] = None
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    author: Optional[str] = None
+    scheduled_at: Optional[str] = None
+    seo_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    keywords: Optional[str] = None
+    focus_keyword: Optional[str] = None
+    og_image: Optional[str] = None
+    noindex: Optional[bool] = None
 
 
 def slugify(text: str) -> str:
     return "".join(c if c.isalnum() else "-" for c in text.lower()).strip("-")
 
 
+def _blog_is_live(doc: dict) -> bool:
+    """A post is live if published=True and (no schedule OR schedule already passed)."""
+    if not doc.get("published"):
+        return False
+    scheduled = doc.get("scheduled_at") or ""
+    if not scheduled:
+        return True
+    try:
+        dt = datetime.fromisoformat(scheduled.replace("Z", "+00:00"))
+        return datetime.now(timezone.utc) >= dt
+    except Exception:
+        return True  # unparseable → treat as live
+
+
 @api_router.get("/blog")
-async def list_blog():
-    docs = await db.blog.find({"published": True}).sort("created_at", -1).to_list(200)
-    return [serialize_doc(d) for d in docs]
+async def list_blog(category: Optional[str] = None, tag: Optional[str] = None):
+    query: dict = {"published": True}
+    if category:
+        query["category"] = category
+    if tag:
+        query["tags"] = tag
+    docs = await db.blog.find(query).sort("created_at", -1).to_list(500)
+    return [serialize_doc(d) for d in docs if _blog_is_live(d)]
 
 
 @api_router.get("/blog/{slug}")
 async def get_blog(slug: str):
     doc = await db.blog.find_one({"slug": slug})
-    if not doc:
+    if not doc or not _blog_is_live(doc):
         raise HTTPException(status_code=404, detail="Post not found")
     return serialize_doc(doc)
 
@@ -782,6 +962,64 @@ async def delete_blog(bid: str, admin: dict = Depends(get_current_admin)):
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Post not found")
     return {"success": True}
+
+
+@api_router.get("/blog-meta")
+async def blog_meta():
+    """Public list of all categories & tags used across live posts."""
+    docs = await db.blog.find({"published": True}).to_list(1000)
+    cats: set[str] = set()
+    tags: set[str] = set()
+    for d in docs:
+        if not _blog_is_live(d):
+            continue
+        if d.get("category"):
+            cats.add(d["category"])
+        for t in d.get("tags") or []:
+            if t:
+                tags.add(t)
+    return {"categories": sorted(cats), "tags": sorted(tags)}
+
+
+# ---------------------------------------------------------------------------
+# Related apps (public)
+# ---------------------------------------------------------------------------
+@api_router.get("/apps/{slug_or_id}/related")
+async def related_apps(slug_or_id: str, limit: int = 6):
+    """Return apps most similar to the given one.
+
+    Scoring:
+      +5 same category
+      +2 each shared feature keyword
+      +1 close download count (log-scale bucket)
+      -inf if hidden or same id
+    """
+    src = await fbs.get_app_by_slug(slug_or_id) or await fbs.get_app(slug_or_id)
+    if not src:
+        raise HTTPException(status_code=404, detail="App not found")
+    src_id = src.get("id")
+    src_cat = src.get("category", "")
+    src_features = {str(f).lower() for f in (src.get("features") or [])}
+    src_dl = max(int(src.get("downloads", 0)), 1)
+
+    import math
+    apps = await fbs.list_apps()
+    scored: list[tuple[float, dict]] = []
+    for a in apps:
+        if a.get("id") == src_id or a.get("hidden"):
+            continue
+        score = 0.0
+        if src_cat and a.get("category") == src_cat:
+            score += 5
+        feats = {str(f).lower() for f in (a.get("features") or [])}
+        score += 2 * len(feats & src_features)
+        # Popularity closeness bonus
+        dl = max(int(a.get("downloads", 0)), 1)
+        score += 1 / (1 + abs(math.log10(dl) - math.log10(src_dl)))
+        scored.append((score, a))
+
+    scored.sort(key=lambda t: t[0], reverse=True)
+    return [a for _, a in scored[: max(1, min(limit, 20))]]
 
 
 # ---------------------------------------------------------------------------
@@ -931,6 +1169,11 @@ def default_settings() -> dict:
             "og_image": "/hero-banner.png",
         },
         "ads": {"enabled": False, "adsense_client": "", "adsense_slot": "", "banner_html": ""},
+        "analytics": {
+            "ga4_id": "",             # e.g. G-XXXXXXXXXX
+            "gsc_verification": "",   # google-site-verification content value
+            "bing_verification": "",  # msvalidate.01 value
+        },
         "winners_config": {"enabled": True, "scroll_speed": 40},
         "legal": {},  # populated from LEGAL_DEFAULTS on seed
     }

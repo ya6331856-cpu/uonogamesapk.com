@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration-8 e2e regression: 24/24 pytest cases PASS (image upload validation, edit-preserve, media audit, blog upgrade, related apps, sitemap/regression). Frontend E2E confirms all requested data-testids exist and work: /admin/blog exposes every documented input (blog-title, blog-slug, blog-author, blog-category, blog-tags, blog-cover-upload, blog-excerpt, blog-content, blog-seo-title, blog-meta-description, blog-keywords, blog-focus-keyword, blog-og-image, blog-noindex, blog-scheduled-at, blog-published, save-blog-btn) plus filter chips (blog-filter-all/published/scheduled/draft). /admin/seo-dashboard shows media-audit-card + media-audit-refresh (after Card testid fix). /admin/seo exposes seo-ga4/seo-gsc/seo-bing. Analytics injection verified live: setting ga4_id='G-TESTXX' emits <script src='https://www.googletagmanager.com/gtag/js?id=G-TESTXX'>, gsc='abc123' emits <meta name='google-site-verification' content='abc123'>, and clearing both removes the tags. Related apps API returns 6 different apps with ≥3 same-category matches; UI shows data-testid=detail-related with 4 clickable data-testid=related-<id> cards on /rumble-rummy. Homepage: 55 apps total (52 in main list + 3 featured carousel = spec), all SEO tags exactly single (no duplicates), sitemap has 56 <loc> entries.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/admin/media/audit", "issue": "Takes ~6-8s on 55 apps because it runs sequential object-storage HEAD-equivalents per image. Frontend SEO Dashboard blocks the whole initial render on this call (Promise.all with overview + apps + audit). Consider (a) parallelising checks with asyncio.gather, or (b) rendering the dashboard body first and lazy-loading the media-audit card independently — SeoDashboardPage.load() currently shows a full-page spinner until audit finishes."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Homepage (/)", "issues": ["No JSON-LD is emitted on the homepage (carried over from iteration_7). SEOHead only pushes JSON-LD when app/breadcrumbs/faqItems props are provided; Store.jsx passes none. Adding a WebSite + Organization schema would enrich Google results."]},
+      {"screen": "/admin/seo-dashboard", "issues": ["Initial load blocks for ~6-8s on the media-audit endpoint before rendering ANY content — user sees only a spinner. Split loading state (overview+apps first, audit second)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration8.py",
+    "/app/backend/tests/test_seo_and_uploads.py",
+    "/app/test_reports/pytest/iteration_8_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/MINOR: Parallelise /api/admin/media/audit existence checks with asyncio.gather (currently sequential await inside two loops → ~55 round-trips ≈ 6-8s). Simple fix: build a list of (kind, id, field, filename) tuples first, then `await asyncio.gather(*[_check_upload_exists(f) for _,_,_,f in items])`.",
+    "OPTIONAL: In SeoDashboardPage.jsx, split the initial Promise.all so overview+apps render immediately and the media-audit card fills in asynchronously — currently the entire page blocks until audit resolves.",
+    "OPTIONAL: Consider emitting a default WebSite/Organization JSON-LD from SEOHead when no app/breadcrumbs/faqItems are provided (Store.jsx does not supply any → homepage has 0 JSON-LD)."
+  ],
+  "critical_code_review_comments": [
+    "server.py PUT /admin/apps/{id} was throwing 500 (Firestore: 'Cannot update with an empty document') whenever the caller sent ONLY image-clear fields (icon_url='', apk_url='', og_image='', screenshots=[]) — the preserve-images logic stripped all four keys leaving updates={}. This directly violates the requirement 'edit preserves images and must not crash the app'. Fixed in this iteration by returning the existing doc when the sanitised update dict is empty.",
+    "adminUI.jsx <Card> component silently DROPPED any HTML attribute other than className (no {...rest} spread). This caused SeoDashboardPage's data-testid='media-audit-card' to never reach the DOM — automated tests couldn't locate the card. Fixed by adding {...rest} spread on <Card>. Same fix indirectly enables any future data-testid or aria-* on Card without needing another patch.",
+    "Media audit is O(N) sequential storage HEAD calls — will scale poorly beyond 500 apps. Wrap with asyncio.gather.",
+    "server.py has grown to 1667 lines mixing many domains (auth, apps, SEO, blog, reviews, winners, media, settings). Recommend splitting into routers/ for maintainability (previous iteration's comment still stands).",
+    "SEOHead.cleanupDuplicates still runs 5 defensive setTimeouts on every render — a scoped MutationObserver would be cheaper (carried over from iter7).",
+    "/api/admin/media (Media Library) walks local UPLOAD_DIR only; Emergent Object Storage uploads won't appear in the library UI (carried over)."
+  ],
+  "updated_files": [
+    "/app/backend/server.py (added empty-updates guard in PUT /admin/apps/{id})",
+    "/app/frontend/src/components/admin/adminUI.jsx (Card now forwards ...rest props so data-testid renders)",
+    "/app/backend/tests/test_iteration8.py (new — 24 test cases)"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100% for tested flows"},
+  "test_credentials": "arfuu9@gmail.com / arfuu7778 (JWT — worked). Token stored in localStorage under key 'uono_token'.",
+  "seed_data_creation": "TestBlogUpgrade creates 3 TEST_iter8-prefixed blog posts (news scheduled-future, past-scheduled, draft) then deletes them in test_zzz_cleanup. TestEditPreservesImages temporarily changes and restores icon_url on the first app. Image-upload tests write 1 tiny PNG, 1 large-random PNG (converted to WebP), 1 fake .apk — all persisted to Emergent Object Storage (harmless orphans).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Base URL: https://smooth-apk-market.preview.emergentagent.com. All 24 iteration_8 pytest cases pass. Two real bugs were found & fixed IN THIS TESTING RUN: (1) PUT /admin/apps/{id} 500-crash on empty-image update — fixed with empty-updates guard in server.py line ~509. (2) <Card> in adminUI.jsx dropped data-testid — fixed with {...rest}. Both fixes are minor & safe. Analytics injection (GA4 + GSC + Bing) verified end-to-end. Related apps working, media audit clean (0 broken / 55 checked). Homepage 55 = 52 in list + 3 in featured carousel (expected). Sitemap: 56 <loc>, 55 <image:image>. Legacy image /api/uploads/00cc5a9062f84ce5aacbf51df61cac9e.jpg still 200. Large PNG → auto-WebP conversion confirmed (server returns content_type=image/webp, size < original). Fake .png (text bytes with .png extension) correctly rejected with 415. APK rejected with 415 when kind=image. Scheduled-future blog post hidden from public /api/blog. Past-scheduled shown. Unpublished hidden. Blog-meta returns {categories, tags}. Firebase Auth still blocked at user's project level; JWT branch works. Emergent Object Storage persistent — expected & correct.",
+  "rca of the issue": "BUG-1 (edit-500): server.py line 508-511 strips icon_url/apk_url/og_image/screenshots from `updates` when they arrive empty (to preserve existing images). If the admin UI sent ONLY these four fields (which the AppsManager cover-image edit dialog does when the user hasn't touched anything), `updates` becomes {} and fbs.update_app() forwards it to Firestore's SetDocument which raises 'Cannot update with an empty document.' → uncaught → 500. Fix: added `if not updates: return await fbs.get_app(app_id) or 404` before the Firestore call. Verified with new pytest case test_empty_icon_url_does_not_wipe. BUG-2 (missing testid): <Card> component in adminUI.jsx destructured only {children,className} and dropped every other prop. Fixed with {...rest} spread on the underlying <div>. Verified: [data-testid='media-audit-card'] now queryable."
+}

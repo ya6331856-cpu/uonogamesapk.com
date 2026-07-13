@@ -19,8 +19,8 @@ export const PageHeader = ({ title, desc, action }) => (
   </div>
 );
 
-export const Card = ({ children, className = "" }) => (
-  <div className={`rounded-[18px] border border-[#E5E7EB] bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.03)] ${className}`}>
+export const Card = ({ children, className = "", ...rest }) => (
+  <div {...rest} className={`rounded-[18px] border border-[#E5E7EB] bg-white p-5 shadow-[0_6px_20px_rgba(0,0,0,0.03)] ${className}`}>
     {children}
   </div>
 );

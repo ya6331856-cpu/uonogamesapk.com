@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Search, Sparkles, RefreshCw, CheckCircle2, AlertCircle, ExternalLink,
-  Loader2, Wand2, FileText, Globe2, Bot,
+  Loader2, Wand2, FileText, Globe2, Bot, Image as ImageIcon, Wrench,
 } from "lucide-react";
 import api, { API } from "@/lib/api";
 import { PageHeader, Card } from "@/components/admin/adminUI";
@@ -27,20 +27,25 @@ const Stat = ({ label, value, tone = "default", testId }) => {
 export default function SeoDashboardPage() {
   const [overview, setOverview] = useState(null);
   const [apps, setApps] = useState([]);
+  const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(null); // app id being generated
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [auditBusy, setAuditBusy] = useState(false);
+  const [repairBusy, setRepairBusy] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [o, a] = await Promise.all([
+      const [o, a, m] = await Promise.all([
         api.get("/admin/seo/overview"),
         api.get("/admin/seo/apps"),
+        api.get("/admin/media/audit"),
       ]);
       setOverview(o.data);
       setApps(a.data);
+      setAudit(m.data);
     } catch (e) {
       toast.error("Failed to load SEO data");
     } finally {
@@ -73,6 +78,34 @@ export default function SeoDashboardPage() {
       toast.error("Bulk fix failed");
     } finally {
       setBulkBusy(false);
+    }
+  };
+
+  const runAudit = async () => {
+    setAuditBusy(true);
+    try {
+      const res = await api.get("/admin/media/audit");
+      setAudit(res.data);
+      toast.success(res.data.broken_count === 0
+        ? "Media audit clean — all images OK"
+        : `${res.data.broken_count} broken image reference(s) found`);
+    } catch {
+      toast.error("Audit failed");
+    } finally {
+      setAuditBusy(false);
+    }
+  };
+
+  const runRepair = async () => {
+    setRepairBusy(true);
+    try {
+      const res = await api.post("/admin/media/repair");
+      toast.success(`Cleared ${res.data.cleared} broken reference(s)`);
+      await load();
+    } catch {
+      toast.error("Repair failed");
+    } finally {
+      setRepairBusy(false);
     }
   };
 
@@ -169,6 +202,47 @@ export default function SeoDashboardPage() {
           </p>
         </Card>
       )}
+
+      {/* Media health */}
+      <Card className={`mb-4 space-y-3 ${audit && audit.broken_count > 0 ? "border-[#FDE68A] bg-[#FFFBEB]" : ""}`} data-testid="media-audit-card">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="flex items-center gap-2 font-display text-sm font-bold text-[#111]">
+            <ImageIcon className="h-4 w-4 text-[#FFC107]" /> Media Health
+          </h3>
+          <span className="text-xs text-[#777]">
+            Checked <b>{audit?.checked ?? 0}</b> · Broken <b className={audit?.broken_count ? "text-[#991B1B]" : "text-[#065F46]"}>{audit?.broken_count ?? 0}</b>
+          </span>
+          <div className="ml-auto flex gap-2">
+            <RippleButton onClick={runAudit} disabled={auditBusy} data-testid="media-audit-refresh"
+              className="flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-2 text-xs font-semibold text-[#555] disabled:opacity-60">
+              {auditBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Re-audit
+            </RippleButton>
+            {audit && audit.broken_count > 0 && (
+              <RippleButton onClick={runRepair} disabled={repairBusy} data-testid="media-audit-repair"
+                className="flex items-center gap-1.5 rounded-full bg-[#111] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60">
+                {repairBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5" />}
+                Repair Broken Refs
+              </RippleButton>
+            )}
+          </div>
+        </div>
+        {audit && audit.broken_count > 0 && (
+          <div className="max-h-48 overflow-y-auto rounded-lg bg-white/80 p-2">
+            <ul className="space-y-1 text-[11px] text-[#7F1D1D]">
+              {audit.broken.slice(0, 20).map((b, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <AlertCircle className="h-3 w-3" /> {b.kind}: <b>{b.name}</b> · {b.field} · <code className="opacity-70">{b.url}</code>
+                </li>
+              ))}
+              {audit.broken.length > 20 && <li>…and {audit.broken.length - 20} more</li>}
+            </ul>
+          </div>
+        )}
+        <p className="text-[11px] leading-relaxed text-[#666]">
+          Scans every app, blog post and homepage image reference and reports any file that is missing from persistent storage. Repair clears broken references so the frontend shows a friendly placeholder instead of a broken image icon.
+        </p>
+      </Card>
 
       {/* Per-app SEO table */}
       <Card className="space-y-3">

@@ -7,6 +7,7 @@ import { SettingsProvider } from "@/context/SettingsContext";
 import Store from "@/pages/Store";
 import AppDetail from "@/pages/AppDetail";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
+import Analytics from "@/components/Analytics";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import Dashboard from "@/pages/admin/Dashboard";
@@ -60,6 +61,7 @@ function App() {
               </Routes>
             </BrowserRouter>
             <PWAInstallBanner />
+            <Analytics />
             <Toaster position="bottom-center" offset={80} richColors />
           </AuthProvider>
         </SettingsProvider>

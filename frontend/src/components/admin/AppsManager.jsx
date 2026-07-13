@@ -38,19 +38,37 @@ function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Client-side size guard
+    const maxMB = isImage ? 15 : 100;
+    if (file.size > maxMB * 1024 * 1024) {
+      toast.error(`File too large — max ${maxMB} MB`);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const { data } = await api.post("/admin/upload", fd);
+      const kind = isImage ? "image" : "auto";
+      const { data } = await api.post(`/admin/upload?kind=${kind}`, fd);
       onUploaded(data.url);
-      toast.success(`${label} uploaded`);
+      const savings = data.storage === "emergent" ? "" : " (fallback storage)";
+      toast.success(`${label} uploaded${savings}`);
     } catch (err) {
-      const msg = err?.response?.status === 401
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail || `${label} upload failed. Please try again.`;
+      const msg = status === 401
         ? "Session expired — please log in again"
-        : `${label} upload failed. Please try again.`;
+        : status === 413
+          ? "File is too large."
+          : status === 415
+            ? detail  // "Unsupported or corrupt file type…"
+            : detail;
       toast.error(msg);
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+      e.target.value = "";  // allow same file re-upload after error
+    }
   };
   return (
     <div className="space-y-1.5">
@@ -105,7 +123,10 @@ export default function AppsManager({ featuredOnly = false }) {
       else await api.post("/admin/apps", payload);
       toast.success(editingId ? "App updated" : "App created");
       setOpen(false); fetchApps();
-    } catch { toast.error("Failed to save"); } finally { setSaving(false); }
+    } catch (err) {
+      const detail = err?.response?.data?.detail || "Failed to save app";
+      toast.error(detail);
+    } finally { setSaving(false); }
   };
 
   const confirmDelete = async () => {

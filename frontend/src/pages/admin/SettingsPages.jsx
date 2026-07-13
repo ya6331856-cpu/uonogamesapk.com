@@ -118,6 +118,38 @@ export function SeoPage() {
         <Field label="Keywords" testId="seo-keywords" value={s.seo?.keywords} onChange={(v) => set("seo.keywords", v)} />
         <Field label="OG Image URL" value={s.seo?.og_image} onChange={(v) => set("seo.og_image", v)} />
       </Card>
+      <div className="mt-4">
+        <Card className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-sm font-bold text-[#111]">Analytics &amp; Verification</h3>
+            <span className="text-[10px] font-semibold uppercase text-[#999]">Live-injected</span>
+          </div>
+          <Field
+            label="Google Analytics 4 Measurement ID"
+            testId="seo-ga4"
+            value={s.analytics?.ga4_id}
+            onChange={(v) => set("analytics.ga4_id", v)}
+            placeholder="G-XXXXXXXXXX"
+          />
+          <Field
+            label="Google Search Console verification (content only)"
+            testId="seo-gsc"
+            value={s.analytics?.gsc_verification}
+            onChange={(v) => set("analytics.gsc_verification", v)}
+            placeholder="abc123... (from the 'HTML tag' method in GSC)"
+          />
+          <Field
+            label="Bing Webmaster verification (msvalidate.01)"
+            testId="seo-bing"
+            value={s.analytics?.bing_verification}
+            onChange={(v) => set("analytics.bing_verification", v)}
+            placeholder="Optional"
+          />
+          <p className="rounded-xl bg-[#F0F9FF] px-3 py-2 text-[11px] leading-relaxed text-[#0369A1]">
+            The GA4 tag and verification meta tags are injected at runtime for every page. Paste only the raw ID / content value — no <code>&lt;meta&gt;</code> or <code>&lt;script&gt;</code> tags.
+          </p>
+        </Card>
+      </div>
     </div>
   );
 }

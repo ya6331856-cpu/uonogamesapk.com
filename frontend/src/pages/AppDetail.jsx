@@ -40,6 +40,7 @@ export default function AppDetail() {
   const key = slug || id;
   const navigate = useNavigate();
   const [app, setApp] = useState(null);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
@@ -47,9 +48,15 @@ export default function AppDetail() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
+    setRelated([]);
     api
       .get(`/apps/${key}`)
-      .then((res) => setApp(res.data))
+      .then((res) => {
+        setApp(res.data);
+        api.get(`/apps/${key}/related`, { params: { limit: 6 } })
+          .then((r) => setRelated(r.data || []))
+          .catch(() => {});
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [key]);
@@ -322,6 +329,38 @@ export default function AppDetail() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </section>
+        )}
+
+        {/* Related apps */}
+        {related.length > 0 && (
+          <section className="space-y-2.5" data-testid="detail-related">
+            <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
+              <Sparkles className="h-4 w-4 text-[#FFC107]" /> You might also like
+            </h2>
+            <div className="grid grid-cols-2 gap-2.5">
+              {related.slice(0, 4).map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => navigate(`/${r.slug || r.id}`)}
+                  data-testid={`related-${r.id}`}
+                  className="flex items-center gap-2.5 rounded-[16px] border border-[#E5E7EB] bg-white p-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
+                >
+                  <AppIcon
+                    src={resolveUrl(r.icon_url)}
+                    alt={`${r.name} APK icon`}
+                    className="h-11 w-11 shrink-0 rounded-[12px] ring-1 ring-black/5"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-[13px] font-semibold text-[#111]">{r.name}</p>
+                    <p className="truncate text-[10px] text-[#777]">
+                      <Star className="mr-0.5 inline h-2.5 w-2.5 fill-[#FFC107] text-[#FFC107]" />
+                      {(r.rating || 4.5).toFixed(1)} · {formatCount(r.downloads)}+ dl
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
           </section>
         )}
