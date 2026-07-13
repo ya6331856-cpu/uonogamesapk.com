@@ -8,6 +8,7 @@ load_dotenv(ROOT_DIR / ".env")
 import logging
 import uuid
 import shutil
+import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Annotated
 
@@ -15,10 +16,13 @@ import bcrypt
 import jwt
 from bson import ObjectId
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, UploadFile, File
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response, JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
+
+import firebase_service as fbs
+import object_storage as obs
 
 # ---------------------------------------------------------------------------
 # Database
@@ -86,6 +90,14 @@ class AppModel(BaseModel):
     badge: str = "Auto"
     signup_bonus: str = ""
     min_withdraw: str = ""
+    slug: str = ""
+    seo_title: str = ""
+    meta_description: str = ""
+    keywords: str = ""
+    focus_keyword: str = ""
+    og_image: str = ""
+    noindex: bool = False
+    faq_items: List[dict] = Field(default_factory=list)
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -115,6 +127,14 @@ class AppCreate(BaseModel):
     badge: str = "Auto"
     signup_bonus: str = ""
     min_withdraw: str = ""
+    slug: str = ""
+    seo_title: str = ""
+    meta_description: str = ""
+    keywords: str = ""
+    focus_keyword: str = ""
+    og_image: str = ""
+    noindex: bool = False
+    faq_items: List[dict] = Field(default_factory=list)
 
 
 class AppUpdate(BaseModel):
@@ -143,6 +163,14 @@ class AppUpdate(BaseModel):
     badge: Optional[str] = None
     signup_bonus: Optional[str] = None
     min_withdraw: Optional[str] = None
+    slug: Optional[str] = None
+    seo_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    keywords: Optional[str] = None
+    focus_keyword: Optional[str] = None
+    og_image: Optional[str] = None
+    noindex: Optional[bool] = None
+    faq_items: Optional[List[dict]] = None
 
 
 class LoginInput(BaseModel):
@@ -208,6 +236,22 @@ async def get_current_admin(request: Request) -> dict:
             token = auth_header[7:]
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # 1) Try Firebase ID token (primary auth)
+    try:
+        decoded = await asyncio.to_thread(fbs.verify_id_token, token)
+        uid = decoded.get("uid") or decoded.get("user_id")
+        email = decoded.get("email", "")
+        allowed = await asyncio.to_thread(fbs.is_admin, uid, email)
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Not an admin account")
+        return {"id": uid, "email": email, "name": decoded.get("name", "Admin"), "role": "admin"}
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    # 2) Fallback: legacy JWT (kept for transition)
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "access":
@@ -250,15 +294,14 @@ async def me(admin: dict = Depends(get_current_admin)):
 # ---------------------------------------------------------------------------
 @api_router.get("/apps")
 async def list_apps(search: Optional[str] = None, category: Optional[str] = None, include_hidden: bool = False):
-    query: dict = {}
+    apps = await fbs.list_apps()
     if not include_hidden:
-        query["hidden"] = {"$ne": True}
+        apps = [a for a in apps if not a.get("hidden")]
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+        s = search.lower()
+        apps = [a for a in apps if s in (a.get("name", "").lower())]
     if category and category != "All":
-        query["category"] = category
-    docs = await db.apps.find(query).to_list(1000)
-    apps = [serialize_app(d) for d in docs]
+        apps = [a for a in apps if a.get("category") == category]
 
     featured = sorted(
         [a for a in apps if a.get("featured")],
@@ -278,26 +321,50 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
     return {"featured": featured, "apps": regular, "trending": trending, "total": len(apps)}
 
 
-@api_router.get("/apps/{app_id}")
-async def get_app(app_id: str):
-    doc = await db.apps.find_one({"_id": to_object_id(app_id)})
+@api_router.get("/apps/slug/{slug}")
+async def get_app_by_slug(slug: str):
+    doc = await fbs.get_app_by_slug(slug)
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
-    return serialize_app(doc)
+    return doc
+
+
+@api_router.get("/apps/{app_id}")
+async def get_app(app_id: str):
+    doc = await fbs.get_app(app_id)
+    if not doc:
+        doc = await fbs.get_app_by_slug(app_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="App not found")
+    return doc
 
 
 @api_router.get("/apps/{app_id}/download")
 async def download_app(app_id: str):
-    doc = await db.apps.find_one({"_id": to_object_id(app_id)})
+    doc = await fbs.get_app(app_id)
+    if not doc:
+        doc = await fbs.get_app_by_slug(app_id)
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
-    await db.apps.update_one({"_id": to_object_id(app_id)}, {"$inc": {"downloads": 1}})
+    await fbs.increment_downloads(doc["id"])
     apk_url = doc.get("apk_url", "")
     if not apk_url:
         raise HTTPException(status_code=404, detail="No APK file available")
     if apk_url.startswith("http"):
         return RedirectResponse(url=apk_url)
     filename = apk_url.split("/")[-1]
+    # Try persistent object storage first
+    obs_path = obs.build_upload_path(filename)
+    try:
+        data, ct = await asyncio.to_thread(obs.get_object, obs_path)
+        download_name = f"{doc.get('name', 'app').replace(' ', '_')}.apk"
+        return Response(
+            content=data,
+            media_type="application/vnd.android.package-archive",
+            headers={"Content-Disposition": f'attachment; filename="{download_name}"'},
+        )
+    except Exception:
+        pass
     file_path = UPLOAD_DIR / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="APK file not found on server")
@@ -307,10 +374,40 @@ async def download_app(app_id: str):
 
 @api_router.get("/uploads/{filename}")
 async def serve_upload(filename: str):
+    """Serve uploaded file. Tries Emergent Object Storage first (persistent),
+    then falls back to local disk for backward compatibility with older uploads.
+    """
+    # Try persistent object storage first
+    obs_path = obs.build_upload_path(filename)
+    try:
+        data, content_type = await asyncio.to_thread(obs.get_object, obs_path)
+        return Response(content=data, media_type=content_type,
+                        headers={"Cache-Control": "public, max-age=31536000, immutable"})
+    except Exception:
+        pass
+    # Fallback to local disk (legacy files)
     file_path = UPLOAD_DIR / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path=str(file_path))
+    if file_path.exists():
+        # Auto-migrate: upload to persistent storage so it survives future restarts
+        try:
+            content = file_path.read_bytes()
+            ct = _guess_content_type(filename)
+            await asyncio.to_thread(obs.put_object, obs_path, content, ct)
+            logger.info("Auto-migrated legacy file to object storage: %s", filename)
+        except Exception as e:
+            logger.warning("Auto-migration failed for %s: %s", filename, e)
+        return FileResponse(path=str(file_path))
+    raise HTTPException(status_code=404, detail="File not found")
+
+
+def _guess_content_type(filename: str) -> str:
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return {
+        "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+        "gif": "image/gif", "webp": "image/webp", "svg": "image/svg+xml",
+        "apk": "application/vnd.android.package-archive",
+        "pdf": "application/pdf",
+    }.get(ext, "application/octet-stream")
 
 
 # ---------------------------------------------------------------------------
@@ -318,21 +415,56 @@ async def serve_upload(filename: str):
 # ---------------------------------------------------------------------------
 @api_router.post("/admin/upload")
 async def upload_file(file: UploadFile = File(...), admin: dict = Depends(get_current_admin)):
-    ext = Path(file.filename or "").suffix
+    """Upload a file to persistent Emergent Object Storage.
+
+    Falls back to local disk only if object storage is unreachable, so uploads
+    survive container restarts and redeployments.
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename")
+    ext = Path(file.filename).suffix.lower()
     unique_name = f"{uuid.uuid4().hex}{ext}"
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file")
+    # Basic size validation (max 100MB for APKs, 10MB for images)
+    max_size = 100 * 1024 * 1024 if ext == ".apk" else 10 * 1024 * 1024
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail=f"File exceeds {max_size // (1024*1024)}MB limit")
+    content_type = file.content_type or _guess_content_type(unique_name)
+
+    # Try persistent object storage first
+    obs_path = obs.build_upload_path(unique_name)
+    try:
+        await asyncio.to_thread(obs.put_object, obs_path, content, content_type)
+        # Return proxy URL so frontend keeps a single stable path
+        return {
+            "url": f"/api/uploads/{unique_name}",
+            "filename": file.filename,
+            "storage": "emergent",
+        }
+    except Exception as e:
+        logger.error("Object storage upload failed, falling back to local disk: %s", e)
+
+    # Last-resort fallback (temporary storage; user is warned)
     dest = UPLOAD_DIR / unique_name
     with dest.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"url": f"/api/uploads/{unique_name}", "filename": file.filename}
+        buffer.write(content)
+    return {
+        "url": f"/api/uploads/{unique_name}",
+        "filename": file.filename,
+        "storage": "local",
+        "warning": "Persistent storage unavailable; file may be lost on restart.",
+    }
 
 
 @api_router.post("/admin/apps")
 async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin)):
     doc = payload.model_dump()
-    doc["created_at"] = now_iso()
-    result = await db.apps.insert_one(doc)
-    new_doc = await db.apps.find_one({"_id": result.inserted_id})
-    return serialize_app(new_doc)
+    new_doc = await fbs.create_app(doc)
+    if new_doc.get("category"):
+        await fbs.upsert_category(new_doc["category"])
+    return new_doc
 
 
 @api_router.put("/admin/apps/{app_id}")
@@ -340,19 +472,243 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
     updates = payload.model_dump(exclude_unset=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
-    result = await db.apps.update_one({"_id": to_object_id(app_id)}, {"$set": updates})
-    if result.matched_count == 0:
+    doc = await fbs.update_app(app_id, updates)
+    if doc is None:
         raise HTTPException(status_code=404, detail="App not found")
-    doc = await db.apps.find_one({"_id": to_object_id(app_id)})
-    return serialize_app(doc)
+    if doc.get("category"):
+        await fbs.upsert_category(doc["category"])
+    return doc
 
 
 @api_router.delete("/admin/apps/{app_id}")
 async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
-    result = await db.apps.delete_one({"_id": to_object_id(app_id)})
-    if result.deleted_count == 0:
+    ok = await fbs.delete_app(app_id)
+    if not ok:
         raise HTTPException(status_code=404, detail="App not found")
     return {"success": True}
+
+
+@api_router.get("/categories")
+async def list_categories():
+    return await fbs.list_categories()
+
+
+# ---------------------------------------------------------------------------
+# SEO: dynamic sitemap, robots, per-app meta (auto-updates from Firestore)
+# ---------------------------------------------------------------------------
+SITE_URL = os.environ.get("SITE_URL", "https://uonogamesapk.com").rstrip("/")
+
+
+def _xml_escape(text: str) -> str:
+    return (
+        (text or "")
+        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        .replace('"', "&quot;").replace("'", "&apos;")
+    )
+
+
+@api_router.get("/sitemap.xml")
+async def sitemap():
+    apps = await fbs.list_apps()
+    apps = [a for a in apps if not a.get("hidden") and not a.get("noindex") and a.get("slug")]
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    urls = [
+        f'  <url><loc>{SITE_URL}/</loc><lastmod>{today}</lastmod>'
+        f'<changefreq>daily</changefreq><priority>1.0</priority></url>'
+    ]
+    for a in apps:
+        loc = f"{SITE_URL}/{_xml_escape(a['slug'])}"
+        lastmod = (a.get("updated_at") or a.get("created_at") or today)[:10]
+        img_url = a.get("icon_url", "") or ""
+        if img_url and not img_url.startswith("http"):
+            img_url = f"{SITE_URL}{img_url}"
+        image_block = ""
+        if img_url:
+            image_block = (
+                f"<image:image><image:loc>{_xml_escape(img_url)}</image:loc>"
+                f"<image:title>{_xml_escape(a.get('name', ''))}</image:title></image:image>"
+            )
+        urls.append(
+            f"  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod>"
+            f"<changefreq>weekly</changefreq><priority>0.8</priority>{image_block}</url>"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'
+        + "\n".join(urls)
+        + "\n</urlset>"
+    )
+    return Response(content=xml, media_type="application/xml")
+
+
+@api_router.get("/robots.txt")
+async def robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin\n\n"
+        f"Sitemap: {SITE_URL}/api/sitemap.xml\n"
+    )
+    return Response(content=content, media_type="text/plain")
+
+
+@api_router.get("/seo/{slug}")
+async def seo_meta(slug: str):
+    a = await fbs.get_app_by_slug(slug)
+    if not a:
+        a = await fbs.get_app(slug)
+    if not a:
+        raise HTTPException(status_code=404, detail="App not found")
+    title = a.get("seo_title") or f"{a.get('name', '')} - Download APK | Uonogamesapk.com"
+    desc = a.get("meta_description") or (a.get("description", "")[:160])
+    return JSONResponse({
+        "slug": a.get("slug", slug),
+        "title": title,
+        "description": desc,
+        "keywords": a.get("keywords", ""),
+        "image": a.get("icon_url", ""),
+        "url": f"{SITE_URL}/{a.get('slug', slug)}",
+        "name": a.get("name", ""),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Admin SEO Dashboard endpoints
+# ---------------------------------------------------------------------------
+@api_router.get("/admin/seo/overview")
+async def seo_overview(admin: dict = Depends(get_current_admin)):
+    """Aggregate SEO health across all apps for the SEO Dashboard."""
+    apps = await fbs.list_apps()
+    total = len(apps)
+    indexed = 0
+    missing_title = 0
+    missing_desc = 0
+    missing_keywords = 0
+    missing_icon = 0
+    duplicate_slugs = {}
+    fields_score = 0
+    max_fields = 6  # title, desc, keywords, slug, icon, focus_keyword
+    for a in apps:
+        if a.get("hidden") or a.get("noindex"):
+            pass
+        else:
+            indexed += 1
+        if not a.get("seo_title"): missing_title += 1
+        if not a.get("meta_description"): missing_desc += 1
+        if not a.get("keywords"): missing_keywords += 1
+        if not a.get("icon_url"): missing_icon += 1
+        slug = a.get("slug", "")
+        if slug:
+            duplicate_slugs[slug] = duplicate_slugs.get(slug, 0) + 1
+        # per-app score
+        score = sum(1 for k in ["seo_title", "meta_description", "keywords", "slug", "icon_url", "focus_keyword"] if a.get(k))
+        fields_score += score
+    duplicates = [s for s, c in duplicate_slugs.items() if c > 1]
+    overall_score = int((fields_score / (max_fields * total)) * 100) if total else 0
+    return {
+        "total_apps": total,
+        "indexed": indexed,
+        "noindex": total - indexed,
+        "missing_title": missing_title,
+        "missing_description": missing_desc,
+        "missing_keywords": missing_keywords,
+        "missing_icon": missing_icon,
+        "duplicate_slugs": duplicates,
+        "seo_score": overall_score,
+        "sitemap_url": f"{SITE_URL}/api/sitemap.xml",
+        "robots_url": f"{SITE_URL}/api/robots.txt",
+    }
+
+
+@api_router.get("/admin/seo/apps")
+async def seo_apps_list(admin: dict = Depends(get_current_admin)):
+    """Per-app SEO status list for the SEO Dashboard table."""
+    apps = await fbs.list_apps()
+    result = []
+    for a in apps:
+        score = sum(1 for k in ["seo_title", "meta_description", "keywords", "slug", "icon_url", "focus_keyword"] if a.get(k))
+        result.append({
+            "id": a.get("id"),
+            "name": a.get("name", ""),
+            "slug": a.get("slug", ""),
+            "seo_title": a.get("seo_title", ""),
+            "meta_description": a.get("meta_description", ""),
+            "keywords": a.get("keywords", ""),
+            "focus_keyword": a.get("focus_keyword", ""),
+            "noindex": bool(a.get("noindex", False)),
+            "hidden": bool(a.get("hidden", False)),
+            "has_icon": bool(a.get("icon_url", "")),
+            "score": int((score / 6) * 100),
+        })
+    return result
+
+
+@api_router.post("/admin/seo/auto-generate/{app_id}")
+async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin)):
+    """Auto-generate SEO fields for a given app from its name/category/description."""
+    a = await fbs.get_app(app_id)
+    if not a:
+        raise HTTPException(status_code=404, detail="App not found")
+    name = a.get("name", "")
+    category = a.get("category", "Games")
+    description = a.get("description", "") or ""
+    focus = a.get("focus_keyword") or f"{name} APK Download"
+    title = a.get("seo_title") or f"{name} APK Download - Latest Version | Uonogamesapk.com"
+    if len(title) > 60:
+        title = title[:57] + "..."
+    desc = a.get("meta_description") or (
+        f"Download {name} APK latest version for free. {description[:110]}"
+        if description else
+        f"Download {name} APK latest version free from Uonogamesapk.com. Fast, safe and verified {category.lower()} download."
+    )
+    if len(desc) > 160:
+        desc = desc[:157] + "..."
+    keywords = a.get("keywords") or (
+        f"{name} apk, {name} download, {name} latest version, {category.lower()} apk, "
+        f"uono games apk, {name.lower()} free download"
+    )
+    updates = {
+        "seo_title": title,
+        "meta_description": desc,
+        "keywords": keywords,
+        "focus_keyword": focus,
+    }
+    doc = await fbs.update_app(app_id, updates)
+    return doc
+
+
+@api_router.post("/admin/seo/bulk-fix")
+async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
+    """Fix all apps with missing SEO fields in one shot."""
+    apps = await fbs.list_apps()
+    fixed = 0
+    for a in apps:
+        if a.get("seo_title") and a.get("meta_description") and a.get("keywords"):
+            continue
+        name = a.get("name", "")
+        category = a.get("category", "Games")
+        description = a.get("description", "") or ""
+        updates = {}
+        if not a.get("seo_title"):
+            t = f"{name} APK Download - Latest Version | Uonogamesapk.com"
+            updates["seo_title"] = t[:60]
+        if not a.get("meta_description"):
+            d = (f"Download {name} APK latest version for free. {description[:110]}"
+                 if description else
+                 f"Download {name} APK latest version free from Uonogamesapk.com. Fast, safe and verified {category.lower()} download.")
+            updates["meta_description"] = d[:160]
+        if not a.get("keywords"):
+            updates["keywords"] = (
+                f"{name} apk, {name} download, {name} latest version, "
+                f"{category.lower()} apk, uono games apk"
+            )
+        if not a.get("focus_keyword"):
+            updates["focus_keyword"] = f"{name} APK Download"
+        if updates:
+            await fbs.update_app(a["id"], updates)
+            fixed += 1
+    return {"fixed": fixed, "total": len(apps)}
 
 
 # ---------------------------------------------------------------------------
@@ -1033,6 +1389,22 @@ async def seed():
 async def on_startup():
     await db.users.create_index("email", unique=True)
     await seed()
+    # Initialize persistent object storage
+    try:
+        await asyncio.to_thread(obs.init_storage)
+        logger.info("Emergent Object Storage ready")
+    except Exception as e:
+        logger.error("Object storage init failed: %s", e)
+    # Ensure the admin exists in Firebase Auth for admin-panel login
+    try:
+        uid = await asyncio.to_thread(
+            fbs.ensure_admin_user,
+            os.environ["ADMIN_EMAIL"],
+            os.environ["ADMIN_PASSWORD"],
+        )
+        logger.info("Firebase admin ensured: %s", uid)
+    except Exception as e:
+        logger.error("Failed to ensure Firebase admin user: %s", e)
 
 
 @app.on_event("shutdown")

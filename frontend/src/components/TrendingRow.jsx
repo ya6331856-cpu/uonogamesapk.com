@@ -31,7 +31,7 @@ export const TrendingRow = ({ apps, onDownload }) => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.3) }}
-            onClick={() => navigate(`/app/${app.id}`)}
+            onClick={() => navigate(`/${app.slug || `app/${app.id}`}`)}
             data-testid={`trending-card-${app.id}`}
             className="relative w-[150px] shrink-0 cursor-pointer overflow-hidden rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_24px_rgba(0,0,0,0.05)] transition-transform duration-200 active:scale-[0.97]"
           >

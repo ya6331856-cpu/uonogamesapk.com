@@ -1,0 +1,35 @@
+{
+  "summary": "Full-stack regression for SEO package + persistent image uploads + PWA + SEO Dashboard. All 14 pytest cases PASSED (public endpoints, sitemap.xml with image tags, robots.txt, seo meta, image upload → emergent storage + immediate GET, legacy migrated image /api/uploads/00cc5a9062f84ce5aacbf51df61cac9e.jpg still 200, admin/seo/overview, admin/seo/apps, bulk-fix, auto-generate, auth protection). Frontend E2E PASSED for homepage (55 apps rendered, exactly 1 title/canonical/og:title/og:url/og:description/description/robots — no duplicates), rumble-rummy detail (breadcrumbs data-testid=breadcrumbs visible, exactly 3 JSON-LD scripts SoftwareApplication+BreadcrumbList+FAQPage, canonical=https://uonogamesapk.com/rumble-rummy, robots=index,follow,max-image-preview:large,max-snippet:-1), SEO Dashboard (score 100%, 55 rows, 55 Auto-Fill buttons, bulk-fix returns Fixed 0/55 = already complete), Add New App dialog exposes form-focus-keyword + form-og-image + form-noindex.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Homepage (/)", "issues": ["No JSON-LD is emitted on the homepage. SEOHead only pushes JSON-LD when app/breadcrumbs/faqItems props are provided; Store.jsx passes none. This satisfies 'no duplicates' but the homepage would benefit from a WebSite (with SearchAction) and Organization schema for richer Google results."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_seo_and_uploads.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL / MINOR: Emit a WebSite + Organization JSON-LD on the homepage from Store.jsx (or extend SEOHead to auto-emit one when no app/breadcrumbs/faqItems are supplied). Currently the homepage has 0 JSON-LD scripts — this is not a duplicate/regression bug, just a missed SEO opportunity.",
+    "OPTIONAL: PWAInstallBanner relies on the browser's beforeinstallprompt event, which does not fire in the headless test browser and only fires on Chromium with an active service worker + engagement heuristics. Component wiring (data-testid=pwa-install-banner) is correct; visual verification of the banner requires a real device or Chromium with a registered SW. No SW file is registered — consider adding a minimal service worker if you want the install prompt to appear reliably on production."
+  ],
+  "critical_code_review_comments": [
+    "server.py has grown to 1400+ lines mixing auth, apps, SEO, blog, reviews, winners, codes, media, backup, analytics, settings, faqs and seed data in one module. Split into routers/ modules (apps.py, seo.py, admin_seo.py, media.py, cms.py, etc.) — safe & non-breaking, will help future maintainability.",
+    "SEOHead.cleanupDuplicates runs on 5 timeouts (50/250/800/2000/4000ms) after every render. That is defensive but noisy — a MutationObserver on <head> scoped to og:/canonical selectors would be cleaner and cheaper.",
+    "Homepage SEOHead does not pass an `app`, `breadcrumbs`, or `faqItems` so no JSON-LD is emitted at all — consider emitting a default WebSite/Organization schema when those props are absent.",
+    "backend /api/admin/media walks the local UPLOAD_DIR only; uploads made via Emergent Object Storage will NOT appear in the Media Library grid. Media list should be sourced from object storage (or a MongoDB media collection) to reflect actual uploads."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_seo_and_uploads.py"
+  ],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "100% for tested flows"},
+  "test_credentials": "arfuu9@gmail.com / arfuu7778 (JWT — worked). Firebase Auth fallback path silently fails; JWT branch succeeds. Expected.",
+  "seed_data_creation": "None. Uploaded one 70-byte PNG via /api/admin/upload to verify emergent object-storage persistence (file remains at /api/uploads/<hash>.png — harmless).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend URL: https://smooth-apk-market.preview.emergentagent.com. Admin JWT still works via /api/auth/login (Firebase branch gets swallowed and returns 401 internally but the JWT fallback branch grants access). All 55 apps have full SEO fields (bulk-fix returns fixed=0/55). Sitemap contains 56 <loc> tags (homepage + 55 slugs) and 55 <image:image> blocks. Image uploads confirmed persistent — emergent object-storage returns storage:'emergent' and GET on the returned /api/uploads/<hash>.png streams the exact bytes back. Legacy image 00cc5a9062f84ce5aacbf51df61cac9e.jpg served 200 (migrated). PWA install banner is code-correct but only visible when browser fires beforeinstallprompt (needs a registered service worker + engagement — not tested in headless).",
+  "rca of the issue": "N/A — no issues reproduced."
+}

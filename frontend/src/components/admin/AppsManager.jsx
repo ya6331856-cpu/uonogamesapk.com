@@ -29,6 +29,8 @@ const EMPTY = {
   requirements: "Android 5.0 and above, 100 MB free space, active internet connection",
   permissions: ["Storage", "Network access", "Phone state"],
   signup_bonus: "₹51", min_withdraw: "₹100",
+  slug: "", seo_title: "", meta_description: "", keywords: "",
+  focus_keyword: "", og_image: "", noindex: false, faq_items: [],
 };
 
 function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
@@ -193,6 +195,20 @@ export default function AppsManager({ featuredOnly = false }) {
                 <Select value={String(form.featured_order || 1)} onValueChange={(v) => setField("featured_order", parseInt(v))}><SelectTrigger data-testid="form-featured-order" className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">#1 (Large)</SelectItem><SelectItem value="2">#2</SelectItem><SelectItem value="3">#3</SelectItem></SelectContent></Select>
               </div>
             )}
+            <div className="rounded-2xl border border-[#DBEAFE] bg-[#F0F9FF] p-3 space-y-3">
+              <p className="text-xs font-bold text-[#0369A1]">SEO & Page Settings</p>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Slug (page URL)</Label><Input data-testid="form-slug" value={form.slug} onChange={(e) => setField("slug", e.target.value)} placeholder="auto from name, e.g. max-rummy" className="rounded-xl bg-white text-xs" /><p className="text-[10px] text-[#999999]">Page will be: uonogamesapk.com/{form.slug || "your-slug"}</p></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">SEO Title</Label><Input data-testid="form-seo-title" value={form.seo_title} onChange={(e) => setField("seo_title", e.target.value)} placeholder="Max Rummy - Download APK & Get ₹51 Bonus" className="rounded-xl bg-white" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Meta Description</Label><Textarea data-testid="form-meta-description" value={form.meta_description} onChange={(e) => setField("meta_description", e.target.value)} rows={2} placeholder="Short description for Google search results (max ~160 chars)" className="rounded-xl bg-white" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Keywords (comma separated)</Label><Input data-testid="form-keywords" value={form.keywords} onChange={(e) => setField("keywords", e.target.value)} placeholder="rummy apk, max rummy, teen patti" className="rounded-xl bg-white text-xs" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Focus Keyword</Label><Input data-testid="form-focus-keyword" value={form.focus_keyword} onChange={(e) => setField("focus_keyword", e.target.value)} placeholder="Max Rummy APK Download" className="rounded-xl bg-white text-xs" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">OG Image URL (optional)</Label><Input data-testid="form-og-image" value={form.og_image} onChange={(e) => setField("og_image", e.target.value)} placeholder="Uses app icon if left empty" className="rounded-xl bg-white text-xs" /></div>
+              <label className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2">
+                <input type="checkbox" data-testid="form-noindex" checked={!!form.noindex} onChange={(e) => setField("noindex", e.target.checked)} className="h-4 w-4" />
+                <span className="text-xs font-semibold text-[#555]">Noindex this page (hide from Google)</span>
+              </label>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Screenshot URLs (comma separated)</Label><Textarea data-testid="form-screenshots" value={Array.isArray(form.screenshots) ? form.screenshots.join(", ") : ""} onChange={(e) => setField("screenshots", e.target.value.split(",").map((x) => x.trim()).filter(Boolean))} rows={2} placeholder="Paste uploaded screenshot URLs, comma separated" className="rounded-xl text-xs" /></div>
           </div>
           <DialogFooter className="flex-row gap-2">
             <button onClick={() => setOpen(false)} className="flex-1 rounded-full border border-[#E5E7EB] py-2.5 text-sm font-medium text-[#555555]">Cancel</button>

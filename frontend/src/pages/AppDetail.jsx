@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
+import SEOHead from "@/components/SEOHead";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import FaqSection from "@/components/FaqSection";
@@ -34,7 +36,8 @@ const Stat = ({ icon: Icon, label, value }) => (
 );
 
 export default function AppDetail() {
-  const { id } = useParams();
+  const { id, slug } = useParams();
+  const key = slug || id;
   const navigate = useNavigate();
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,11 +48,11 @@ export default function AppDetail() {
     window.scrollTo(0, 0);
     setLoading(true);
     api
-      .get(`/apps/${id}`)
+      .get(`/apps/${key}`)
       .then((res) => setApp(res.data))
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [key]);
 
   const handleDownload = () => {
     if (!app) return;
@@ -97,6 +100,28 @@ export default function AppDetail() {
 
   return (
     <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
+      <SEOHead
+        type="app"
+        title={app.seo_title || `${app.name} APK Download - Latest Version | Uonogamesapk.com`}
+        description={app.meta_description || (app.description || "").slice(0, 160) || `Download ${app.name} APK latest version for Android. Fast, safe and verified download at Uonogamesapk.com.`}
+        keywords={app.keywords || `${app.name} apk, ${app.name} download, ${app.category?.toLowerCase()} apk`}
+        canonical={`https://uonogamesapk.com/${app.slug || app.id}`}
+        image={app.og_image || app.icon_url}
+        noindex={!!app.noindex || !!app.hidden}
+        app={app}
+        breadcrumbs={[
+          { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
+          { name: app.name, url: `/${app.slug || app.id}` },
+        ]}
+        faqItems={(app.faq_items && app.faq_items.length) ? app.faq_items : [
+          { question: `Is ${app.name} safe to download?`,
+            answer: `Yes. ${app.name} is malware-scanned and verified before publishing on Uonogamesapk.com.` },
+          { question: `How to install ${app.name} APK?`,
+            answer: `Download the APK, enable "Install from unknown sources" in your Android settings, then tap the APK file to install.` },
+          { question: `Is ${app.name} free to download?`,
+            answer: `Yes, ${app.name} APK download is completely free on Uonogamesapk.com.` },
+        ]}
+      />
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E5E7EB] bg-white/85 px-4 py-3 backdrop-blur-xl">
         <button onClick={() => navigate(-1)} data-testid="detail-back" className="flex items-center gap-1 text-sm font-medium text-[#555555]">
@@ -108,6 +133,10 @@ export default function AppDetail() {
       </header>
 
       <main className="space-y-6 px-4 pt-4">
+        <Breadcrumbs items={[
+          { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
+          { name: app.name, url: `/${app.slug || app.id}` },
+        ]} />
         {/* App head */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -117,7 +146,7 @@ export default function AppDetail() {
         >
           <AppIcon
             src={resolveUrl(app.icon_url)}
-            alt={app.name}
+            alt={`${app.name} APK icon - ${app.category || "Games"}`}
             className="h-[84px] w-[84px] shrink-0 rounded-[20px] ring-1 ring-black/5"
           />
           <div className="min-w-0 flex-1">

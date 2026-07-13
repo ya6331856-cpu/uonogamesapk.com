@@ -30,7 +30,8 @@ const NAV = [
     { to: "/admin/media-library", label: "Media Library", icon: FolderOpen },
   ]},
   { group: "Growth", items: [
-    { to: "/admin/seo", label: "SEO", icon: SeoIcon },
+    { to: "/admin/seo", label: "SEO Settings", icon: SeoIcon },
+    { to: "/admin/seo-dashboard", label: "SEO Dashboard", icon: SeoIcon },
     { to: "/admin/ads", label: "Advertisements", icon: Megaphone },
     { to: "/admin/notifications", label: "Notifications", icon: Bell },
   ]},

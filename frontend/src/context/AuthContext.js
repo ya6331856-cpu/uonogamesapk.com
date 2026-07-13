@@ -29,16 +29,36 @@ export const AuthProvider = ({ children }) => {
     check();
   }, [check]);
 
+  // Login: try Firebase Auth first (loaded lazily so public pages never touch
+  // the Firebase SDK); fall back to legacy JWT so the panel keeps working even
+  // while the Firebase Email/Password provider is being enabled.
   const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
-    localStorage.setItem("uono_token", data.token);
-    setUser(data.user);
-    return data.user;
+    const em = email.trim().toLowerCase();
+    try {
+      const [{ signInWithEmailAndPassword }, { firebaseAuth }] = await Promise.all([
+        import("firebase/auth"),
+        import("@/lib/firebase"),
+      ]);
+      const cred = await signInWithEmailAndPassword(firebaseAuth, em, password);
+      const idToken = await cred.user.getIdToken();
+      localStorage.setItem("uono_token", idToken);
+      const { data } = await api.get("/auth/me");
+      setUser(data);
+      return data;
+    } catch (fbErr) {
+      const { data } = await api.post("/auth/login", { email: em, password });
+      localStorage.setItem("uono_token", data.token);
+      setUser(data.user);
+      return data.user;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem("uono_token");
     setUser(false);
+    import("@/lib/firebase")
+      .then(({ firebaseAuth }) => import("firebase/auth").then(({ signOut }) => signOut(firebaseAuth)))
+      .catch(() => {});
   };
 
   return (

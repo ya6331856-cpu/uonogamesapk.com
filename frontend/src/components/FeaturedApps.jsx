@@ -16,7 +16,7 @@ const FeaturedMain = ({ app, onDownload }) => {
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     whileHover={{ y: -3 }}
-    onClick={() => navigate(`/app/${app.id}`)}
+    onClick={() => navigate(`/${app.slug || `app/${app.id}`}`)}
     data-testid={`featured-main-${app.id}`}
     className="glow-pulse relative cursor-pointer overflow-hidden rounded-[22px] border border-[#FFE082] bg-white p-4 shadow-[0_10px_40px_rgba(255,193,7,0.18)]"
   >
@@ -104,7 +104,7 @@ const FeaturedSecondary = ({ app, onDownload, delay }) => {
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
     whileHover={{ y: -3 }}
-    onClick={() => navigate(`/app/${app.id}`)}
+    onClick={() => navigate(`/${app.slug || `app/${app.id}`}`)}
     data-testid={`featured-secondary-${app.id}`}
     className="flex cursor-pointer flex-col rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)]"
   >

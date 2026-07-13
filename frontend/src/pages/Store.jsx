@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
+import SEOHead from "@/components/SEOHead";
 import { useSettings, sectionEnabled } from "@/context/SettingsContext";
 import Header from "@/components/Header";
 import WelcomeTypewriter from "@/components/WelcomeTypewriter";
@@ -193,6 +194,13 @@ export default function Store() {
 
   return (
     <div className="app-shell pb-10">
+      <SEOHead
+        title={settings?.seo?.homepage_title || "Uonogamesapk.com - Download Premium Rummy & Games APK Free"}
+        description={settings?.seo?.homepage_description || "Download the latest Rummy and gaming APK apps for Android free. Fast, safe & verified downloads with sign-up bonuses at Uonogamesapk.com."}
+        keywords={settings?.seo?.homepage_keywords || "rummy apk, teen patti apk, real cash rummy, apk download, android games, uono games apk"}
+        canonical="https://uonogamesapk.com/"
+        image="/logo-v2.png"
+      />
       <AnnouncementBar config={settings?.announcement} />
       <Header />
       <WelcomeTypewriter />
