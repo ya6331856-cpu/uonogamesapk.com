@@ -1,102 +1,74 @@
-# Uonogamesapk.com — Premium APK Store
+# Uonogamesapk.com — Product Requirements & Status
 
-## Problem Statement
-Ultra-premium, mobile-first APK Store (White & Gold) that feels like a native Android app.
-Featured Apps section (1 large pinned card + 2 side-by-side) always before the app list.
-Compact horizontal APK cards, admin panel to manage apps + pinned featured, real downloads.
+## Original Problem
+Premium, mobile-first APK Store (White & Gold theme) hosted at `uonogamesapk.com`. Users can browse & download Rummy/Games APK apps with sign-up bonus & min-withdraw info. Admin panel controls apps, SEO, sections, blog, reviews, winners, etc.
 
-## Stack
-FastAPI + React + MongoDB. JWT admin auth. Local file uploads (icons + APKs).
+## Architecture (as of Feb 2026)
+- **Frontend:** React (CRA) + react-router + react-helmet-async + framer-motion + shadcn/ui.
+- **Backend:** FastAPI (single `server.py` ~1300 lines).
+- **Databases (Hybrid):**
+  - **Firestore** (Firebase Admin SDK) → `apps`, `categories`.
+  - **MongoDB** → `users`, `settings`, `reviews`, `winners`, `blog`, `faq`, `codes`.
+- **File Storage:** **Emergent Object Storage** (persistent) — replaces local disk & Firebase Storage.
+- **Frontend API client:** Custom `fetch`-based shim at `/app/frontend/src/lib/api.js` (axios was hanging in this container env).
 
-## User Choices
-- Auth: JWT username/password (admin only)
-- File uploads for icon image + APK file (URLs also supported)
-- Download button triggers real download/redirect
-- Sample apps seeded
-- Brand: Uonogamesapk.com
+## Completed (Feb 13, 2026)
+### 🔴 P0 — Image Upload Persistence Bug (FIXED)
+- Root cause: uploads were saved to `/app/backend/uploads/` (local container disk) → wiped on every deploy/restart. Firebase Storage was blocked (Spark plan, no bucket).
+- Fix: created `/app/backend/object_storage.py` → uploads to Emergent Object Storage (persistent). Serve endpoint `/api/uploads/{filename}` reads from object storage first, falls back to local disk + auto-migrates legacy files. All 71 existing local files migrated via `migrate_uploads_to_object_storage.py`.
+- File size validation added (10 MB images, 100 MB APKs), proper error messages, no more silent failures.
 
-## Architecture
-- Backend `/app/backend/server.py`: auth (login/me), public /api/apps + /api/apps/{id} + /api/apps/{id}/download (increments count, redirects/serves file), admin CRUD /api/admin/apps, /api/admin/upload (multipart -> /app/backend/uploads), /api/uploads/{filename}. Seeds admin + 8 sample apps (3 featured).
-- Frontend: Store (`pages/Store.jsx`), AdminLogin, AdminDashboard. Components: FeaturedApps, AppCard, AppIcon, RippleButton, AnimatedCounter, Skeletons, Header. Token in localStorage `uono_token`, Bearer header.
-- Hero banner edited via Gemini Nano Banana → `/app/frontend/public/hero-banner.png` (UONOGAMESAPK.COM branding).
+### 🟢 SEO Package (COMPLETE)
+- **JSON-LD** on every app page: `SoftwareApplication` + `BreadcrumbList` + `FAQPage` (3 blocks).
+- **Open Graph & Twitter Cards** on every page (og:title, og:url, og:image, twitter:card).
+- **Canonical URL** — single, per-page.
+- **Robots meta** — `index, follow, max-image-preview:large, max-snippet:-1` by default; `noindex, nofollow` when app has `noindex=true` or `hidden=true`.
+- **Breadcrumbs** — both visible (`data-testid=breadcrumbs`) and JSON-LD.
+- **Image ALT tags** — `${app.name} APK icon - ${category}`.
+- **Sitemap.xml** — auto-generated, includes `<image:image>` for every app, lastmod dates.
+- **Robots.txt** — allows all, disallows `/admin`, references sitemap.
+- **`cleanupDuplicates()`** in `SEOHead.jsx` removes duplicate meta/link tags injected by third-party scripts.
+- **New App SEO fields** in admin form: `focus_keyword`, `og_image`, `noindex`, `faq_items`.
 
-## Implemented (2025-12)
-- White & Gold premium UI, mobile-first centered shell (max 480px)
-- Featured section (1 large + 2 grid), compact horizontal app cards with rating/verified/downloads
-- Search + category filters (includes featured), animated counters, shimmer skeletons, ripple buttons, fade-up motion
-- Telegram CTA
-- JWT admin login + dashboard: add/edit/delete apps, pin 3 featured, icon + APK file uploads
-- Real download via /api/apps/{id}/download
-- Tested: backend 19/19, frontend all critical flows
+### 🟢 SEO Dashboard (`/admin/seo-dashboard`)
+- SEO Score % (100% currently)
+- Total Apps / Indexable / Noindex stats
+- Missing title / description / keywords / icon counters
+- Duplicate slug warnings
+- Sitemap.xml + robots.txt viewers + Google Search Console link
+- **Regenerate Sitemap** button
+- Per-app table with SEO Score %, index status, **Auto-Fill** per row, **Auto-Fix All Missing** bulk button
+- View page link per app
 
-## Credentials
-arfuu9@gmail.com / arfuu7778 (admin). Old admin purged on startup. See test_credentials.md
+### 🟢 PWA Install Banner
+- `/app/frontend/src/components/PWAInstallBanner.jsx` — appears when browser fires `beforeinstallprompt`
+- `/app/frontend/public/manifest.json` — start_url, icons, theme_color
+- 7-day dismiss TTL in localStorage
 
-## Implemented (updated)
-- MANDATORY sections: FAQ (10 seeded, admin-editable accordion), Legal (10 policy cards w/ dialogs), enhanced Footer (legal links, Telegram, back-to-top, auto year)
-- Sort control (Most Downloaded / Top Rated / Newest)
-- Admin FAQ management (add/edit/delete/reorder) via Tabs (Apps | FAQs)
-- SECOND PAGE: App Detail `/app/:id` — clicking any card opens full page (icon, developer, stats, screenshots gallery, description, what's new, additional info, sticky Download bar, share)
-- Admin app form extended: developer, package_name, min_android, whats_new, multi-screenshot upload
-- Security: seed() purges stale admins so rotated credentials invalidate old ones
-- Tested: backend 31/31, all frontend flows
+### 🟢 Backend SEO endpoints
+- `GET /api/sitemap.xml` — dynamic, includes image sitemap
+- `GET /api/robots.txt`
+- `GET /api/seo/{slug}` — JSON SEO metadata
+- `GET /api/admin/seo/overview` — dashboard stats
+- `GET /api/admin/seo/apps` — per-app SEO status list
+- `POST /api/admin/seo/auto-generate/{app_id}` — AI-style fill for one app
+- `POST /api/admin/seo/bulk-fix` — fill all apps missing SEO fields
 
-## Implemented — CMS (Iteration 4)
-- **Admin CMS (7 tabs)**: Apps, FAQs, Content(site settings), Reviews, Winners, Codes, Analytics
-- **Site Settings singleton** (`/api/settings`): branding (name/logo/footer/copyright), contact + socials, hero (banner/headline/subtitle/toggle), stats (editable + auto values), telegram (link/cta/members/toggle), announcement bar, theme colors, homepage **section order + enable/disable**, SEO (title/desc/keywords/OG — applied live), ads (AdSense/custom banner), winners ticker config, editable Legal pages
-- **Storefront is now data-driven**: hero/stats/telegram/sections/announcement/theme/SEO all come from settings; Header/Footer dynamic
-- **Reviews** (approve/hide + CRUD), **Live Winners** auto-scroll ticker (CRUD), **Redeem Codes** (CRUD + public /api/redeem with expiry & usage limits), **Analytics** dashboard (downloads/apps/reviews/codes + by-category + top apps)
-- **App boxes now show tags/badges** (Hot/New/Popular/Trending — admin-selectable or auto)
-- **Expanded APK fields**: badge, trending, hidden (hide/show), features[], requirements, permissions[] — surfaced on detail page
-- Tested: backend 52/52; frontend 100% (fixed: admin list now includes hidden apps via include_hidden)
+## Blocked (waiting on user)
+- **Firebase Storage:** requires Blaze plan upgrade — currently blocked. Uploads go to Emergent Object Storage instead (works perfectly).
+- **Firebase Auth:** Email/Password provider not enabled in Firebase Console — currently blocked. Backend falls back to JWT + MongoDB successfully.
 
-## Implemented — Full Admin CMS panel (Iteration 5)
-- Professional multi-route admin at /admin/* with dark collapsible sidebar (grouped nav, icons, active states, animations), top navbar (search, notifications, profile menu, View Site), page transitions
-- Routes: dashboard, apks, featured-apps, categories, hero, homepage, reviews, faq, live-winners, redeem-codes, blog, seo, ads, media-library, notifications, users, settings, security, backup
-- Dashboard: stat cards + recharts bar chart + quick actions + top apps + recently added
-- New backend: blog CRUD, media library (list/delete uploads), users list, change password, backup export/restore, settings.categories
-- Redeem code box moved to bottom of homepage; every app card shows a Hot/New/Popular/Trending tag
-- Tested: backend 69/69, frontend 100%
-- Deployment readiness: PASS (no blockers)
+## Test Credentials
+Admin: `arfuu9@gmail.com` / `arfuu7778` (JWT).
 
-## Logo (updated 2026-02)
-- Brand logo: dark rummy/casino theme (green felt, poker chips, cards, golden crown + red spade). "UONOGAMES" white + "APK.COM" gold.
-- Files: /app/frontend/public/logo-v2.png + logo-icon-v2.png (renamed from logo.png to bust browser/CDN cache). branding.logo_url="/logo-v2.png", favicon_url="/logo-icon-v2.png". default_settings() updated too. Generator: /app/scripts/gen_logo.py
-- Verified rendering on preview URL. IMPORTANT: production only shows new logo AFTER a successful redeploy (prior deploys were failing on /health 404, now fixed).
+## Regression Health (last run: iteration_7.json)
+- 14 pytest backend cases: **ALL PASS**
+- Frontend E2E: homepage, app detail (breadcrumbs + 3 JSON-LD), SEO Dashboard (55 apps, 100% score), Add-New-App SEO fields — **ALL PASS**
+- Zero issues logged.
 
-## Deployment fix (2026-02)
-- Added root `@app.get("/health")` in /app/backend/server.py returning {"status":"healthy"} — fixes K8s health probe 404 that was blocking production deploy. Verified 200 locally.
-
-## Welcome animation (2026-02)
-- New component /app/frontend/src/components/WelcomeTypewriter.jsx — looping typewriter "Welcome to the UONOGAMESAPK.COM" (brand part gold gradient + blinking cursor). Rendered in Store.jsx after Header.
-
-## Rummy rewards fields (2026-02)
-- New per-app fields: signup_bonus + min_withdraw (strings, e.g. "₹51" / "₹100"). Added to AppModel/AppCreate/AppUpdate in server.py.
-- Admin "Add New App" form (AppsManager.jsx): prominent gold "Rummy Rewards" box at top for signup_bonus & min_withdraw. EMPTY defaults pre-filled with rummy-ready values (rating 4.8, downloads 500000, size 45MB, developer, description, features, requirements, permissions, badge Hot, trending true) so admin only sets name + logo + bonus + min-withdraw.
-- Display: AppCard shows gold "Bonus" chip + green "Min W/D" chip; AppDetail shows two reward highlight cards (gift/wallet) above download button + rows in Additional Information. FeaturedApps (large + secondary cards) and TrendingRow on the landing page also show bonus/withdraw. Verified end-to-end (testing agent iteration_6: 100%).
-
-## AdSense / Ads (2026-02)
-- index.html <head> has AdSense loader script (client ca-pub-5669686743285209). /public/ads.txt added (google.com, pub-5669686743285209, DIRECT, f08c47fec0942fa0).
-- Admin > Advertisements (AdsPage in SettingsPages.jsx): Enable toggle, AdSense Client ID, Ad Slot ID (data-ad-slot), custom banner HTML, + a live placeholder preview card. settings.ads = {enabled, adsense_client, adsense_slot, banner_html}.
-- AdSlot.jsx renders a labelled "ADVERTISEMENT" placeholder box that real AdSense fills after approval; uses data-ad-slot when set, else responsive Auto Ads.
-- NOTE: AdSense verification + live ads only work on the approved LIVE domain (uonogamesapk.com), NOT preview. Requires deploy + custom domain connected.
-
-## Auth robustness + upload fix (2026-02)
-- Root cause of "Upload failed": user's JWT token was stale/expired → POST /api/admin/upload returned 401 (endpoint itself is fine; verified 60MB APK upload = 200 in ~1.7s via correct URL). User was also on a STALE preview URL (apk-market... → /api 404) instead of the current REACT_APP_BACKEND_URL (smooth-apk-market...).
-- Added a response interceptor in /app/frontend/src/lib/api.js: on any 401 (except the login call), it clears the token and redirects admin routes to /admin/login?expired=1.
-- AdminLogin.jsx shows a "session expired" notice when ?expired=1. FileUpload (AppsManager.jsx) now shows a clear message ("Session expired — please log in again" on 401, otherwise "<label> upload failed").
-- JWT_SECRET is in backend/.env (persistent) — restarts do NOT invalidate tokens.
-
-
-- Uploaded icons/APKs are stored on local disk (/app/backend/uploads) — NOT persistent across redeploys. For production use, move to object storage (S3/GCS).
-- Seeded sample apps use example.com placeholder APK URLs — replace with real download links/files via the admin APK Manager.
-
-## Deferred (enterprise add-ons, not built)
-- Real per-visitor analytics (visitors/countries/devices/sources)
-- Web push notifications
-- Multi-admin roles/permissions, login history, activity logs
-- Auto sitemap.xml/robots.txt, schema markup builder
-- Drag-and-drop custom section builder (current: reorder + enable/disable fixed sections)
-
-
-
+## Backlog / Future
+- Blog Management page enhancements (currently basic — needs categories, tags, scheduling, drafts, SEO fields per post).
+- Google Analytics 4 tag + Search Console verification meta.
+- Rate limiting + firestore security rules review (once Blaze plan enabled).
+- WebP/AVIF auto-conversion pipeline for uploaded icons.
+- Related-apps / trending logic tuning.
