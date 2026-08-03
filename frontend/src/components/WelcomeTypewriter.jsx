@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-const PREFIX = "Welcome to the ";
-const BRAND = "UONOGAMESAPK.COM";
+const PREFIX = "Welcome to ";
+const BRAND = "YONO GAMES";
 const FULL = PREFIX + BRAND;
 
 // Typewriter welcome heading: types the text out, pauses, then restarts.
@@ -37,11 +37,14 @@ export const WelcomeTypewriter = () => {
     <div className="px-4 pt-4" data-testid="welcome-typewriter">
       <h2 className="text-center font-display text-lg font-extrabold tracking-tight sm:text-xl">
         <span className="text-[#111111]">{prefixPart}</span>
-        <span className="bg-gradient-to-r from-[#FFC107] to-[#FF9800] bg-clip-text text-transparent drop-shadow-[0_1px_2px_rgba(255,193,7,0.25)]">
+        <span className="bg-gradient-to-r from-[#22C55E] via-[#FFD54F] to-[#FFB300] bg-clip-text text-transparent drop-shadow-[0_1px_2px_rgba(255,193,7,0.25)]">
           {brandPart}
         </span>
         <span className="ml-0.5 inline-block h-[1.1em] w-[3px] translate-y-[3px] animate-pulse rounded-full bg-[#FFB300]" />
       </h2>
+      <p className="mt-1 text-center text-[10px] font-semibold uppercase tracking-[0.25em] text-[#22C55E]/80">
+        Play &amp; Win · Since 2024
+      </p>
     </div>
   );
 };

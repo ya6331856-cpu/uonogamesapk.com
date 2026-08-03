@@ -55,11 +55,19 @@ export default function AdminLogin() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#FFC107] to-[#FFB300] shadow-[0_8px_24px_rgba(255,193,7,0.4)]">
-            <ShieldCheck className="h-7 w-7 text-white" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-[#111111]">Admin Panel</h1>
-          <p className="mt-1 text-sm text-[#777777]">Sign in to manage Uonogamesapk.com</p>
+          <img
+            src="/logo-icon-v2.png"
+            alt="YONO GAMES - Play and Win"
+            className="mx-auto mb-3 h-20 w-20 rounded-[20px] shadow-[0_10px_30px_rgba(255,193,7,0.35)]"
+          />
+          <h1 className="font-display text-2xl font-bold">
+            <span className="text-[#22C55E]">YONO</span>{" "}
+            <span className="bg-gradient-to-r from-[#FFD54F] to-[#FFB300] bg-clip-text text-transparent">GAMES</span>
+          </h1>
+          <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFD54F]">
+            Admin Panel · Play &amp; Win
+          </p>
+          <p className="mt-2 text-sm text-[#777777]">Sign in to manage YONO GAMES</p>
         </div>
 
         <form onSubmit={submit} className="space-y-4 rounded-[22px] border border-[#E5E7EB] bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.06)]">

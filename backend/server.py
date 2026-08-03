@@ -701,7 +701,7 @@ async def seo_meta(slug: str):
         a = await fbs.get_app(slug)
     if not a:
         raise HTTPException(status_code=404, detail="App not found")
-    title = a.get("seo_title") or f"{a.get('name', '')} - Download APK | Uonogamesapk.com"
+    title = a.get("seo_title") or f"{a.get('name', '')} APK Download - YONO GAMES"
     desc = a.get("meta_description") or (a.get("description", "")[:160])
     return JSONResponse({
         "slug": a.get("slug", slug),
@@ -795,13 +795,13 @@ async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin
     category = a.get("category", "Games")
     description = a.get("description", "") or ""
     focus = a.get("focus_keyword") or f"{name} APK Download"
-    title = a.get("seo_title") or f"{name} APK Download - Latest Version | Uonogamesapk.com"
+    title = a.get("seo_title") or f"{name} APK Download - Latest Version | YONO GAMES"
     if len(title) > 60:
         title = title[:57] + "..."
     desc = a.get("meta_description") or (
         f"Download {name} APK latest version for free. {description[:110]}"
         if description else
-        f"Download {name} APK latest version free from Uonogamesapk.com. Fast, safe and verified {category.lower()} download."
+        f"Download {name} APK latest version free from YONO GAMES (uonogamesapk.com). Fast, safe and verified {category.lower()} download."
     )
     if len(desc) > 160:
         desc = desc[:157] + "..."
@@ -832,12 +832,12 @@ async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
         description = a.get("description", "") or ""
         updates = {}
         if not a.get("seo_title"):
-            t = f"{name} APK Download - Latest Version | Uonogamesapk.com"
+            t = f"{name} APK Download - Latest Version | YONO GAMES"
             updates["seo_title"] = t[:60]
         if not a.get("meta_description"):
             d = (f"Download {name} APK latest version for free. {description[:110]}"
                  if description else
-                 f"Download {name} APK latest version free from Uonogamesapk.com. Fast, safe and verified {category.lower()} download.")
+                 f"Download {name} APK latest version free from YONO GAMES (uonogamesapk.com). Fast, safe and verified {category.lower()} download.")
             updates["meta_description"] = d[:160]
         if not a.get("keywords"):
             updates["keywords"] = (
@@ -1111,7 +1111,7 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
 
 @api_router.get("/")
 async def root():
-    return {"message": "Uonogamesapk API"}
+    return {"message": "YONO GAMES API"}
 
 
 # ---------------------------------------------------------------------------
@@ -1124,12 +1124,12 @@ SETTINGS_ID = "site"
 def default_settings() -> dict:
     return {
         "branding": {
-            "site_name": "Uonogamesapk.com",
-            "logo_text": "Uonogamesapk",
+            "site_name": "YONO GAMES",
+            "logo_text": "YONO GAMES",
             "logo_url": "/logo-v2.png",
             "favicon_url": "/logo-icon-v2.png",
             "footer_text": "Premium APK store for safe, verified Android games and apps.",
-            "copyright": "Uonogamesapk.com",
+            "copyright": "YONO GAMES · uonogamesapk.com",
         },
         "contact": {"email": "support@uonogamesapk.com", "whatsapp": "", "instagram": "", "youtube": "", "twitter": ""},
         "hero": {
@@ -1149,7 +1149,7 @@ def default_settings() -> dict:
             ],
         },
         "telegram": {"enabled": True, "link": "https://t.me/", "cta_text": "Join our Telegram", "sub_text": "Get instant updates & new APK releases", "member_count": ""},
-        "announcement": {"enabled": False, "text": "Welcome to Uonogamesapk.com!", "link": ""},
+        "announcement": {"enabled": False, "text": "Welcome to YONO GAMES — Play and Win!", "link": ""},
         "theme": {"primary": "#FFC107", "secondary": "#FFB300", "radius": 20},
         "sections": [
             {"id": "featured", "label": "Featured Apps", "enabled": True},
@@ -1163,7 +1163,7 @@ def default_settings() -> dict:
         ],
         "categories": ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"],
         "seo": {
-            "meta_title": "Uonogamesapk.com | Premium APK Store",
+            "meta_title": "YONO GAMES - Play and Win | Premium APK Store",
             "meta_description": "Download premium APK games. Fast, safe & verified.",
             "keywords": "apk, rummy, games, download, android",
             "og_image": "/hero-banner.png",
@@ -1530,14 +1530,14 @@ SAMPLE_APPS = [
 
 
 DEFAULT_FAQS = [
-    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on Uonogamesapk.com is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
+    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
     {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly. Once finished, open the file from your notification bar or your device's Downloads folder and tap 'Install'. The entire process usually takes less than a minute on a normal connection."},
     {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
     {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
     {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
     {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
     {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
-    {"question": "Is registration free?", "answer": "Yes, downloading APKs from Uonogamesapk.com is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
+    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (uonogamesapk.com) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
     {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
     {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
 ]

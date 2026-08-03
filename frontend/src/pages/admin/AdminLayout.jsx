@@ -67,15 +67,23 @@ export default function AdminLayout() {
 
   const current = ALL_ITEMS.find((i) => i.to === location.pathname);
   const results = search ? ALL_ITEMS.filter((i) => i.label.toLowerCase().includes(search.toLowerCase())) : [];
-  const siteName = settings?.branding?.site_name || "Uonogamesapk";
+  const siteName = settings?.branding?.site_name || "YONO GAMES";
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-white/10 px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#FFC107] to-[#FFB300]">
-          <StoreIcon className="h-5 w-5 text-[#111111]" />
-        </div>
-        {!collapsed && <span className="truncate font-display text-sm font-bold text-white">{siteName}</span>}
+        <img src="/logo-icon-v2.png" alt="YONO GAMES" className="h-9 w-9 shrink-0 rounded-[10px] object-contain" />
+        {!collapsed && (
+          <div className="min-w-0 leading-none">
+            <div className="font-display text-sm font-extrabold tracking-tight text-white">
+              <span className="text-[#22C55E]">YONO</span>{" "}
+              <span className="text-[#FFD54F]">GAMES</span>
+            </div>
+            <div className="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.16em] text-white/50">
+              Play &amp; Win
+            </div>
+          </div>
+        )}
       </div>
 
       <nav className="no-scrollbar flex-1 space-y-4 overflow-y-auto px-3 py-4">

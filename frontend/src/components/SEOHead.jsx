@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { resolveUrl } from "@/lib/api";
 
 const SITE_URL = "https://uonogamesapk.com";
-const SITE_NAME = "Uonogamesapk.com";
+const SITE_NAME = "YONO GAMES";
 const DEFAULT_OG = `${SITE_URL}/logo-v2.png`;
 
 function absUrl(u) {
