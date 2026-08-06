@@ -93,3 +93,4 @@ secrets/
 firebase-admin.json
 frontend/node_modules/.cache/default-development/8.pack
 frontend/node_modules/.cache/default-development/7.pack
+frontend/node_modules/.cache/default-development/33.pack

@@ -95,15 +95,17 @@ export default function AppsManager({ featuredOnly = false }) {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
-  const fetchApps = async () => {
-    try {
-      const { data } = await api.get("/apps", { params: { include_hidden: true } });
-      let list = [...data.featured, ...data.apps];
-      if (featuredOnly) list = list.filter((a) => a.featured);
-      setApps(list);
-    } finally { setLoading(false); }
-  };
-  useEffect(() => { fetchApps(); }, [featuredOnly]);
+  useEffect(() => {
+    const fetchApps = async () => {
+      try {
+        const { data } = await api.get("/apps", { params: { include_hidden: true } });
+        let list = [...data.featured, ...data.apps];
+        if (featuredOnly) list = list.filter((a) => a.featured);
+        setApps(list);
+      } finally { setLoading(false); }
+    };
+    fetchApps();
+  }, [featuredOnly]);
 
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const openNew = () => { setForm({ ...EMPTY, featured: featuredOnly }); setEditingId(null); setOpen(true); };
