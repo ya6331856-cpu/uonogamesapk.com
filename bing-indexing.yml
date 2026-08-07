@@ -1,0 +1,39 @@
+name: Bing Indexing API
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  bing-submit:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Bing Submission Script
+      env:
+        BING_API_KEY: ${{ secrets.BING_API_KEY }}
+      run: |
+        python -c '
+        import os
+        import requests
+
+        api_key = os.environ["BING_API_KEY"]
+        site_url = "https://uonogamesapk.com/"
+        
+        endpoint = f"https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl?apikey={api_key}"
+        
+        headers = {
+            "Content-Type": "application/json; charset=utf-8"
+        }
+        
+        body = {
+            "siteUrl": site_url,
+            "url": "https://uonogamesapk.com/"
+        }
+        
+        response = requests.post(endpoint, headers=headers, json=body)
+        print("Response:", response.status_code, response.text)
+        '
