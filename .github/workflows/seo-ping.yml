@@ -2,6 +2,8 @@ name: SEO Sitemap Ping
 
 on:
   push:
+  workflow_dispatch:
+  
     branches:
       - main
 
