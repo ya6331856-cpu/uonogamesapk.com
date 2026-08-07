@@ -1,0 +1,28 @@
+name: Send Telegram Notification
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send_alert:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Send Telegram Message
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        python -c '
+        import os, urllib.request, urllib.parse, json
+        token = os.environ["TELEGRAM_BOT_TOKEN"]
+        chat_id = os.environ["TELEGRAM_CHAT_ID"]
+        message = "🚀 Hello Yasir! Your SEO and tracking automation workflow is successfully connected with Telegram!"
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        data = urllib.parse.urlencode({"chat_id": chat_id, "text": message}).encode("utf-8")
+        req = urllib.request.Request(url, data=data)
+        try:
+            with urllib.request.urlopen(req) as response:
+                print("Message sent successfully:", response.read().decode())
+        except Exception as e:
+            print("Failed to send message:", e)
+        '
