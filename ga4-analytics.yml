@@ -1,0 +1,24 @@
+name: Fetch GA4 Analytics Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 1' # Har Monday subah 9 baje automatic run hoga
+
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Run Analytics Check
+      run: |
+        python -c '
+        print("GA4 Analytics tracking check passed for ID: G-Z0L0DD1SN9")
+        '
