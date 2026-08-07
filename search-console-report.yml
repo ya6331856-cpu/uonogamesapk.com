@@ -1,0 +1,38 @@
+name: Fetch Search Console Performance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1' # Har Monday subah 8 baje automatic run hoga
+
+jobs:
+  gsc_report:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: pip install google-api-python-client google-auth
+
+    - name: Run GSC Analytics Script
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }} # Agar aapne service account key JSON save ki hai
+      run: |
+        python -c '
+        import os
+        from googleapiclient.discovery import build
+        from google.oauth2 import service_account
+
+        # Search Console API scope
+        SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
+        SITE_URL = "https://uonogamesapk.com/"
+
+        # Note: Aap apni Google Cloud service account ki JSON key ko GitHub Secret mein save karke authenticate kar sakte hain.
+        print("Google Search Console API workflow is ready to connect!")
+        '
