@@ -1,0 +1,30 @@
+name: Generate Sitemap Automatically
+
+on:
+  push:
+    branches:
+      - main # Ya jo bhi aapki default branch ho (jaise fix/appsmanager-useeffect)
+  workflow_dispatch:
+
+jobs:
+  sitemap:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Generate Sitemap
+      run: python generate_sitemap.py
+
+    - name: Commit and push if sitemap changed
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add sitemap.xml
+        git commit -m "Auto-generate sitemap.xml" || exit 0
+        git push
