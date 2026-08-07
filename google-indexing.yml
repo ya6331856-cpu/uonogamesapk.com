@@ -1,0 +1,56 @@
+name: Google Indexing API
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  indexing:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: pip install google-auth requests
+
+    - name: Run Indexing Script
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
+      run: |
+        python -c '
+        import os
+        import json
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import Request
+        import requests
+
+        credentials_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info, scopes=["https://www.googleapis.com/auth/indexing"]
+        )
+        scoped_credentials = credentials.with_scopes(["https://www.googleapis.com/auth/indexing"])
+        request = Request()
+        scoped_credentials.refresh(request)
+        token = scoped_credentials.token
+
+        endpoint = "https://indexing.googleapis.com/v3/urlNotifications:publish"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+        
+        body = {
+            "url": "https://uonogamesapk.com/",
+            "type": "URL_UPDATED"
+        }
+        
+        response = requests.post(endpoint, headers=headers, json=body)
+        print("Response:", response.status_code, response.text)
+        '
