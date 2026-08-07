@@ -1,0 +1,20 @@
+name: SEO Sitemap Ping
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ping-search-engines:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Google
+        run: |
+          curl -s "https://www.google.com/ping?sitemap=https://uonogamesapk.com/sitemap.xml"
+          echo "Google sitemap pinged successfully."
+
+      - name: Ping Bing
+        run: |
+          curl -s "https://www.bing.com/ping?sitemap=https://uonogamesapk.com/sitemap.xml"
+          echo "Bing sitemap pinged successfully."
