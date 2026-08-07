@@ -1,4 +1,4 @@
-name: Google Indexing API
+name: Google Indexing API - Batch Submit
 
 on:
   workflow_dispatch:
@@ -20,13 +20,15 @@ jobs:
     - name: Install dependencies
       run: pip install google-auth requests
 
-    - name: Run Indexing Script
+    - name: Run Batch Indexing Script
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
       run: |
         python -c '
         import os
         import json
+        import urllib.request
+        import xml.etree.ElementTree as ET
         from google.oauth2 import service_account
         from google.auth.transport.requests import Request
         import requests
@@ -35,22 +37,40 @@ jobs:
         credentials = service_account.Credentials.from_service_account_info(
             credentials_info, scopes=["https://www.googleapis.com/auth/indexing"]
         )
-        scoped_credentials = credentials.with_scopes(["https://www.googleapis.com/auth/indexing"])
         request = Request()
-        scoped_credentials.refresh(request)
-        token = scoped_credentials.token
+        credentials.refresh(request)
+        token = credentials.token
 
-        endpoint = "https://indexing.googleapis.com/v3/urlNotifications:publish"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}"
-        }
+        sitemap_url = "https://uonogamesapk.com/sitemap.xml"
+        print(f"Fetching sitemap from {sitemap_url}")
         
-        body = {
-            "url": "https://uonogamesapk.com/",
-            "type": "URL_UPDATED"
-        }
-        
-        response = requests.post(endpoint, headers=headers, json=body)
-        print("Response:", response.status_code, response.text)
+        req = urllib.request.Request(sitemap_url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            xml_data = urllib.request.urlopen(req).read()
+            root = ET.fromstring(xml_data)
+            
+            ns = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+            urls = [elem.text for elem in root.findall(".//ns:loc", ns)]
+            
+            if not urls:
+                urls = [elem.text for elem in root.findall(".//loc")]
+
+            print(f"Found {len(urls)} URLs in sitemap.")
+
+            endpoint = "https://indexing.googleapis.com/v3/urlNotifications:publish"
+            
+            for url in urls:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}"
+                }
+                body = {
+                    "url": url,
+                    "type": "URL_UPDATED"
+                }
+                response = requests.post(endpoint, headers=headers, json=body)
+                print(f"URL: {url} -> Status: {response.status_code}")
+                
+        except Exception as e:
+            print("Error reading sitemap or submitting URLs:", str(e))
         '
