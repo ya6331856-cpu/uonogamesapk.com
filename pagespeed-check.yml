@@ -1,0 +1,32 @@
+name: PageSpeed Insights Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1' # Har Monday ko automatic run hoga
+
+jobs:
+  pagespeed:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Run PageSpeed Insights API
+      env:
+        PSI_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+      run: |
+        python -c '
+        import os
+        import requests
+
+        api_key = os.environ["PSI_KEY"]
+        target_url = "https://uonogamesapk.com/"
+        
+        endpoint = f"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={target_url}&key={api_key}&strategy=mobile"
+        
+        response = requests.get(endpoint)
+        if response.status_code == 200:
+            data = response.json()
+            score = data["lighthouseResult"]["categories"]["performance"]["score"] * 100
+            print(f"🚀 Mobile Performance Score for {target_url}: {score}/100")
+        else:
+            print("Error:", response.status_code, response.text)
+        '
