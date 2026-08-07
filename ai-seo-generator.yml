@@ -1,0 +1,64 @@
+name: AI SEO Generator & Telegram Notifier
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate_seo:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: pip install google-genai requests
+
+    - name: Run AI SEO Generator and Send to Telegram
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        python -c '
+        import os
+        from google import genai
+        import requests
+
+        gemini_key = os.environ["GEMINI_API_KEY"]
+        tg_token = os.environ["TELEGRAM_BOT_TOKEN"]
+        chat_id = os.environ["TELEGRAM_CHAT_ID"]
+
+        client = genai.Client(api_key=gemini_key)
+
+        prompt = """
+        Generate best SEO content for an Android APK downloading website app named Uono Games.
+        Provide:
+        1. Catchy SEO Title (Under 60 chars)
+        2. Meta Description (Under 160 chars)
+        3. Top 5 High-Ranking SEO Keywords
+        """
+
+        # Yahan humne model ko Pro version par set kar diya hai
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=prompt,
+        )
+        
+        seo_result = response.text
+        print("Generated SEO Content:\n", seo_result)
+
+        tg_url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": f"🤖 *Gemini Pro SEO & Optimization Result:*\n\n{seo_result}",
+            "parse_mode": "Markdown"
+        }
+        
+        resp = requests.post(tg_url, json=payload)
+        print("Telegram Response:", resp.text)
+        '
