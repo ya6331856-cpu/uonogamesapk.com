@@ -1,4 +1,20 @@
-return f"""
+def build_prompt(app_name):
+
+    clean_app_name = app_name.strip()
+
+    if clean_app_name.lower().startswith("yono "):
+        yono_keyword = clean_app_name
+    else:
+        yono_keyword = f"Yono {clean_app_name}"
+
+    return f"""
+You are an expert SEO content writer specializing in programmatic SEO, APK directories, mobile gaming, app discovery, and search-intent optimization.
+
+Write a completely original, useful, natural-sounding SEO landing page for:
+
+{clean_app_name}
+
+This page is part of the broader Yono Games / Yono Apps search ecosystem.
 You are an expert SEO content writer specializing in programmatic SEO, APK directories, mobile gaming, app discovery, and search-intent optimization.
 
 Write a completely original, useful, natural-sounding SEO landing page for:
