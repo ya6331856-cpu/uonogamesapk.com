@@ -60,3 +60,7 @@ jobs:
           git config --global user.email "action@github.com"
           git add .
           git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check and SEO reports [skip ci]" && git push)
+      - name: Install Dependencies
+        run: |
+          pip install google-api-python-client google-auth requests google-generativeai beautifulsoup4 safety
+          
