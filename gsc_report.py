@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -21,14 +22,43 @@ request = {
     "startDate": "2026-07-01",
     "endDate": "2026-08-01",
     "dimensions": ["query"],
-    "rowLimit": 10
+    "rowLimit": 5
 }
+
+def send_telegram_report(report_text):
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if token and chat_id:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": f"📊 *Google Search Console Daily Report*\n\n{report_text}",
+            "parse_mode": "Markdown"
+        }
+        try:
+            requests.post(url, json=payload)
+            print("GSC Daily Summary sent to Telegram!")
+        except Exception as e:
+            print(f"Failed to send GSC report: {e}")
 
 try:
     response = service.searchanalytics().query(siteUrl=site_url, body=request).execute()
     rows = response.get("rows", [])
     print("Top Search Queries & Clicks:")
+    
+    report_lines = []
     for row in rows:
-        print(f"Query: {row['keys'][0]} | Clicks: {row['clicks']} | Impressions: {row['impressions']}")
+        q = row['keys'][0]
+        clicks = row['clicks']
+        impressions = row['impressions']
+        line = f"Query: {q} | Clicks: {clicks} | Impressions: {impressions}"
+        print(line)
+        report_lines.append(line)
+        
+    if report_lines:
+        send_telegram_report("\n".join(report_lines))
+    else:
+        send_telegram_report("No search queries data found for this period.")
+
 except Exception as e:
-    print("Error fetching GSC data:", str(e))
+    print(f"Error fetching GSC data: {str(e)}")
