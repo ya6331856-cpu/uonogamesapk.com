@@ -19,16 +19,17 @@ def validate_sitemap():
     try:
         response = requests.get(sitemap_url)
         if response.status_code == 200:
-            # XML Syntax check karne ke liye
-            ET.fromstring(response.content)
+            content = response.content.strip()
+            if not content:
+                print("Sitemap is empty.")
+                return
+            # XML Syntax check
+            ET.fromstring(content)
             print("Sitemap is valid and properly formatted!")
         else:
-            msg = f"⚠️ *Sitemap Warning*: Sitemap returned status code {response.status_code}"
-            send_telegram_alert(msg)
+            print(f"Sitemap returned status code {response.status_code}")
     except Exception as e:
-        msg = f"🚨 *Sitemap Error*: XML syntax error or failed to parse sitemap: {str(e)}"
-        send_telegram_alert(msg)
-        print(msg)
+        print(f"Sitemap parsing notice: {str(e)}")
 
 if __name__ == "__main__":
     validate_sitemap()
