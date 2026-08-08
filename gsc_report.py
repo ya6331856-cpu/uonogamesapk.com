@@ -1,6 +1,5 @@
 import os
 import json
-import re
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -8,15 +7,7 @@ sa_key_json = os.environ.get("GCP_SA_KEY")
 if not sa_key_json:
     raise ValueError("GCP_SA_KEY secret not found!")
 
-# Clean invalid control characters that break JSON parsing from mobile copy-paste
-cleaned_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sa_key_json)
-
-try:
-    sa_info = json.loads(cleaned_json)
-except json.JSONDecodeError:
-    # Fallback to fix escaped newlines
-    fixed_json = cleaned_json.replace('\\n', '\n')
-    sa_info = json.loads(fixed_json)
+sa_info = json.loads(sa_key_json)
 
 credentials = service_account.Credentials.from_service_account_info(
     sa_info, scopes=["https://www.googleapis.com/auth/webmasters.readonly"]
