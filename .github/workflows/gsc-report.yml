@@ -66,9 +66,15 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python indexing_and_validator.py
 
+      - name: Run Broken Image Checker
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python check_images.py
+
       - name: Commit and Push All Changes
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add .
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validator and SEO reports [skip ci]" && git push)
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]" && git push)
