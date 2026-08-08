@@ -66,3 +66,9 @@ jobs:
           git config --global user.email "action@github.com"
           git add .
           git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security and SEO reports [skip ci]" && git push)
+      - name: Run Sitemap & Feed Validator
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python indexing_and_validator.py
+        
