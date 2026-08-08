@@ -4,7 +4,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 # GitHub Secret se credentials load karna
-sa_key_json = os.environ.get("GCP_SA_KEY")
+sa_key_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT")
 if not sa_key_json:
     raise ValueError("GCP_SA_KEY secret not found!")
 
