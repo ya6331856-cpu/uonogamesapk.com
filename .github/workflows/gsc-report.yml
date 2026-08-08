@@ -78,3 +78,10 @@ jobs:
           git config --global user.email "action@github.com"
           git add .
           git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]" && git push)
+      - name: Run Keyword Gap Monitor
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: python keyword_gap_monitor.py
+        
