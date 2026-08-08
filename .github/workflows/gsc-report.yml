@@ -34,13 +34,6 @@ jobs:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: python gsc_report.py
 
-      - name: Commit and Push Generated Reports
-        run: |
-          git config --global user.name "GitHub Action Bot"
-          git config --global user.email "action@github.com"
-          git add .
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update reports and data [skip ci]" && git push)
-
       - name: Generate Sitemap
         run: python generate_sitemap.py
 
@@ -49,9 +42,9 @@ jobs:
           curl -s "https://www.google.com/ping?sitemap=https://www.uonogamesapk.com/sitemap.xml"
           curl -s "https://www.bing.com/ping?sitemap=https://www.uonogamesapk.com/sitemap.xml"
 
-      - name: Commit and Push Generated Reports
+      - name: Commit and Push All Changes
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
-          git add sitemap.xml
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap [skip ci]" && git push)
+          git add .
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap and SEO reports [skip ci]" && git push)
