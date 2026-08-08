@@ -1,6 +1,7 @@
 name: Fetch Search Console Performance
 
 on:
+push:
   workflow_dispatch:
   schedule:
     - cron: '0 8 * * 1' # Har Monday subah 8 baje automatic run hoga
