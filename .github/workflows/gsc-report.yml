@@ -40,3 +40,18 @@ jobs:
           git config --global user.email "action@github.com"
           git add .
           git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update reports and data [skip ci]" && git push)
+
+      - name: Generate Sitemap
+        run: python generate_sitemap.py
+
+      - name: Ping Search Engines
+        run: |
+          curl -s "https://www.google.com/ping?sitemap=https://www.uonogamesapk.com/sitemap.xml"
+          curl -s "https://www.bing.com/ping?sitemap=https://www.uonogamesapk.com/sitemap.xml"
+
+      - name: Commit and Push Generated Reports
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add sitemap.xml
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap [skip ci]" && git push)
