@@ -1,6 +1,7 @@
 name: Fetch GA4 Analytics Report
 
 on:
+push:
   workflow_dispatch:
   schedule:
     - cron: '0 9 * * 1' # Har Monday subah 9 baje automatic run hoga
