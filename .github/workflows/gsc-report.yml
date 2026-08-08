@@ -48,9 +48,15 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python check_links.py
 
+      - name: Monitor Website Speed
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python check_speed.py
+
       - name: Commit and Push All Changes
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add .
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, links and SEO reports [skip ci]" && git push)
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check and SEO reports [skip ci]" && git push)
