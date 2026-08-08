@@ -1,20 +1,139 @@
+import os
+import json
+import time
+import google.generativeai as genai
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+# ============================================================
+# GEMINI API CONFIGURATION
+# ============================================================
+API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable nahi mili. Pehle apni Gemini API key set karein.")
+
+genai.configure(api_key=API_KEY)
+MODEL_NAME = "gemini-2.0-flash"
+model = genai.GenerativeModel(MODEL_NAME)
+
+# ============================================================
+# FILE CONFIGURATION
+# ============================================================
+COMPLETED_FILE = "completed_blogs.txt"
+OUTPUT_FILE = "generated_blogs.json"
+
+DEFAULT_APPS = [
+    "Yono Rummy",
+    "Spin Gold",
+    "Spin Crush",
+    "Bingo101",
+    "GOGO Rummy"
+]
+
+DELAY_BETWEEN_REQUESTS = 15
+MAX_RETRIES = 3
+
+# ============================================================
+# INDEXING API FUNCTION
+# ============================================================
+def notify_google_indexing(url):
+    credentials_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT")
+    
+    if not credentials_json:
+        print("⚠️ Google Service Account key nahi mili, indexing request skip ki ja rahi hai.")
+        return
+
+    try:
+        credentials_info = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info,
+            scopes=["https://www.googleapis.com/auth/indexing"]
+        )
+        
+        service = build('indexing', 'v3', credentials=credentials)
+        
+        body = {
+            "url": url,
+            "type": "URL_UPDATED"
+        }
+        
+        request = service.urlNotifications().publish(body=body)
+        response = request.execute()
+        print(f"✓ Google Indexing API Success for {url}")
+        
+    except Exception as e:
+        print(f"✗ Google Indexing API Error: {e}")
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+def get_apps_list():
+    apps = set(DEFAULT_APPS)
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    for app in data.keys():
+                        apps.add(app)
+        except Exception:
+            pass
+    return sorted(apps)
+
+def get_completed_blogs():
+    if not os.path.exists(COMPLETED_FILE):
+        return set()
+    try:
+        with open(COMPLETED_FILE, "r", encoding="utf-8") as f:
+            return {line.strip() for line in f if line.strip()}
+    except Exception:
+        return set()
+
+def load_existing_data():
+    if not os.path.exists(OUTPUT_FILE):
+        return {}
+    try:
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+def save_blog(app_name, content):
+    data = load_existing_data()
+    data[app_name] = content
+
+    try:
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+
+        completed = get_completed_blogs()
+        if app_name not in completed:
+            with open(COMPLETED_FILE, "a", encoding="utf-8") as f:
+                f.write(app_name + "\n")
+
+        print(f"✓ Successfully saved: {app_name}")
+        
+        # Google Indexing API ko notify karein
+        slug = app_name.lower().replace(" ", "-")
+        blog_url = f"https://uonogamesapk.com/blogs/{slug}"
+        notify_google_indexing(blog_url)
+
+    except Exception as e:
+        print(f"Blog save karne me error ({app_name}): {e}")
+
+# ============================================================
+# GEMINI BLOG PROMPT
+# ============================================================
 def build_prompt(app_name):
-
     clean_app_name = app_name.strip()
-
     if clean_app_name.lower().startswith("yono "):
         yono_keyword = clean_app_name
     else:
         yono_keyword = f"Yono {clean_app_name}"
 
     return f"""
-You are an expert SEO content writer specializing in programmatic SEO, APK directories, mobile gaming, app discovery, and search-intent optimization.
-
-Write a completely original, useful, natural-sounding SEO landing page for:
-
-{clean_app_name}
-
-This page is part of the broader Yono Games / Yono Apps search ecosystem.
 You are an expert SEO content writer specializing in programmatic SEO, APK directories, mobile gaming, app discovery, and search-intent optimization.
 
 Write a completely original, useful, natural-sounding SEO landing page for:
@@ -255,3 +374,71 @@ Before returning the article, silently check that:
 11. The slug is lowercase and uses hyphens.
 12. The output follows the requested structure exactly.
 """
+
+# ============================================================
+# GENERATE BLOG
+# ============================================================
+def generate_blog(app_name):
+    prompt = build_prompt(app_name)
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            print(f"Sending request to Gemini (attempt {attempt}/{MAX_RETRIES})...")
+            response = model.generate_content(prompt)
+            if not response:
+                continue
+            content = getattr(response, "text", None)
+            if not content:
+                continue
+            content = content.strip()
+            if len(content) < 100:
+                continue
+            return content
+        except Exception as e:
+            error_message = str(e)
+            if "429" in error_message or "quota" in error_message.lower() or "rate limit" in error_message.lower():
+                print("\n⚠️ Gemini quota/rate limit reached. Script safely stop ho rahi hai.")
+                return None
+            print(f"Gemini API error: {error_message}")
+            if attempt < MAX_RETRIES:
+                wait_time = 10 * attempt
+                time.sleep(wait_time)
+    return None
+
+# ============================================================
+# MAIN
+# ============================================================
+def main():
+    print("=" * 60)
+    print("       GEMINI SEO BLOG GENERATOR")
+    print("=" * 60)
+
+    completed = get_completed_blogs()
+    apps_list = get_apps_list()
+
+    pending_apps = [app for app in apps_list if app not in completed]
+
+    if not pending_apps:
+        print("\n✓ Sabhi available apps ke blogs already generated hain.")
+        return
+
+    for index, app in enumerate(pending_apps, start=1):
+        print("\n" + "-" * 60)
+        print(f"[{index}/{len(pending_apps)}] Generating blog for: {app}")
+        print("-" * 60)
+
+        blog_content = generate_blog(app)
+
+        if blog_content:
+            save_blog(app, blog_content)
+            if index < len(pending_apps):
+                time.sleep(DELAY_BETWEEN_REQUESTS)
+        else:
+            print(f"\n✗ Blog generation failed: {app}")
+            break
+
+    print("\n" + "=" * 60)
+    print("                 DONE")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    main()
