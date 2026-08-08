@@ -9,6 +9,7 @@ on:
 jobs:
   optimize-seo:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -19,7 +20,11 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
-        run: pip install requests
+        run: |
+          pip install requests
 
       - name: Run AI SEO Script
-        run: python ai_seo_optimizer.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python ai_seo_optimizer.py
