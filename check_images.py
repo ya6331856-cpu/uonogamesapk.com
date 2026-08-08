@@ -17,7 +17,7 @@ def check_images():
     print("Checking for broken images and assets...")
     url = "https://www.uonogamesapk.com"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         if response.status_code != 200:
             print("Could not load homepage for asset check.")
             return
@@ -38,7 +38,7 @@ def check_images():
                     img_res = requests.head(img_url, timeout=5)
                     if img_res.status_code >= 400:
                         broken_count += 1
-                except:
+                except Exception:
                     pass
 
         if broken_count > 0:
@@ -47,6 +47,9 @@ def check_images():
             print(f"Found {broken_count} broken assets and alerted via Telegram.")
         else:
             print("All checked images and assets are working fine!")
+
+    except Exception as e:
+        print(f"Error during image check: {str(e)}")
 
 if __name__ == "__main__":
     check_images()
