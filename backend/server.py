@@ -1126,8 +1126,8 @@ def default_settings() -> dict:
         "branding": {
             "site_name": "YONO GAMES",
             "logo_text": "YONO GAMES",
-            "logo_url": "/logo-v2.png",
-            "favicon_url": "/logo-icon-v2.png",
+            "logo_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
+            "favicon_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
             "footer_text": "Premium APK store for safe, verified Android games and apps.",
             "copyright": "YONO GAMES · uonogamesapk.com",
         },
