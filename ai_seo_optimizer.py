@@ -40,7 +40,13 @@ def generate_ai_seo(app_name):
 
 if __name__ == "__main__":
     # Dynamic list support: Future mein aap yahan apne saare apps add kar sakte hain ya dynamic scan laga sakte hain
-    apps_list = ["Yono Rummy", "Teen Patti Gold", "Lucky Spin APK"]
+    apps_list = [
+    "Yono Rummy", "Bingo101", "Yono Arcade", "Max Rummy", "Diwa Slots", 
+    "Spin Winner", "Boss Rummy", "INR Rummy", "Jaiho Slots", "Rummy 888", 
+    "Rummy 77", "Rummy Ludo", "Ok Rummy", "Hindi 777", "789 Jackpot", 
+    "Game Rummy", "Rumble Rummy", "Yes Spin", "Love Rummy", "Share Slots", 
+    "Maha Games", "Hi Rummy", "777 Game", "Ind Club", "Ind Rummy"
+    ]
     
     for app in apps_list:
         generate_ai_seo(app)
