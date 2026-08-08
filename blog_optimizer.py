@@ -4,7 +4,8 @@ import time
 import google.generativeai as genai
 
 # Gemini API Configuration
-genai.configure(api_key="YOUR_API_KEY")  # Apna Gemini API Key yahan daalein
+api_key = os.environ.get("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Files & Apps List
