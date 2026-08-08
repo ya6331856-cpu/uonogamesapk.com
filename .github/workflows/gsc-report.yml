@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install google-api-python-client google-auth requests google-generativeai
+          pip install google-api-python-client google-auth requests google-generativeai beautifulsoup4
 
       - name: Run API Health Check
         env:
@@ -42,9 +42,15 @@ jobs:
           curl -s "https://www.google.com/ping?sitemap=https://www.uonogamesapk.com/sitemap.xml"
           curl -s "https://www.bing.com/ping?sitemap=https://www.uonogamesapk.com/sitemap.xml"
 
+      - name: Run Broken Link Checker
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python check_links.py
+
       - name: Commit and Push All Changes
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add .
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap and SEO reports [skip ci]" && git push)
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, links and SEO reports [skip ci]" && git push)
