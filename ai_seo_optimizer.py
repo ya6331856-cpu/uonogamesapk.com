@@ -10,7 +10,7 @@ def generate_ai_seo(app_name):
         print("Error: GEMINI_API_KEY not found in secrets!")
         return
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     prompt = (
         f"Write an SEO-optimized title and a viral high-converting description for a gaming app named '{app_name}'. "
