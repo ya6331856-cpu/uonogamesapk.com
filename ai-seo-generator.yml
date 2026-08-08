@@ -1,6 +1,7 @@
 name: AI SEO Generator & Telegram Notifier
 
 on:
+push:
   workflow_dispatch:
 
 jobs:
