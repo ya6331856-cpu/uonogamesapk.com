@@ -1,4 +1,4 @@
-name: Google Search Console Analytics
+name: Automated SEO & API Health Pipeline
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  gsc-analytics:
+  run-automation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -18,9 +18,25 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
-        run: pip install google-api-python-client google-auth
+        run: |
+          pip install google-api-python-client google-auth requests google-generativeai
 
-      - name: Run GSC Report Script
+      - name: Run API Health Check
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BING_API_KEY: ${{ secrets.BING_API_KEY }}
+        run: python health_check.py
+
+      - name: Run Main GSC Report Automation
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: python gsc_report.py
+
+      - name: Commit and Push Generated Reports
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add .
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update reports and data [skip ci]" && git push)
