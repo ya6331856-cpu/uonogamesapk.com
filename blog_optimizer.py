@@ -6,7 +6,7 @@ import google.generativeai as genai
 # Gemini API Configuration
 api_key = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-3.6-flash')
 
 # Files & Apps List
 APPS_LIST = ["Yono Rummy", "Spin Gold", "Spin Crush", "Bingo101", "GOGO Rummy"]  # Yahan games ki list daalein
@@ -56,4 +56,4 @@ for app in APPS_LIST:
         blog_content = generate_blog(app)
         if blog_content:
             save_blog(app, blog_content)
-            time.sleep(5)
+            time.sleep(15)
