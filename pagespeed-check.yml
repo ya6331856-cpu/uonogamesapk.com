@@ -1,6 +1,7 @@
 name: PageSpeed Insights Check
 
 on:
+push:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 1' # Har Monday ko automatic run hoga
