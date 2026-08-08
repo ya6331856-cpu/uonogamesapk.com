@@ -6,7 +6,7 @@ from googleapiclient.discovery import build
 # GitHub Secret se credentials load karna
 sa_key_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT")
 if not sa_key_json:
-    raise ValueError("GCP_SA_KEY secret not found!")
+    raise ValueError("GOOGLE_SERVICE_ACCOUNT secret not found!")
 
 sa_info = json.loads(sa_key_json)
 credentials = service_account.Credentials.from_service_account_info(
