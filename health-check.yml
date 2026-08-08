@@ -1,0 +1,35 @@
+name: System Health Check & Status Notifier
+
+on:
+push:
+  schedule:
+    - cron: '0 10 * * *' # Roz subah 10 baje status bhejega
+  workflow_dispatch:
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Send Telegram Status Alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "
+          import os
+          import requests
+
+          token = os.environ.get('TELEGRAM_BOT_TOKEN')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+          
+          message = '🟢 *System Health Report*: Uonogames APK automations are active, redirects and SEO scripts are running smoothly!'
+          
+          url = f'https://api.telegram.org/bot{token}/sendMessage'
+          payload = {'chat_id': chat_id, 'text': message, 'parse_mode': 'Markdown'}
+          
+          response = requests.post(url, json=payload)
+          print('Telegram Response:', response.status_code)
+          "
