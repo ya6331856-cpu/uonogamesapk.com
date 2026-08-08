@@ -1,6 +1,7 @@
 name: Auto SEO Optimizer & Notifier
 
 on:
+push:
   schedule:
     - cron: '0 9 * * *' # Yeh roz subah 9 baje apne aap chal jayega
   workflow_dispatch:
