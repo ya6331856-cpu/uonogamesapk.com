@@ -1,0 +1,24 @@
+name: Build and Optimize Assets
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Minify
+        run: |
+          # Agar aap npm packages ya build tools use karte hain
+          npm install
+          # Example: HTML/CSS/JS minification script yahan run kar sakte hain
+          # npm run build
