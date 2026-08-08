@@ -8,7 +8,7 @@ def check_gemini():
         return "Missing"
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-3.6-flash')
         response = model.generate_content("Hello")
         return "Working" if response else "Failed"
     except Exception as e:
