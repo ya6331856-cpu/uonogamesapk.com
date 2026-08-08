@@ -8,7 +8,13 @@ sa_key_json = os.environ.get("GCP_SA_KEY")
 if not sa_key_json:
     raise ValueError("GCP_SA_KEY secret not found!")
 
-sa_info = json.loads(sa_key_json)
+# JSON decode error handle karne ke liye fallback fix
+try:
+    sa_info = json.loads(sa_key_json)
+except json.JSONDecodeError:
+    fixed_json = sa_key_json.replace('\\n', '\n')
+    sa_info = json.loads(fixed_json)
+
 credentials = service_account.Credentials.from_service_account_info(
     sa_info, scopes=["https://www.googleapis.com/auth/webmasters.readonly"]
 )
@@ -17,7 +23,6 @@ service = build("searchconsole", "v1", credentials=credentials)
 
 site_url = "https://www.uonogamesapk.com/"
 
-# Pichle kuch dinon ka search performance data request karna
 request = {
     "startDate": "2026-07-01",
     "endDate": "2026-08-01",
