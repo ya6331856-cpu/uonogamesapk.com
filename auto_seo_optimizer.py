@@ -51,4 +51,4 @@ if __name__ == "__main__":
 
     for app in apps_list:
         generate_ai_seo(app)
-        time.sleep(5)  # Har request ke beech 5 seconds ka gap taaki 429 quota error na aaye
+        time.sleep(15)  # Har request ke beech 5 seconds ka gap taaki 429 quota error na aaye
