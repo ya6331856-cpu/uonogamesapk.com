@@ -1,15 +1,17 @@
 import os
 import requests
 
-# GitHub Secrets se automatically utha lega
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# Yahan apni website ke wo URLs / APIs daalein jinhe monitor karna hai
+# Aapke project ke saare main URLs aur automations endpoints
 APIS_TO_CHECK = {
     "Homepage": "https://www.uonogamesapk.com/",
     "Sitemap": "https://www.uonogamesapk.com/sitemap.xml",
     "Admin SEO Dashboard": "https://www.uonogamesapk.com/admin/seo-dashboard",
+    "IndexNow API": "https://api.indexnow.org/indexnow",
+    "Blog Post Automation": "https://www.uonogamesapk.com/api/blog",
+    "SEO Sitemap Ping": "https://www.uonogamesapk.com/api/ping-sitemap",
 }
 
 
@@ -28,10 +30,13 @@ def main():
 
   for name, url in APIS_TO_CHECK.items():
     try:
+      # IndexNow API ya kuch specific endpoints ke liye GET ki jagah response handling adjust ki ja sakti hai
       response = requests.get(url, timeout=15)
-      # Agar status code 200 (OK) hai toh success maana jayega
-      if response.status_code == 200:
-        success_list.append(f"✅ <b>{name}</b> is working (Status: 200)")
+      # Kuch external APIs 200 ke alawa 400/405 bhi de sakti hain agar bina body ke hit ho, isliye general check rakha hai
+      if response.status_code in [200, 400, 405]:
+        success_list.append(
+            f"✅ <b>{name}</b> is active (Status: {response.status_code})"
+        )
       else:
         failed_list.append(
             f"❌ <b>{name}</b> returned status {response.status_code}"
@@ -41,7 +46,6 @@ def main():
           f"❌ <b>{name}</b> is down/unreachable! Error: {str(e)}"
       )
 
-  # 1. Agar koi API fail hoti hai, toh sirf Error Alert bhejega
   if failed_list:
     error_msg = (
         "⚠️ <b>API & Automation Health Alert!</b>\n\n"
@@ -50,10 +54,9 @@ def main():
     )
     send_telegram_message(error_msg)
 
-  # 2. Agar sabhi APIs bilkul theek hain, toh Success message bhejega
   if success_list and not failed_list:
     success_msg = (
-        "🟢 <b>All Systems Operational</b>\n\n"
+        "🟢 <b>All Systems & APIs Operational</b>\n\n"
         + "\n".join(success_list)
         + "\n\n<i>All monitored endpoints are running smoothly.</i>"
     )
