@@ -9,7 +9,6 @@ APIS_TO_CHECK = {
     "Homepage": "https://www.uonogamesapk.com/",
     "Sitemap": "https://www.uonogamesapk.com/sitemap.xml",
     "Admin SEO Dashboard": "https://www.uonogamesapk.com/admin/seo-dashboard",
-    "IndexNow API": "https://api.indexnow.org/indexnow",
     "Blog Post Automation": "https://www.uonogamesapk.com/api/blog",
     "SEO Sitemap Ping": "https://www.uonogamesapk.com/sitemap.xml"
 }
@@ -29,8 +28,7 @@ def main():
     for name, url in APIS_TO_CHECK.items():
         try:
             response = requests.get(url, timeout=15)
-            # 200, 400 (IndexNow ke liye), 405, 422 ko success mein count karenge taki false alarms na aayein
-            if response.status_code in [200, 400, 405, 422]:
+            if response.status_code in [200, 405, 422]:
                 success_list.append(
                     f"✅ <b>{name}</b> is active (Status: {response.status_code})"
                 )
