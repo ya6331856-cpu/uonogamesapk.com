@@ -44,7 +44,7 @@ export default function Store() {
 
   const fetchApps = async () => {
     try {
-      const res = await api.get("/apps");
+      const res = await api.get("/apps?limit=200");
       setData(res.data);
     } catch (e) {
       toast.error("Failed to load apps");
