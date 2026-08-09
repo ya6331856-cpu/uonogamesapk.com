@@ -11,57 +11,54 @@ APIS_TO_CHECK = {
     "Admin SEO Dashboard": "https://www.uonogamesapk.com/admin/seo-dashboard",
     "IndexNow API": "https://api.indexnow.org/indexnow",
     "Blog Post Automation": "https://www.uonogamesapk.com/api/blog",
-    "SEO Sitemap Ping": "https://www.uonogamesapk.com/api/ping-sitemap",
+    "SEO Sitemap Ping": "https://www.uonogamesapk.com/sitemap.xml"
 }
 
-
 def send_telegram_message(message):
-  url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-  payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
-  try:
-    requests.post(url, json=payload, timeout=10)
-  except Exception as e:
-    print(f"Failed to send telegram message: {e}")
-
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
+    try:
+        requests.post(url, json=payload, timeout=10)
+    except Exception as e:
+        print(f"Failed to send telegram message: {e}")
 
 def main():
-  success_list = []
-  failed_list = []
+    success_list = []
+    failed_list = []
 
-  for name, url in APIS_TO_CHECK.items():
-    try:
-      # IndexNow API ya kuch specific endpoints ke liye GET ki jagah response handling adjust ki ja sakti hai
-      response = requests.get(url, timeout=15)
-      # Kuch external APIs 200 ke alawa 400/405 bhi de sakti hain agar bina body ke hit ho, isliye general check rakha hai
-      if response.status_code in [200, 400, 405]:
-        success_list.append(
-            f"✅ <b>{name}</b> is active (Status: {response.status_code})"
+    for name, url in APIS_TO_CHECK.items():
+        try:
+            # IndexNow API ya kuch specific endpoints ke liye GET ki jagah response handling adjust ki ja sakti hai
+            # Kuch external APIs 200 ke alawa 400/405 bhi de sakti hain agar bina body ke hit ho, isliye general check rakha
+            response = requests.get(url, timeout=15)
+            if response.status_code in [200, 480, 405]:
+                success_list.append(
+                    f"✅ <b>{name}</b> is active (Status: {response.status_code})"
+                )
+            else:
+                failed_list.append(
+                    f"❌ <b>{name}</b> returned status {response.status_code}"
+                )
+        except Exception as e:
+            failed_list.append(
+                f"❌ <b>{name}</b> is down/unreachable! Error: {str(e)}"
+            )
+
+    if failed_list:
+        error_msg = (
+            "⚠️ <b>API & Automation Health Alert!</b>\n\n"
+            + "\n".join(failed_list)
+            + "\n\n<i>Please check your server or GitHub actions.</i>"
         )
-      else:
-        failed_list.append(
-            f"❌ <b>{name}</b> returned status {response.status_code}"
+        send_telegram_message(error_msg)
+
+    if success_list and not failed_list:
+        success_msg = (
+            "🟢 <b>All Systems & APIs Operational</b>\n\n"
+            + "\n".join(success_list)
+            + "\n\n<i>All monitored endpoints are running smoothly.</i>"
         )
-    except Exception as e:
-      failed_list.append(
-          f"❌ <b>{name}</b> is down/unreachable! Error: {str(e)}"
-      )
-
-  if failed_list:
-    error_msg = (
-        "⚠️ <b>API & Automation Health Alert!</b>\n\n"
-        + "\n".join(failed_list)
-        + "\n\n<i>Please check your server or GitHub actions.</i>"
-    )
-    send_telegram_message(error_msg)
-
-  if success_list and not failed_list:
-    success_msg = (
-        "🟢 <b>All Systems & APIs Operational</b>\n\n"
-        + "\n".join(success_list)
-        + "\n\n<i>All monitored endpoints are running smoothly.</i>"
-    )
-    send_telegram_message(success_msg)
-
+        send_telegram_message(success_msg)
 
 if __name__ == "__main__":
-  main()
+    main()
