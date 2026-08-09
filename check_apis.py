@@ -28,10 +28,9 @@ def main():
 
     for name, url in APIS_TO_CHECK.items():
         try:
-            # IndexNow API ya kuch specific endpoints ke liye GET ki jagah response handling adjust ki ja sakti hai
-            # Kuch external APIs 200 ke alawa 400/405 bhi de sakti hain agar bina body ke hit ho, isliye general check rakha
             response = requests.get(url, timeout=15)
-            if response.status_code in [200, 480, 405]:
+            # 200, 400 (IndexNow ke liye), 405, 422 ko success mein count karenge taki false alarms na aayein
+            if response.status_code in [200, 400, 405, 422]:
                 success_list.append(
                     f"✅ <b>{name}</b> is active (Status: {response.status_code})"
                 )
