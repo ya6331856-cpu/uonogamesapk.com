@@ -16,9 +16,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Dependencies & Minify
+      - name: Check Project and Run Build
         run: |
-          # Agar aap npm packages ya build tools use karte hain
-          npm install
-          # Example: HTML/CSS/JS minification script yahan run kar sakte hain
-          # npm run build
+          if [ -f "package.json" ]; then
+            npm install
+            npm run build --if-present
+          else
+            echo "No package.json found, skipping build."
+          fi
