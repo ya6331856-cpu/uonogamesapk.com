@@ -77,8 +77,25 @@ jobs:
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add .
-          git diff --quiet && git diff --cached --quiet || git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]"
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]"
+          fi
+          success=0
           for i in 1 2 3 4 5; do
             git fetch origin
-            git rebase origin/$(git branch --show-current) && break
+            if git rebase origin/$(git branch --show-current); then
+              success=1
+              break
+            fi
             git rebase --abort
+            echo "Rebase failed, retrying in 5s..."
+            sleep 5
+          done
+          git push origin HEAD:$(git branch --show-current)
+
+      - name: Run Keyword Gap Monitor
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: python keyword_gap_monitor.py
