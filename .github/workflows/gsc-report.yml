@@ -77,7 +77,7 @@ jobs:
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add .
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]" && git pull --rebase origin main && git push origin HEAD:main)
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]" && git pull --rebase origin $(git branch --show-current) || true && git push origin HEAD:$(git branch --show-current))
 
       - name: Run Keyword Gap Monitor
         env:
