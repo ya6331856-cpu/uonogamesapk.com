@@ -2,7 +2,7 @@ name: Autonated SEO & API Health Pipeline
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -72,13 +72,21 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python check_images.py
 
+      - name: Run Autonomous AI GSC & SEO Fixer
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: python gsc_ai_fixer.py
+
       - name: Commit and Push All Changes
         run: |
           git config --global user.name GitHubActionBot
           git config --global user.email action@github.com
           git add .
           if ! git diff --quiet || ! git diff --cached --quiet; then
-            git commit -m auto-update-seo-reports
+            git commit -m "auto-update-seo-reports-and-ai-fixes"
           fi
           success=0
           for i in 1 2 3 4 5; do
