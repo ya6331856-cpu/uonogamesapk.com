@@ -1,4 +1,4 @@
-name: Automated SEO & API Health Pipeline
+name: Autonated SEO & API Health Pipeline
 
 on:
   schedule:
@@ -77,11 +77,11 @@ jobs:
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add .
-          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]" && git push)
+          git diff --quiet && git diff --cached --quiet || (git commit -m "chore: auto-update sitemap, speed check, security, validators, images and SEO reports [skip ci]" && git pull --rebase origin main && git push origin HEAD:main)
+
       - name: Run Keyword Gap Monitor
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: python keyword_gap_monitor.py
-        
