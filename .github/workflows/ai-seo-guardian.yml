@@ -42,7 +42,14 @@ jobs:
         run: python scripts/seo_gsc_analyzer.py
 
       - name: Run Telegram Approval Manager
-        run: python scripts/telegram_approval_manager.py
+        run: |
+          if [ -f "scripts/telegram_approval_manager.py" ]; then
+            python scripts/telegram_approval_manager.py
+          elif [ -f "telegram_approval_manager.py" ]; then
+            python telegram_approval_manager.py
+          else
+            find . -name "telegram_approval_manager.py" -exec python {} \;
+          fi
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
