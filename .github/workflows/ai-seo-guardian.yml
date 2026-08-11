@@ -1,0 +1,39 @@
+name: AI SEO Guardian
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  seo-audit-and-optimize:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Node Dependencies
+        run: npm install
+
+      - name: Run GSC Intelligence Analyzer
+        run: python scripts/seo_gsc_analyzer.py
+
+      - name: Run SEO Rollback & Health Guard
+        run: python scripts/seo_rollback_guard.py
+
+      - name: Commit SEO Reports & Logs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 AI SEO Guardian: Automated Health Check & Reports Updated"
+          file_pattern: seo_change_log.json seo_opportunities.json
