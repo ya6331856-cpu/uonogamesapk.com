@@ -26,12 +26,12 @@ jobs:
       - name: Find and Install Node Dependencies
         run: |
           if [ -f "package.json" ]; then
-            npm install
+            npm install --legacy-peer-deps
           else
             PKG_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | head -n 1)
             if [ -n "$PKG_DIR" ]; then
               echo "Found package.json in $PKG_DIR"
-              cd "$PKG_DIR" && npm install
+              cd "$PKG_DIR" && npm install --legacy-peer-deps
             else
               echo "package.json not found anywhere!"
               exit 1
