@@ -1,36 +1,30 @@
 import os
 import json
-import tempfile
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def analyze_opportunities():
     print("Connecting to Google Search Console API...")
     
-    # GitHub Secret se JSON data read karna
     json_creds = os.environ.get("GSC_SERVICE_ACCOUNT_JSON") or os.environ.get("GOOGLE_SERVICE_ACCOUNT")
     
     if not json_creds:
-        print("Error: GSC service account credentials not found in environment secrets!")
+        print("Error: GSC service account credentials not found in secrets!")
         return
 
     try:
-        # Temporary file mein credentials likh kar authenticate karna
         creds_dict = json.loads(json_creds)
         scopes = ["https://www.googleapis.com/auth/webmasters.readonly"]
         credentials = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
         
         service = build('webmasters', 'v3', credentials=credentials)
+        site_url = "https://uonogamesapk.com/"
         
-        # Aapki website ka property URL (Search Console ke mutabiq)
-        site_url = os.environ.get("SITE_URL", "https://uonogamesapk.com/")
-        
-        # Pichle 28 dino ka data fetch karne ki request
         request = {
             'startDate': '28DaysAgo',
             'endDate': 'today',
             'dimensions': ['query', 'page'],
-            'rowLimit': 50
+            'rowLimit': 100
         }
         
         response = service.searchanalytics().query(siteUrl=site_url, body=request).execute()
@@ -45,9 +39,8 @@ def analyze_opportunities():
             position = row['position']
             ctr = (clicks / impressions) * 100 if impressions > 0 else 0
             
-            # Striking Distance logic (Position 4 se 20 ke beech)
-            if 4 <= position <= 20:
-                priority = "HIGH (Striking Distance)" if position <= 11 else "MEDIUM"
+            if 3 <= position <= 25:
+                priority = "HIGH (Striking Distance)" if position <= 12 else "MEDIUM"
                 opportunities.append({
                     "query": query,
                     "url": page,
@@ -58,14 +51,16 @@ def analyze_opportunities():
                     "priority": priority
                 })
                 
-        report_path = "seo_opportunities.json"
-        with open(report_path, 'w') as f:
-            json.dump(opportunities, f, indent=2)
-            
-        print(f"Analysis complete. Found {len(opportunities)} real ranking opportunities saved to {report_path}.")
+        if opportunities:
+            report_path = "seo_opportunities.json"
+            with open(report_path, 'w') as f:
+                json.dump(opportunities, f, indent=2)
+            print(f"Success! Found {len(opportunities)} real ranking keywords saved to {report_path}.")
+        else:
+            print("API connected, but no keywords found in the specified position range.")
 
     except Exception as e:
-        print(f"Error connecting to GSC API: {e}")
+        print(f"Error fetching data from GSC API: {e}")
 
 if __name__ == '__main__':
     analyze_opportunities()
