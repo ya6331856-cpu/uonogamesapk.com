@@ -2,13 +2,12 @@ name: AI SEO Guardian
 
 on:
   schedule:
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+    - cron: '0 */6 * * *' # Yeh 24/7 non-stop har 6 ghante mein automatically run hoga
+  workflow_dispatch: # Isse aap manually bhi run kar sakte hain
 
 jobs:
   seo-audit-and-optimize:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -18,49 +17,21 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Python Dependencies
+      - name: Install Dependencies
         run: |
-          pip install requests
-          pip install google-generativeai google-api-python-client google-auth-httplib2 google-auth-oauthlib
+          pip install google-generativeai
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Find and Install Node Dependencies
-        run: |
-          if [ -f "package.json" ]; then
-            npm install --legacy-peer-deps
-          else
-            PKG_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | head -n 1)
-            if [ -n "$PKG_DIR" ]; then
-              echo "Found package.json in $PKG_DIR"
-              cd "$PKG_DIR" && npm install --legacy-peer-deps
-            else
-              echo "package.json not found anywhere!"
-              exit 1
-            fi
-          fi
-
-      - name: Run GSC Intelligence Analyzer
-        run: python scripts/seo_gsc_analyzer.py
-
-      - name: Run Telegram Approval Manager
-        run: |
-          if [ -f "scripts/telegram_approval_manager.py" ]; then
-            python scripts/telegram_approval_manager.py
-          elif [ -f "telegram_approval_manager.py" ]; then
-            python telegram_approval_manager.py
-          else
-            find . -name "telegram_approval_manager.py" -exec python {} \;
-          fi
+      - name: Run GSC Intelligence Analyzer & Auto-Publisher
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+        run: |
+          python scripts/seo_gsc_analyzer.py
 
-      - name: Commit SEO Reports & Logs
+      - name: Commit SEO Reports & Updates
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🤖 AI SEO Guardian: Automated Health Check & Reports Updated"
-          file_pattern: seo_change_log.json seo_opportunities.json
+          commit_message: "AI SEO Guardian: 24/7 Automated 100% SEO Optimization & Publishing [skip ci]"
+          branch: main
