@@ -5,7 +5,7 @@ from datetime import datetime
 import google.generativeai as genai
 
 def analyze_and_optimize():
-    print("Initializing Gemini AI SEO Guardian with Timestamp & Auto-Publisher...")
+    print("Running Gemini AI SEO Generator...")
     
     api_keys = [
         os.environ.get("GEMINI_API_KEY"),
@@ -17,33 +17,34 @@ def analyze_and_optimize():
     valid_keys = [key for key in api_keys if key]
     
     if not valid_keys:
-        print("Error: No Gemini API keys found in secrets!")
+        print("Error: No Gemini API keys found!")
         return
 
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    prompt = f"""
-    You are an expert AI SEO Master and Gaming Content Strategist for 'uonogamesapk.com'.
-    Current execution time: {current_time}.
-    Analyze current 2026 gaming trends for APK downloads (like Rummy, Teen Patti, Uono Games, Crash Games) and generate a fresh JSON array of 5 highly optimized SEO opportunities.
-    Each item in the JSON array must contain:
-    - "query": Target keyword string
-    - "url": Recommended target path (e.g. "/", "/gogo-rummy")
-    - "impressions": Estimated number
-    - "clicks": Estimated number
-    - "position": Current rank float
-    - "ctr": Click-through rate float
-    - "priority": "HIGH (100% AI Optimized)"
-    - "optimized_title": A catchy, SEO-friendly 100% perfected title
-    - "optimized_description": A high-converting meta description
-    - "last_updated": "{current_time}"
     
-    Return ONLY valid JSON format without markdown code blocks.
+    # Direct aur fresh prompt jo 5 alag naye gaming apps ke liye data dega
+    prompt = f"""
+    Generate a JSON array of 61 highly optimized SEO opportunities for different gaming and earning apps (like yono games, yono Rummy, Uono, games, rummy all Games, all yono, yono all new games, new yono games, yono arcade, yono rummy, jaiho Arcade, download all yono apk, new rummy, 2026 yono games, download all yono games, yono games list , uono games, download all yono, new 2026 yono, uono games download apps, all yono apps, rummy games download, ).
+    Current time: {current_time}
+    
+    Each item must have these exact keys:
+    - "query": string (keyword)
+    - "url": string (path)
+    - "impressions": number
+    - "clicks": number
+    - "position": float
+    - "ctr": float
+    - "priority": string
+    - "optimized_title": string
+    - "optimized_description": string
+    
+    Return ONLY valid raw JSON array. No markdown, no extra text.
     """
 
     opportunities = []
     for i, api_key in enumerate(valid_keys):
         try:
-            print(f"Trying Gemini API Key #{i+1}...")
+            print(f"Trying API Key #{i+1}...")
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel("gemini-1.5-pro")
             response = model.generate_content(prompt)
@@ -51,50 +52,27 @@ def analyze_and_optimize():
             
             if text_response.startswith("```json"):
                 text_response = text_response[7:]
+            if text_response.startswith("```"):
+                text_response = text_response[3:]
             if text_response.endswith("```"):
                 text_response = text_response[:-3]
                 
             opportunities = json.loads(text_response.strip())
-            print(f"Success using API Key #{i+1}! Generated {len(opportunities)} SEO items.")
+            print(f"Success with API Key #{i+1}! Got {len(opportunities)} items.")
             break
         except Exception as e:
-            print(f"API Key #{i+1} failed: {e}. Switching...")
+            print(f"API Key #{i+1} error: {e}. Trying next...")
             continue
 
     if not opportunities:
-        print("Error: Failed to fetch data from all Gemini keys.")
+        print("Error: Could not generate data from Gemini keys.")
         return
 
-    # 1. Save opportunities report with timestamp
+    # File ko naye data ke sath save karna
     report_path = "seo_opportunities.json"
     with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(opportunities, f, indent=2)
-
-    # 2. Auto-publish / inject changes into frontend HTML files
-    print("Auto-publishing and injecting SEO changes into frontend files...")
-    html_files = glob.glob("frontend/**/*.html", recursive=True) + glob.glob("pages/**/*.html", recursive=True) + glob.glob("*.html", recursive=True)
-    
-    updated_count = 0
-    for item in opportunities:
-        target_title = item.get("optimized_title")
-        
-        for file_path in html_files:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    content = file.read()
-                
-                if "<title>" in content and "</title>" in content:
-                    start = content.find("<title>")
-                    end = content.find("</title>") + len("</title>")
-                    content = content[:start] + f"<title>{target_title}</title>" + content[end:]
-                    
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.write(content)
-                updated_count += 1
-            except Exception as ex:
-                print(f"Skipped file {file_path}: {ex}")
-
-    print(f"Auto-Publish Complete! Updated {updated_count} files with fresh 100% AI optimized SEO data.")
+    print("seo_opportunities.json successfully updated with new apps!")
 
 if __name__ == '__main__':
     analyze_and_optimize()
