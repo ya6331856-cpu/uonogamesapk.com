@@ -57,14 +57,6 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
-      - name: Run SEO Rollback & Health Guard
-        run: |
-          if [ -d "frontend" ]; then
-            cd frontend && python ../scripts/seo_rollback_guard.py
-          else
-            python scripts/seo_rollback_guard.py
-          fi
-
       - name: Commit SEO Reports & Logs
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
