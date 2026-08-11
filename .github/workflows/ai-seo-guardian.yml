@@ -2,13 +2,13 @@ name: AI SEO Guardian
 
 on:
   schedule:
-    - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
   seo-audit-and-optimize:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -28,6 +28,12 @@ jobs:
 
       - name: Run GSC Intelligence Analyzer
         run: python scripts/seo_gsc_analyzer.py
+
+      - name: Run Telegram Approval Manager
+        run: python scripts/telegram_approval_manager.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Run SEO Rollback & Health Guard
         run: python scripts/seo_rollback_guard.py
