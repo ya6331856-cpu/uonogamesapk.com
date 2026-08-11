@@ -1,12 +1,12 @@
 import os
 import json
 import glob
+from datetime import datetime
 import google.generativeai as genai
 
 def analyze_and_optimize():
-    print("Initializing Gemini AI SEO Guardian with Multi-API Fallback & Auto-Publisher...")
+    print("Initializing Gemini AI SEO Guardian with Timestamp & Auto-Publisher...")
     
-    # Aapki 4 alag-alag Gemini API keys
     api_keys = [
         os.environ.get("GEMINI_API_KEY"),
         os.environ.get("GEMINI_API_KEY_2"),
@@ -20,19 +20,22 @@ def analyze_and_optimize():
         print("Error: No Gemini API keys found in secrets!")
         return
 
-    prompt = """
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    prompt = f"""
     You are an expert AI SEO Master and Gaming Content Strategist for 'uonogamesapk.com'.
-    Analyze current gaming trends for APK downloads (like Rummy, Teen Patti, Uono Games) and generate a JSON array of 5 highly optimized SEO opportunities.
+    Current execution time: {current_time}.
+    Analyze current 2026 gaming trends for APK downloads (like Rummy, Teen Patti, Uono Games, Crash Games) and generate a fresh JSON array of 5 highly optimized SEO opportunities.
     Each item in the JSON array must contain:
     - "query": Target keyword string
     - "url": Recommended target path (e.g. "/", "/gogo-rummy")
-    - "impressions": Estimated number (e.g. 3500)
-    - "clicks": Estimated number (e.g. 150)
-    - "position": Current rank float (e.g. 11.2)
-    - "ctr": Click-through rate float (e.g. 4.2)
+    - "impressions": Estimated number
+    - "clicks": Estimated number
+    - "position": Current rank float
+    - "ctr": Click-through rate float
     - "priority": "HIGH (100% AI Optimized)"
     - "optimized_title": A catchy, SEO-friendly 100% perfected title
     - "optimized_description": A high-converting meta description
+    - "last_updated": "{current_time}"
     
     Return ONLY valid JSON format without markdown code blocks.
     """
@@ -55,19 +58,19 @@ def analyze_and_optimize():
             print(f"Success using API Key #{i+1}! Generated {len(opportunities)} SEO items.")
             break
         except Exception as e:
-            print(f"API Key #{i+1} failed due to limit or error: {e}. Switching to next...")
+            print(f"API Key #{i+1} failed: {e}. Switching...")
             continue
 
     if not opportunities:
         print("Error: Failed to fetch data from all Gemini keys.")
         return
 
-    # 1. Save opportunities report
+    # 1. Save opportunities report with timestamp
     report_path = "seo_opportunities.json"
-    with open(report_path, 'w') as f:
+    with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(opportunities, f, indent=2)
 
-    # 2. Auto-publish / inject changes into frontend pages
+    # 2. Auto-publish / inject changes into frontend HTML files
     print("Auto-publishing and injecting SEO changes into frontend files...")
     html_files = glob.glob("frontend/**/*.html", recursive=True) + glob.glob("pages/**/*.html", recursive=True) + glob.glob("*.html", recursive=True)
     
@@ -91,7 +94,7 @@ def analyze_and_optimize():
             except Exception as ex:
                 print(f"Skipped file {file_path}: {ex}")
 
-    print(f"Auto-Publish Complete! Updated {updated_count} files with 100% AI optimized SEO data.")
+    print(f"Auto-Publish Complete! Updated {updated_count} files with fresh 100% AI optimized SEO data.")
 
 if __name__ == '__main__':
     analyze_and_optimize()
