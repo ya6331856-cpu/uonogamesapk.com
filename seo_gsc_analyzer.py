@@ -6,6 +6,7 @@ import google.generativeai as genai
 def analyze_and_optimize():
     print("Initializing Gemini AI SEO Guardian with Multi-API Fallback & Auto-Publisher...")
     
+    # Aapki 4 alag-alag Gemini API keys
     api_keys = [
         os.environ.get("GEMINI_API_KEY"),
         os.environ.get("GEMINI_API_KEY_2"),
@@ -54,33 +55,31 @@ def analyze_and_optimize():
             print(f"Success using API Key #{i+1}! Generated {len(opportunities)} SEO items.")
             break
         except Exception as e:
-            print(f"API Key #{i+1} failed: {e}. Trying next...")
+            print(f"API Key #{i+1} failed due to limit or error: {e}. Switching to next...")
             continue
 
     if not opportunities:
         print("Error: Failed to fetch data from all Gemini keys.")
         return
 
-    # 1. Save to JSON report
+    # 1. Save opportunities report
     report_path = "seo_opportunities.json"
     with open(report_path, 'w') as f:
         json.dump(opportunities, f, indent=2)
 
-    # 2. Auto-publish / inject into frontend HTML files automatically
+    # 2. Auto-publish / inject changes into frontend pages
     print("Auto-publishing and injecting SEO changes into frontend files...")
     html_files = glob.glob("frontend/**/*.html", recursive=True) + glob.glob("pages/**/*.html", recursive=True) + glob.glob("*.html", recursive=True)
     
     updated_count = 0
     for item in opportunities:
         target_title = item.get("optimized_title")
-        target_desc = item.get("optimized_description")
         
         for file_path in html_files:
             try:
                 with open(file_path, 'r', encoding='utf-8') as file:
                     content = file.read()
                 
-                # Simple injection for demonstration or general template update
                 if "<title>" in content and "</title>" in content:
                     start = content.find("<title>")
                     end = content.find("</title>") + len("</title>")
