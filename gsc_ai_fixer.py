@@ -18,7 +18,7 @@ def send_telegram(message):
     requests.post(url, json=payload)
 
 def analyze_and_fix_with_gemini(error_type, url_path, context_data):
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-3.6-pro')
     
     prompt = f"""
     You are an expert Autonomous SEO and Web Engineer AI. 
