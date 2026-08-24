@@ -78,6 +78,8 @@ class AppModel(BaseModel):
     apk_url: str = ""
     featured: bool = False
     featured_order: Optional[int] = None
+    pinned: bool = False
+    sort_order: int = 0
     developer: str = ""
     package_name: str = ""
     min_android: str = "Android 6.0+"
@@ -115,6 +117,8 @@ class AppCreate(BaseModel):
     apk_url: str = ""
     featured: bool = False
     featured_order: Optional[int] = None
+    pinned: bool = False
+    sort_order: int = 0
     developer: str = ""
     package_name: str = ""
     min_android: str = "Android 6.0+"
@@ -151,6 +155,8 @@ class AppUpdate(BaseModel):
     apk_url: Optional[str] = None
     featured: Optional[bool] = None
     featured_order: Optional[int] = None
+    pinned: Optional[bool] = None
+    sort_order: Optional[int] = None
     developer: Optional[str] = None
     package_name: Optional[str] = None
     min_android: Optional[str] = None
@@ -293,6 +299,12 @@ async def me(admin: dict = Depends(get_current_admin)):
 # ---------------------------------------------------------------------------
 # Public app routes
 # ---------------------------------------------------------------------------
+def _invert_ts(ts: str) -> tuple:
+    """Sort key that makes an ISO timestamp order NEWEST-first inside an
+    otherwise ascending tuple key (no reverse=True available there)."""
+    return tuple(-ord(c) for c in (ts or ""))
+
+
 @api_router.get("/apps")
 async def list_apps(search: Optional[str] = None, category: Optional[str] = None, include_hidden: bool = False):
     apps = await fbs.list_apps()
@@ -309,10 +321,18 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
         key=lambda a: (a.get("featured_order") or 99),
     )[:3]
     featured_ids = {a["id"] for a in featured}
+    # Ordering contract for the homepage list:
+    #   1. pinned apps first, in the admin's explicit drag order
+    #   2. then everything else, also by explicit order
+    #   3. sort_order ties broken by newest-first, preserving old behaviour
+    #      for rows that have never been dragged (sort_order defaults to 0)
     regular = sorted(
         [a for a in apps if a["id"] not in featured_ids],
-        key=lambda a: a.get("created_at", ""),
-        reverse=True,
+        key=lambda a: (
+            0 if a.get("pinned") else 1,
+            int(a.get("sort_order") or 0),
+            _invert_ts(a.get("created_at", "")),
+        ),
     )
     trending = sorted(
         [a for a in apps if a.get("trending")],
@@ -522,6 +542,39 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
     if doc.get("category"):
         await fbs.upsert_category(doc["category"])
     return doc
+
+
+class ReorderItem(BaseModel):
+    id: str
+    sort_order: int
+    pinned: bool = False
+
+
+class ReorderPayload(BaseModel):
+    items: List[ReorderItem]
+
+
+@api_router.patch("/admin/apps/reorder")
+async def reorder_apps(payload: ReorderPayload, admin: dict = Depends(get_current_admin)):
+    """Persist the homepage order produced by drag-and-drop in the admin panel.
+
+    Accepts the WHOLE ordered list in one request rather than one request per
+    row: 40 separate writes can partially fail and scramble the homepage, and
+    it makes dragging feel slow. Committed as a single Firestore batch.
+    """
+    if not payload.items:
+        return {"ok": True, "updated": 0}
+    if len(payload.items) > 2000:
+        raise HTTPException(status_code=413, detail="Too many items in one reorder")
+
+    seen = set()
+    for it in payload.items:
+        if it.id in seen:
+            raise HTTPException(status_code=400, detail=f"Duplicate app id: {it.id}")
+        seen.add(it.id)
+
+    updated = await fbs.bulk_set_order([i.model_dump() for i in payload.items])
+    return {"ok": True, "updated": updated}
 
 
 @api_router.delete("/admin/apps/{app_id}")

@@ -174,6 +174,38 @@ async def update_app(app_id: str, updates: dict) -> dict | None:
     return await asyncio.to_thread(_run)
 
 
+async def bulk_set_order(items: list[dict]) -> int:
+    """Persist homepage ordering for many apps in ONE atomic batch.
+
+    `items` is a list of {"id": str, "sort_order": int, "pinned": bool}.
+
+    Uses a Firestore WriteBatch rather than a loop of update_app() calls so a
+    drag of 40 rows cannot half-apply and leave the homepage in a scrambled
+    intermediate state. Firestore caps a batch at 500 operations, so the work
+    is chunked.
+    """
+    if not items:
+        return 0
+
+    def _run():
+        written = 0
+        for start in range(0, len(items), 400):
+            chunk = items[start:start + 400]
+            batch = fs.batch()
+            for it in chunk:
+                ref = fs.collection(APPS).document(it["id"])
+                batch.update(ref, {
+                    "sort_order": int(it["sort_order"]),
+                    "pinned": bool(it.get("pinned", False)),
+                    "updated_at": _now_iso(),
+                })
+            batch.commit()
+            written += len(chunk)
+        return written
+
+    return await asyncio.to_thread(_run)
+
+
 async def delete_app(app_id: str) -> bool:
     def _run():
         ref = fs.collection(APPS).document(app_id)
