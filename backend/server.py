@@ -680,18 +680,34 @@ async def sitemap():
         + "\n".join(urls)
         + "\n</urlset>"
     )
-    return Response(content=xml, media_type="application/xml")
+    return Response(
+        content=xml,
+        media_type="application/xml",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+# Admin surfaces must stay crawlable so that the X-Robots-Tag: noindex response
+# header (see noindex_private_routes below) can actually be read. A URL blocked
+# by robots.txt can never have its noindex directive seen, and bare URLs still
+# get indexed. Authorisation is what protects these routes, not robots.txt.
+ROBOTS_TXT = (
+    "User-agent: *\n"
+    "Allow: /\n\n"
+    "Disallow: /api/\n"
+    "Allow: /api/sitemap.xml\n"
+    "Allow: /api/uploads/\n\n"
+    f"Sitemap: {SITE_URL}/api/sitemap.xml\n"
+)
 
 
 @api_router.get("/robots.txt")
 async def robots_txt():
-    content = (
-        "User-agent: *\n"
-        "Allow: /\n"
-        "Disallow: /admin\n\n"
-        f"Sitemap: {SITE_URL}/api/sitemap.xml\n"
+    return Response(
+        content=ROBOTS_TXT,
+        media_type="text/plain",
+        headers={"Cache-Control": "public, max-age=3600"},
     )
-    return Response(content=content, media_type="text/plain")
 
 
 @api_router.get("/seo/{slug}")
@@ -1653,6 +1669,48 @@ async def on_startup():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+# ---------------------------------------------------------------------------
+# Canonical URL hygiene + crawl control
+#
+# The stale static /sitemap.xml (2 hardcoded www URLs, lastmod 2026-08-10) has
+# been deleted from frontend/public. Anything still requesting it - Search
+# Console, old backlinks, third-party crawlers - is redirected to the live
+# Firestore-backed sitemap so there is exactly ONE sitemap of record.
+# ---------------------------------------------------------------------------
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_redirect():
+    return RedirectResponse(url=f"{SITE_URL}/api/sitemap.xml", status_code=301)
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_root():
+    return Response(
+        content=ROBOTS_TXT,
+        media_type="text/plain",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+# Routes that must never appear in search results. Prefix-matched.
+PRIVATE_PATH_PREFIXES = ("/admin", "/apps-manager")
+
+
+@app.middleware("http")
+async def noindex_private_routes(request: Request, call_next):
+    """Send `X-Robots-Tag: noindex, nofollow` for admin surfaces.
+
+    Deliberately an HTTP response header rather than a <meta> tag: the frontend
+    is a client-rendered SPA, so a meta tag only exists after JavaScript runs,
+    whereas this header is honoured on the raw response by every crawler.
+    """
+    response = await call_next(request)
+    path = request.url.path.rstrip("/") or "/"
+    if any(path == pfx or path.startswith(pfx + "/") for pfx in PRIVATE_PATH_PREFIXES):
+        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 app.include_router(api_router)

@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
@@ -23,6 +23,17 @@ import {
 } from "@/pages/admin/SettingsPages";
 import { UsersPage, SecurityPage } from "@/pages/admin/UsersSecurityPages";
 
+/**
+ * Legacy `/app/:id` URLs render the exact same content as `/:slug`, which gave
+ * every game page two crawlable addresses and split its ranking signals.
+ * `/:slug` is the canonical form (it is what the sitemap emits), so the old
+ * path now redirects instead of rendering. `replace` keeps it out of history.
+ */
+function LegacyAppUrlRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/${id}`} replace />;
+}
+
 function App() {
   return (
     <div className="App">
@@ -32,7 +43,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Store />} />
-                <Route path="/app/:id" element={<AppDetail />} />
+                <Route path="/app/:id" element={<LegacyAppUrlRedirect />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
