@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
@@ -337,14 +337,19 @@ export default function AppDetail() {
         {related.length > 0 && (
           <section className="space-y-2.5" data-testid="detail-related">
             <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
-              <Sparkles className="h-4 w-4 text-[#FFC107]" /> You might also like
+              <Sparkles className="h-4 w-4 text-[#FFC107]" /> You may also like
             </h2>
+            {/* Rendered as real <a href> anchors, not buttons with onClick:
+                a click handler is invisible to crawlers, so this block passed
+                zero internal link equity between APK pages and none of the
+                related games were discoverable through it. */}
             <div className="grid grid-cols-2 gap-2.5">
-              {related.slice(0, 4).map((r) => (
-                <button
+              {related.slice(0, 6).map((r) => (
+                <Link
                   key={r.id}
-                  onClick={() => navigate(`/${r.slug || r.id}`)}
+                  to={`/${r.slug || r.id}`}
                   data-testid={`related-${r.id}`}
+                  title={`${r.name} APK download`}
                   className="flex items-center gap-2.5 rounded-[16px] border border-[#E5E7EB] bg-white p-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
                 >
                   <AppIcon
@@ -359,7 +364,7 @@ export default function AppDetail() {
                       {(r.rating || 4.5).toFixed(1)} · {formatCount(r.downloads)}+ dl
                     </p>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           </section>

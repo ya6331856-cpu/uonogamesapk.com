@@ -13,6 +13,34 @@ function absUrl(u) {
 }
 
 /**
+ * Normalise any URL into the one canonical form Google should see:
+ *   - always the non-www apex origin
+ *   - query strings and hash fragments stripped (?utm_source=... must not
+ *     create a second canonical for the same page)
+ *   - no trailing slash, except on the root document
+ *
+ * Every canonical and og:url on the site flows through this function, so there
+ * is a single place where URL shape is decided.
+ */
+export function canonicalize(input) {
+  if (!input) return `${SITE_URL}/`;
+  // Collapse a protocol-relative leading "//" first, otherwise new URL() reads
+  // "//good-slots" as a HOSTNAME and the path silently becomes "/" — which is
+  // precisely the every-page-canonicalises-to-the-homepage bug being fixed.
+  const raw = String(input).replace(/^\/{2,}/, "/");
+  let path;
+  try {
+    path = new URL(raw, SITE_URL).pathname;
+  } catch {
+    path = raw.split("?")[0].split("#")[0];
+    if (!path.startsWith("/")) path = `/${path}`;
+  }
+  path = path.replace(/\/{2,}/g, "/");
+  if (path !== "/") path = path.replace(/\/+$/, "");
+  return `${SITE_URL}${path}`;
+}
+
+/**
  * Remove duplicate/conflicting meta/link tags NOT managed by react-helmet-async
  * (e.g. those injected by third-party scripts before mount). Called once per
  * render pass; Helmet-managed tags carry an `x-file-name="SEOHead"` marker in
@@ -82,7 +110,11 @@ export default function SEOHead({
   breadcrumbs,                  // [{name, url}]
   faqItems,                     // [{question, answer}]
 }) {
-  const canonicalUrl = canonical || (typeof window !== "undefined" ? window.location.href : SITE_URL);
+  // Previously fell back to window.location.href, which leaked query strings
+  // (?utm_source=...) and the www host into the canonical. Always normalise.
+  const canonicalUrl = canonicalize(
+    canonical || (typeof window !== "undefined" ? window.location.pathname : "/")
+  );
   const ogImage = absUrl(image) || DEFAULT_OG;
   const robots = noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1";
 
@@ -98,6 +130,11 @@ export default function SEOHead({
 
   const jsonLd = [];
 
+  // Real, stored rating count only — never derived from download numbers.
+  const ratingCount = Number(
+    app?.rating_count ?? app?.reviews_count ?? app?.review_count ?? 0
+  ) || 0;
+
   if (app) {
     jsonLd.push({
       "@context": "https://schema.org",
@@ -110,14 +147,20 @@ export default function SEOHead({
       url: canonicalUrl,
       softwareVersion: app.version || "",
       fileSize: app.size || "",
-      downloadUrl: canonicalUrl,
+      // downloadUrl must point at the actual APK, not back at this page.
+      downloadUrl: absUrl(app.apk_url) || canonicalUrl,
       author: { "@type": "Organization", name: app.developer || SITE_NAME },
       publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-      aggregateRating: app.rating
+      // Only emit aggregateRating when a REAL rating count backs it.
+      // This previously derived ratingCount from `downloads`, which claimed
+      // ~500,000 ratings for an app with none. Inventing rating counts is a
+      // structured-data policy violation and risks a manual action that would
+      // strip rich results across the whole site.
+      aggregateRating: ratingCount > 0 && app.rating
         ? {
             "@type": "AggregateRating",
             ratingValue: String(app.rating),
-            ratingCount: String(Math.max(app.downloads || 100, 100)),
+            ratingCount: String(ratingCount),
             bestRating: "5",
             worstRating: "1",
           }
@@ -130,11 +173,12 @@ export default function SEOHead({
     jsonLd.push({
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
-      itemListElement: breadcrumbs.map((b, i) => ({
+      // `item` must be an absolute URL — callers pass relative paths.
+      itemListElement: [{ name: "Home", url: "/" }, ...breadcrumbs].map((b, i) => ({
         "@type": "ListItem",
         position: i + 1,
         name: b.name,
-        item: b.url,
+        item: b.url.startsWith("http") ? b.url : `${SITE_URL}${b.url.startsWith("/") ? "" : "/"}${b.url}`,
       })),
     });
   }
