@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Pencil, Trash2, Star, BadgeCheck, Crown, Upload, Loader2, Package, Gift } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, BadgeCheck, Crown, Upload, Loader2, Package, Gift, ArrowUpDown, Pin } from "lucide-react";
 import { toast } from "sonner";
 import api, { resolveUrl } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import RippleButton from "@/components/RippleButton";
+import AppOrderManager from "@/components/admin/AppOrderManager";
 
 const BADGES = ["Auto", "Hot", "New", "Popular", "Trending", "None"];
 const EMPTY = {
@@ -94,6 +95,7 @@ export default function AppsManager({ featuredOnly = false }) {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [reorderMode, setReorderMode] = useState(false);
 
   useEffect(() => {
     const fetchApps = async () => {
@@ -138,12 +140,33 @@ export default function AppsManager({ featuredOnly = false }) {
 
   return (
     <div className="space-y-4">
-      <RippleButton onClick={openNew} data-testid="add-app-btn" className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] px-5 py-2.5 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]">
-        <Plus className="h-4 w-4" /> Add {featuredOnly ? "Featured " : ""}App
-      </RippleButton>
+      <div className="flex flex-wrap items-center gap-2">
+        <RippleButton onClick={openNew} data-testid="add-app-btn" className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] px-5 py-2.5 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]">
+          <Plus className="h-4 w-4" /> Add {featuredOnly ? "Featured " : ""}App
+        </RippleButton>
+        {apps.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setReorderMode((v) => !v)}
+            aria-pressed={reorderMode}
+            data-testid="toggle-reorder"
+            className={[
+              "flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold",
+              reorderMode
+                ? "border-[#FFC107] bg-[#FFF8E1] text-[#B37F00]"
+                : "border-[#E5E7EB] bg-white text-[#555555] hover:border-[#FFC107]",
+            ].join(" ")}
+          >
+            {reorderMode ? <Pin className="h-4 w-4" /> : <ArrowUpDown className="h-4 w-4" />}
+            {reorderMode ? "Done reordering" : "Reorder & pin"}
+          </button>
+        )}
+      </div>
 
       {loading ? <div className="py-16 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" /></div> : apps.length === 0 ? (
         <div className="rounded-[18px] border border-dashed border-[#E5E7EB] bg-white py-14 text-center"><Package className="mx-auto h-8 w-8 text-[#CCCCCC]" /><p className="mt-2 text-sm text-[#777777]">No apps yet.</p></div>
+      ) : reorderMode ? (
+        <AppOrderManager apps={apps} onReordered={setApps} />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {apps.map((app) => (
@@ -153,6 +176,7 @@ export default function AppsManager({ featuredOnly = false }) {
                 <div className="flex items-center gap-1.5">
                   <h3 className="truncate font-display text-sm font-semibold text-[#111111]">{app.name}</h3>
                   {app.featured && <span className="inline-flex items-center gap-0.5 rounded-full bg-[#FFF8E1] px-1.5 py-0.5 text-[10px] font-bold text-[#FFB300]"><Crown className="h-2.5 w-2.5" />#{app.featured_order}</span>}
+                  {app.pinned && <span className="inline-flex items-center gap-0.5 rounded-full bg-[#FFF8E1] px-1.5 py-0.5 text-[10px] font-bold text-[#FFB300]"><Pin className="h-2.5 w-2.5" />Pinned</span>}
                   {app.hidden && <span className="rounded-full bg-[#FEF2F2] px-1.5 py-0.5 text-[10px] font-bold text-red-500">Hidden</span>}
                 </div>
                 <p className="text-[11px] text-[#777777]">v{app.version} • {app.size} • {app.category}</p>

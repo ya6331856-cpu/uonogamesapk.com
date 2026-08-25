@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow } from "lucide-react";
+import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
 import SEOHead from "@/components/SEOHead";
@@ -26,6 +26,16 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+
+// Collapse a string to lowercase alphanumerics so search is insensitive to
+// spacing, hyphens, dots and other punctuation that APK titles use freely:
+// 'Teen Patti', 'teen-patti' and 'TeenPatti' all become 'teenpatti'.
+function normalize(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "");
+}
 
 const SORTS = [
   { value: "downloads", label: "Most Downloaded" },
@@ -79,20 +89,45 @@ export default function Store() {
     return ["All", ...Array.from(set)];
   }, [data]);
 
+  // Deferred so typing stays responsive while a long list re-filters.
+  const deferredSearch = useDeferredValue(search);
+
   const filtered = useMemo(() => {
     if (!data) return [];
-    const hasFilter = category !== "All" || search.trim();
+    const q = normalize(deferredSearch);
+    const hasFilter = category !== "All" || q;
     let list = hasFilter ? [...data.featured, ...data.apps] : [...data.apps];
     if (category !== "All") list = list.filter((a) => a.category === category);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((a) => a.name.toLowerCase().includes(q));
+
+    if (q) {
+      // Match on normalized text so "teenpatti", "Teen Patti" and "teen-patti"
+      // all find the same app — punctuation and spacing in APK names is
+      // inconsistent, and the old exact-substring match on `name` missed them.
+      const scored = [];
+      for (const a of list) {
+        const name = normalize(a.name);
+        const haystack = `${name} ${normalize(a.slug)} ${normalize(a.category)} ${normalize(a.developer)}`;
+        let score;
+        if (name === q) score = 0;
+        else if (name.startsWith(q)) score = 1;
+        else if (name.includes(q)) score = 2;
+        else if (haystack.includes(q)) score = 3;
+        else continue;
+        scored.push({ a, score });
+      }
+      // Best match first; downloads as the tiebreaker inside each tier.
+      scored.sort((x, y) => x.score - y.score || (y.a.downloads || 0) - (x.a.downloads || 0));
+      list = scored.map((s) => s.a);
+      // A relevance-ranked result set must not be re-sorted by the dropdown,
+      // or the closest name match gets buried.
+      return list;
     }
+
     if (sort === "downloads") list.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
     else if (sort === "rating") list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     else if (sort === "newest") list.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
     return list;
-  }, [data, category, search, sort]);
+  }, [data, category, deferredSearch, sort]);
 
   const totalDownloads = useMemo(() => {
     if (!data) return 0;
@@ -120,7 +155,9 @@ export default function Store() {
         <h2 className="font-display text-base font-bold text-[#111111]">
           {isDefaultView ? "All Apps" : "Results"}
         </h2>
-        <span className="text-xs text-[#999999]">({filtered.length})</span>
+        <span className="text-xs text-[#999999]" aria-live="polite">
+          ({filtered.length}{isDefaultView ? "" : filtered.length === 1 ? " match" : " matches"})
+        </span>
         <div className="ml-auto">
           <Select value={sort} onValueChange={setSort}>
             <SelectTrigger data-testid="sort-select" className="h-8 w-auto gap-1 rounded-full border-[#E5E7EB] bg-white px-3 text-xs font-medium text-[#555555] focus:ring-[#FFC107]">
@@ -252,8 +289,32 @@ export default function Store() {
       <div className="sticky top-[57px] z-30 bg-[#F8F9FA]/90 px-4 py-3 backdrop-blur-md">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777777]" />
-          <Input data-testid="search-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search apps & games..."
-            className="h-11 rounded-full border-[#E5E7EB] bg-white pl-10 text-sm shadow-[0_4px_14px_rgba(0,0,0,0.03)] focus-visible:ring-[#FFC107]" />
+          <Input
+            data-testid="search-input"
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            aria-label="Search apps and games"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && setSearch("")}
+            placeholder="Search apps & games..."
+            /* text-base (16px) is deliberate: anything smaller makes iOS Safari
+               zoom the page on focus, which wrecks the sticky search bar. */
+            className="h-11 rounded-full border-[#E5E7EB] bg-white pl-10 pr-10 text-base shadow-[0_4px_14px_rgba(0,0,0,0.03)] focus-visible:ring-[#FFC107] sm:text-sm"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+              data-testid="search-clear"
+              className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#F1F1F1] text-[#777777] hover:bg-[#E5E7EB]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
           {categories.map((c) => (
