@@ -19,12 +19,8 @@ jobs:
       - name: Install and Build
         working-directory: ./frontend
         run: |
-          rm -rf node_modules package-lock.json
+          npm cache clean --force
           npm install --legacy-peer-deps
+          npx npm-check-updates -y || true
           npm run build
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./frontend/build
+          
