@@ -5,9 +5,9 @@ bing_api_key = os.environ.get("BING_API_KEY")
 if not bing_api_key:
     raise ValueError("BING_API_KEY secret not found!")
 
-site_url = "https://www.uonogamesapk.com"
+site_url = "https://www.newyono.games"
 url_list = [
-    "https://www.uonogamesapk.com/",
+    "https://www.newyono.games/",
     # Agar aur bhi naye URLs hon toh yahan add kar sakte hain
 ]
 

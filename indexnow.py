@@ -1,7 +1,7 @@
 import requests
 
-host = "www.uonogamesapk.com"
-key = "uonogamesapkindexnowkey"  # Yeh aapki IndexNow key hai
+host = "www.newyono.games"
+key = "newyonogamesindexnowkey"  # Yeh aapki IndexNow key hai
 key_location = f"https://{host}/{key}.txt"
 
 url_list = [

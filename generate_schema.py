@@ -2,7 +2,7 @@ import os
 import json
 
 # Aapki website ka base domain
-DOMAIN = "https://uonogamesapk.com"
+DOMAIN = "https://newyono.games"
 
 # Aapke games/apps ki list (Ise aap apne project ke mutabiq dynamic ya static rakh sakte hain)
 games = [
@@ -31,10 +31,4 @@ for game in games:
             "priceCurrency": "USD"
         }
     }
-
-    # Schema ko JSON file ya HTML snippet ke taur par save karne ka logic
-    os.makedirs("schemas", exist_ok=True)
-    with open(f"schemas/{game['slug']}_schema.json", "w") as f:
-        json.dump(schema, f, indent=4)
-
-print("SEO Schema Markup generated successfully!")
+    #...
