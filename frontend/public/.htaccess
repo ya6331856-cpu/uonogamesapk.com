@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^uonogamesapk\.com [NC]
+  RewriteRule ^(.*)$ https://newyono.games/$1 [L,R=301]
+</IfModule>
+
+# Set canonical URL
+<IfModule mod_headers.c>
+  Header add Link "<https://newyono.games>; rel=\"canonical\""
+End</IfModule>

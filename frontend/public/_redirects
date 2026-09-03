@@ -1,0 +1,3 @@
+# Redirect old domain to new domain
+http://uonogamesapk.com/* https://newyono.games/:splat 301
+https://uonogamesapk.com/* https://newyono.games/:splat 301

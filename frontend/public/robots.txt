@@ -1,14 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
 
-# Admin surfaces are crawlable so that the X-Robots-Tag: noindex response
-# header can actually be read. Do NOT add Disallow rules here for /admin —
-# a blocked URL can never have its noindex directive seen, and bare URLs
-# still end up indexed. Access control is enforced server-side.
-
-# API is not useful to crawlers, except the sitemap and public image uploads.
-Disallow: /api/
-Allow: /api/sitemap.xml
-Allow: /api/uploads/
-
-Sitemap: https://uonogamesapk.com/api/sitemap.xml
+Sitemap: https://newyono.games/sitemap.xml
