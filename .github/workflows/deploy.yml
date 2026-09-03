@@ -1,26 +1,68 @@
-name: Deploy to GitHub Pages
+name: Build & Deploy Frontend to GitHub Pages
 
 on:
   push:
-    branches: ["fix/appsmanager-useeffect"]
+    branches:
+      - fix/appsmanager-useeffect
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
+    name: Build React App
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install and Build
+      - name: Clean npm cache
+        run: npm cache clean --force
+
+      - name: Install dependencies
         working-directory: ./frontend
-        run: |
-          npm cache clean --force
-          npm install --legacy-peer-deps
-          npx npm-check-updates -y || true
-          npm run build
-          
+        run: npm install --legacy-peer-deps
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          CI: false
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './frontend/build'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
