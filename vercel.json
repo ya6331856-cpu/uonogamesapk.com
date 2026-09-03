@@ -1,6 +1,3 @@
 {
-  "redirects": [
-    { "source": "http://uonogamesapk.com/:path*", "destination": "https://uonogamesapk.com/:path*", "permanent": true },
-    { "source": "https://www.uonogamesapk.com/:path*", "destination": "https://uonogamesapk.com/:path*", "permanent": true }
-  ]
+  "version": 2
 }
