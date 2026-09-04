@@ -7,8 +7,8 @@ import {
   Megaphone, FolderOpen, Bell, Users, Settings, Shield, DatabaseBackup,
   Menu, X, LogOut, ChevronDown, Store as StoreIcon, PanelLeftClose, PanelLeft,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { useSettings } from "@/context/SettingsContext";
+import { useAuth } from "../../context/AuthContext";
+import { useSettings } from "../../context/SettingsContext";
 
 const NAV = [
   { group: "Overview", items: [
