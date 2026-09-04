@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import { Download, Upload, Loader2, DatabaseBackup, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import api from "@/lib/api";
-import { useSettings } from "@/context/SettingsContext";
-import { PageHeader, Card } from "@/components/admin/adminUI";
-import RippleButton from "@/components/RippleButton";
+import api from "../../lib/api";
+import { useSettings } from "../../context/SettingsContext";
+import { PageHeader, Card } from "../../components/admin/adminUI";
+import RippleButton from "../../components/RippleButton";
 
 export default function BackupPage() {
   const { refreshSettings } = useSettings();
