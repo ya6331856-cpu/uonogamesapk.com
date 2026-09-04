@@ -4,10 +4,10 @@ import {
   Search, Sparkles, RefreshCw, CheckCircle2, AlertCircle, ExternalLink,
   Loader2, Wand2, FileText, Globe2, Bot, Image as ImageIcon, Wrench,
 } from "lucide-react";
-import api, { API } from "@/lib/api";
-import { PageHeader, Card } from "@/components/admin/adminUI";
-import RippleButton from "@/components/RippleButton";
-import { Input } from "@/components/ui/input";
+import api, { API } from "../../lib/api";
+import { PageHeader, Card } from "../../components/admin/adminUI";
+import RippleButton from "../../components/RippleButton";
+import { Input } from "../../components/ui/input";
 
 const Stat = ({ label, value, tone = "default", testId }) => {
   const toneMap = {
@@ -30,7 +30,7 @@ export default function SeoDashboardPage() {
   const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState(null); // app id being generated
+  const [busy, setBusy] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [auditBusy, setAuditBusy] = useState(false);
   const [repairBusy, setRepairBusy] = useState(false);
