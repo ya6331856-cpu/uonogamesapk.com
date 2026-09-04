@@ -1,71 +1,71 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import api from "../lib/api";
+import api, { resolveUrl } from "../lib/api";
 
-const AuthContext = createContext(null);
+const SettingsContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // null = checking, false = logged out, object = logged in
-    const [ready, setReady] = useState(false);
+export const SettingsProvider = ({ children }) => {
+    const [settings, setSettings] = useState(null);
 
-    const check = useCallback(async () => {
-        const token = localStorage.getItem("uono_token");
-        if (!token) {
-            setUser(false);
-            setReady(true);
-            return;
-        }
+    const load = useCallback(async () => {
         try {
-            const { data } = await api.get("/auth/me");
-            setUser(data);
+            const { data } = await api.get("/settings");
+            setSettings(data);
         } catch (e) {
-            localStorage.removeItem("uono_token");
-            setUser(false);
-        } finally {
-            setReady(true);
+            setSettings({});
         }
     }, []);
 
     useEffect(() => {
-        check();
-    }, [check]);
+        load();
+    }, [load]);
 
-    // Login: try Firebase Auth first (loaded lazily so public pages never touch
-    // the Firebase SDK); fall back to legacy JWT so the panel keeps working even
-    // while the Firebase Email/Password provider is being enabled.
-    const login = async (email, password) => {
-        const em = email.trim().toLowerCase();
-        try {
-            const [{ signInWithEmailAndPassword }, { firebaseAuth }] = await Promise.all([
-                import("firebase/auth"),
-                import("../lib/firebase"),
-            ]);
-            const cred = await signInWithEmailAndPassword(firebaseAuth, em, password);
-            const idToken = await cred.user.getIdToken();
-            localStorage.setItem("uono_token", idToken);
-            const { data } = await api.get("/auth/me");
-            setUser(data);
-            return data;
-        } catch (fbErr) {
-            const { data } = await api.post("/auth/login", { email: em, password });
-            localStorage.setItem("uono_token", data.token);
-            setUser(data.user);
-            return data.user;
+    // Apply theme + SEO whenever settings change
+    useEffect(() => {
+        if (!settings) return;
+        const root = document.documentElement;
+        if (settings.theme?.primary) root.style.setProperty("--gold", settings.theme.primary);
+        if (settings.theme?.secondary) root.style.setProperty("--gold-dark", settings.theme.secondary);
+
+        const seo = settings.seo || {};
+        if (seo.meta_title) document.title = seo.meta_title;
+        const setMeta = (name, content, attr = "name") => {
+            if (!content) return;
+            let el = document.querySelector(`meta[${attr}="${name}"]`);
+            if (!el) {
+                el = document.createElement("meta");
+                el.setAttribute(attr, name);
+                document.head.appendChild(el);
+            }
+            el.setAttribute("content", content);
+        };
+        setMeta("description", seo.meta_description);
+        setMeta("keywords", seo.keywords);
+        setMeta("og:title", seo.meta_title, "property");
+        setMeta("og:description", seo.meta_description, "property");
+        if (seo.og_image) setMeta("og:image", resolveUrl(seo.og_image), "property");
+
+        if (settings.branding?.favicon_url) {
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement("link");
+                link.rel = "icon";
+                document.head.appendChild(link);
+            }
+            link.href = resolveUrl(settings.branding.favicon_url);
         }
-    };
-
-    const logout = () => {
-        localStorage.removeItem("uono_token");
-        setUser(false);
-        import("../lib/firebase")
-            .then(({ firebaseAuth }) => import("firebase/auth").then(({ signOut }) => signOut(firebaseAuth)))
-            .catch(() => {});
-    };
+    }, [settings]);
 
     return (
-        <AuthContext.Provider value={{ user, ready, login, logout }}>
+        <SettingsContext.Provider value={{ settings, refreshSettings: load }}>
             {children}
-        </AuthContext.Provider>
+        </SettingsContext.Provider>
     );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useSettings = () => useContext(SettingsContext);
+
+// Helper: is a section enabled?
+export const sectionEnabled = (settings, id) => {
+    const s = (settings?.sections || []).find((x) => x.id === id);
+    return s ? s.enabled : true;
+};
