@@ -30,7 +30,7 @@ export default function SeoDashboardPage() {
   const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState(null);
+  const [busy, setBusy] = useState(null); // app id being generated
   const [bulkBusy, setBulkBusy] = useState(false);
   const [auditBusy, setAuditBusy] = useState(false);
   const [repairBusy, setRepairBusy] = useState(false);
