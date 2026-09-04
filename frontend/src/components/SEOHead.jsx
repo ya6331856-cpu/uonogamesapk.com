@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { resolveUrl } from "@/lib/api";
+import { resolveUrl } from "/lib/api";
 
 const SITE_URL = "https://newyono.games";
 const SITE_NAME = "YONO GAMES";
