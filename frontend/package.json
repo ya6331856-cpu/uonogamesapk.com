@@ -94,6 +94,7 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "globals": "15.15.0",
     "postcss": "8.5.10",
-    "tailwindcss": "3.4.17“
-    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721ba3d8daef840d4303ae443d9f1b4ad17790b47bab1568239042f65ac36094b23b6b7f7u7a5f67b24255f7c24255f762a4255f7d24255f"
+    "tailwindcss": "3.4.17"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721ba3d8daef840d4303ae443d9f1b4ad17790b47bab1568239042f65ac36094b23b6b7f7u7a5f67b24255f7c24255f762a4255f7d24255f"
 }
