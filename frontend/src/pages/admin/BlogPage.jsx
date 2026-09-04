@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Loader2, FileText, Upload, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import api, { resolveUrl } from "@/lib/api";
-import { PageHeader, Card, Spinner } from "@/components/admin/adminUI";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import RippleButton from "@/components/RippleButton";
+import api, { resolveUrl } from "../../lib/api";
+import { PageHeader, Card, Spinner } from "../../components/admin/adminUI";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import { Switch } from "../../components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog";
+import RippleButton from "../../components/RippleButton";
 
 const EMPTY = {
   title: "", slug: "", excerpt: "", content: "", cover_url: "", published: true,
