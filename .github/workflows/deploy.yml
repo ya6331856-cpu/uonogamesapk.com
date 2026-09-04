@@ -3,7 +3,7 @@ name: Build & Deploy Frontend to GitHub Pages
 on:
   push:
     branches:
-      - fix/appsmanager-useeffect
+      - 'fix/appsmanager-useeffect'
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy.yml'
@@ -22,47 +22,48 @@ jobs:
   build:
     name: Build React App
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Clean npm cache
-        run: npm cache clean --force
-
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm install --legacy-peer-deps
+        run: |
+          yarn install --frozen-lockfile || yarn install
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Build
         working-directory: ./frontend
-        run: npm run build
+        run: |
+          yarn build
         env:
           CI: false
           NODE_OPTIONS: "--max-old-space-size=4096"
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Create .nojekyll
+        run: touch ./frontend/build/.nojekyll
+
+      - name: Add CNAME
+        run: echo "newyono.games" > ./frontend/build/CNAME
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './frontend/build'
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+deploy:
+  needs: build
+  runs-on: ubuntu-latest
+  if: github.event_name == 'push'
 
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+  environment:
+    name: github-pages
+    url: ${{ steps.deployment.outputs.page_url }}
+
+  steps:
+    - name: Deploy
+      id: deployment
+      uses: actions/deploy-pages@v4
