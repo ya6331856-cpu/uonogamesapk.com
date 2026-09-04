@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import api from "../lib/api";
+import api, { resolveUrl } from "../lib/api";
 
 const SettingsContext = createContext(null);
 
