@@ -1,7 +1,7 @@
 import { ArrowUp, ArrowDown, Plus, X, Bell } from "lucide-react";
-import { PageHeader, Card, Field, Area, Toggle, SaveBar, Spinner, useSettingsEditor } from "@/components/admin/adminUI";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageHeader, Card, Field, Area, Toggle, SaveBar, Spinner, useSettingsEditor } from "../../components/admin/adminUI";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import { useState } from "react";
 
 export function HeroPage() {
