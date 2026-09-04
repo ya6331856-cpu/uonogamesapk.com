@@ -6,9 +6,9 @@ import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import Store from './pages/Store';
 import AppDetail from './pages/AppDetail';
+import AdminLogin from './pages/AdminLogin';
 import PWAInstallBanner from './components/PWAInstallBanner';
 import Analytics from './components/Analytics';
-import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
 import ApksPage from './pages/admin/ApksPage';
@@ -26,23 +26,10 @@ import SeoDashboardPage from './pages/admin/SeoDashboardPage';
 import AdsPage from './pages/admin/AdsPage';
 import MediaLibraryPage from './pages/admin/MediaLibraryPage';
 import NotificationsPage from './pages/admin/NotificationsPage';
-import GeneralSettingsPage, {
-  HeroPage as AdminHeroPage,
-  HomepagePage as AdminHomepagePage,
-  CategoriesPage as AdminCategoriesPage,
-  SeoPage as AdminSeoPage,
-  AdsPage as AdminAdsPage,
-  NotificationsPage as AdminNotificationsPage,
-  GeneralSettingsPage as AdminGeneralSettingsPage,
-} from './pages/admin/SettingsPages';
+import BackupPage from './pages/admin/BackupPage';
+import GeneralSettingsPage from './pages/admin/SettingsPages';
 import UsersPage, { SecurityPage } from './pages/admin/UsersSecurityPages';
 
-/**
- * Legacy /app/:id URLs render the exact same content as /slug, which gave
- * every game page two crawlable addresses and split its ranking signals.
- * /slug is the canonical form (it is what the sitemap emits), so the old
- * path now redirects instead of rendering. 'replace' keeps it out of history.
- */
 function LegacyAppUrlRedirect() {
   const { id } = useParams();
   return <Navigate to={`/${id}`} replace />;
