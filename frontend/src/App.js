@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './context/AuthContext';
-import { SettingsProvider } from './context/SettingsContext';
+import SettingsProvider from './context/SettingsContext';
 import Store from './pages/Store';
 import AppDetail from './pages/AppDetail';
 import AdminLogin from './pages/AdminLogin';
