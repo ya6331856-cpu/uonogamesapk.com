@@ -13,7 +13,6 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ApksPage from "./pages/admin/ApksPage";
 import FeaturedAppsPage from "./pages/admin/FeaturedAppsPage";
-import HomepagePage from "./pages/admin/HomepagePage";
 import ReviewsPage from "./pages/admin/ReviewsPage";
 import FaqPage from "./pages/admin/FaqPage";
 import LiveWinnersPage from "./pages/admin/LiveWinnersPage";
@@ -49,7 +48,6 @@ function App() {
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="apks" element={<ApksPage />} />
                   <Route path="featured-apps" element={<FeaturedAppsPage />} />
-                  <Route path="homepage" element={<HomepagePage />} />
                   <Route path="reviews" element={<ReviewsPage />} />
                   <Route path="faq" element={<FaqPage />} />
                   <Route path="live-winners" element={<LiveWinnersPage />} />
