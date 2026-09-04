@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, Trash2, Copy, Loader2, FileType } from "lucide-react";
 import { toast } from "sonner";
-import api, { resolveUrl } from "@/lib/api";
-import { PageHeader, Card, Spinner } from "@/components/admin/adminUI";
-import RippleButton from "@/components/RippleButton";
+import api, { resolveUrl } from "../../lib/api";
+import { PageHeader, Card, Spinner } from "../../components/admin/adminUI";
+import RippleButton from "../../components/RippleButton";
 
 const isImage = (name) => /\.(png|jpe?g|webp|gif|svg|heic)$/i.test(name);
 const fmtSize = (b) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${(b / 1e3).toFixed(0)} KB`);
