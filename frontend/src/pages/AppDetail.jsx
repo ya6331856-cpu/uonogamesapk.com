@@ -7,16 +7,16 @@ import {
   Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
-import api, { API, resolveUrl } from "@/lib/api";
-import SEOHead from "@/components/SEOHead";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import AppIcon from "@/components/AppIcon";
-import RippleButton from "@/components/RippleButton";
-import FaqSection from "@/components/FaqSection";
-import LegalSection from "@/components/LegalSection";
-import LegalDialog from "@/components/LegalDialog";
-import SiteFooter from "@/components/SiteFooter";
-import { formatCount, formatFull } from "@/lib/format";
+import api, { API, resolveUrl } from "../lib/api";
+import SEOHead from "../components/SEOHead";
+import Breadcrumbs from "../components/Breadcrumbs";
+import AppIcon from "../components/AppIcon";
+import RippleButton from "../components/RippleButton";
+import FaqSection from "../components/FaqSection";
+import LegalSection from "../components/LegalSection";
+import LegalDialog from "../components/LegalDialog";
+import SiteFooter from "../components/SiteFooter";
+import { formatCount, formatFull } from "../lib/format";
 
 const GAME_HIGHLIGHTS = [
   { icon: Zap, title: "Smooth 60 FPS", desc: "Optimized for buttery-smooth gameplay on all devices." },
