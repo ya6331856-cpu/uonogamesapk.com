@@ -79,17 +79,14 @@ let webpackConfig = {
   },
   webpack: {
     configure: (webpackConfig) => {
-      // =========================================================
-      // NAYA FIX 1: Jabardasti Alias Inject karo 
-      // (Isse koi plugin ise ignore nahi kar payega)
-      // =========================================================
+      // Bulletproof Alias Injection (Supports @, lib, and @lib)
       webpackConfig.resolve = webpackConfig.resolve || {};
       webpackConfig.resolve.alias = {
         ...(webpackConfig.resolve.alias || {}),
         "@": path.resolve(__dirname, "src"),
-        "lib": path.resolve(__dirname, "src/lib")
+        "lib": path.resolve(__dirname, "src/lib"),
+        "@lib": path.resolve(__dirname, "src/lib")
       };
-      // =========================================================
 
       // Add ignored patterns to reduce watched directories
       webpackConfig.watchOptions = {
@@ -104,16 +101,13 @@ let webpackConfig = {
         ],
       };
 
-      // =========================================================
-      // NAYA FIX 2: React ko src/ ke bahar se import karne do
-      // =========================================================
+      // Bypass ModuleScopePlugin restrictions
       const scopePluginIndex = (webpackConfig.resolve.plugins || []).findIndex(
         ({ constructor }) => constructor && constructor.name === 'ModuleScopePlugin'
       );
       if (scopePluginIndex > -1) {
         webpackConfig.resolve.plugins.splice(scopePluginIndex, 1);
       }
-      // =========================================================
 
       // Add health check plugin to webpack if enabled
       if (config.enableHealthCheck && healthPluginInstance) {
@@ -129,11 +123,9 @@ let webpackConfig = {
       const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
 
       devServerConfig.setupMiddlewares = (middlewares, devServer) => {
-        // Call original setup if exists
         if (originalSetupMiddlewares) {
           middlewares = originalSetupMiddlewares(middlewares, devServer);
         }
-        // Setup health endpoints
         setupHealthEndpoints(devServer, healthPluginInstance);
         return middlewares;
       };
