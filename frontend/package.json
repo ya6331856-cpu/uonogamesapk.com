@@ -62,9 +62,9 @@
     "zod": "3.24.4"
   },
   "scripts": {
-    "start": "npx craco start",
-    "build": "npx craco build",
-    "test": "npx craco test"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test"
   },
   "browserslist": {
     "production": [
@@ -80,7 +80,6 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
-    "@craco/craco": "7.1.0",
     "@emergentbase/visual-edits": "https://assets.emergent.sh/npm/emergentbase-visual-edits-1.0.13.tgz",
     "@eslint/js": "9.23.0",
     "@types/lodash": "4.17.24",
@@ -94,13 +93,5 @@
     "globals": "15.15.0",
     "postcss": "8.5.10",
     "tailwindcss": "3.4.17"
-  },
-  "resolutions": {
-    "ajv": "6.12.6",
-    "ajv-keywords": "3.5.2"
-  },
-  "overrides": {
-    "ajv": "6.12.6",
-    "ajv-keywords": "3.5.2"
   }
 }
