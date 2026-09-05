@@ -76,15 +76,22 @@ let webpackConfig = {
   },
   webpack: {
     configure: (webpackConfig) => {
-      // Bulletproof Alias Injection inside configure
-      webpackConfig.resolve = webpackConfig.resolve || {};
-      webpackConfig.resolve.alias = {
-        ...(webpackConfig.resolve.alias || {}),
-        "@": path.resolve(__dirname, "src"),
-        "lib": path.resolve(__dirname, "src/lib"),
-        "@lib": path.resolve(__dirname, "src/lib")
-      };
+      // Bulletproof replacement plugin to handle any variation of lib/ imports (/lib, lib, @lib, etc.)
+      const webpack = require("webpack");
+      webpackConfig.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /[\\/]lib[\\/]/,
+          (resource) => {
+            const requestPath = resource.request;
+            if (requestPath.includes("lib/")) {
+              const subPath = requestPath.split("lib/").pop();
+              resource.request = path.resolve(__dirname, "src/lib", subPath);
+            }
+          }
+        )
+      );
 
+      // Add ignored patterns to reduce watched directories
       webpackConfig.watchOptions = {
         ...webpackConfig.watchOptions,
         ignored: [
@@ -97,6 +104,7 @@ let webpackConfig = {
         ],
       };
 
+      // Bypass ModuleScopePlugin restrictions
       const scopePluginIndex = (webpackConfig.resolve.plugins || []).findIndex(
         ({ constructor }) => constructor && constructor.name === 'ModuleScopePlugin'
       );
@@ -104,6 +112,7 @@ let webpackConfig = {
         webpackConfig.resolve.plugins.splice(scopePluginIndex, 1);
       }
 
+      // Add health check plugin to webpack if enabled
       if (config.enableHealthCheck && healthPluginInstance) {
         webpackConfig.plugins.push(healthPluginInstance);
       }
@@ -127,6 +136,7 @@ let webpackConfig = {
   },
 };
 
+// Wrap with visual edits (automatically adds babel plugin, dev server, and overlay in dev mode)
 if (isDevServer) {
   try {
     const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
