@@ -1,4 +1,3 @@
-// craco.config.js
 const path = require("path");
 require("dotenv").config();
 
@@ -11,7 +10,7 @@ const config = {
   enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === "true",
 };
 
-function makeDevServerV5Compatible(devServerConfig) {
+function makeDevServerVSCompatible(devServerConfig) {
   const {
     https,
     onAfterSetupMiddleware,
@@ -25,8 +24,9 @@ function makeDevServerV5Compatible(devServerConfig) {
     typeof https === "object"
       ? { type: "https", options: https }
       : https
-        ? "https"
-        : "http";
+      ? "https"
+      : "http";
+
   compatibleConfig.headers = {
     ...compatibleConfig.headers,
     "Cross-Origin-Resource-Policy": "same-origin",
@@ -38,9 +38,11 @@ function makeDevServerV5Compatible(devServerConfig) {
         onBeforeSetupMiddleware(devServer);
       }
 
-      return setupMiddlewares
-        ? setupMiddlewares(middlewares, devServer)
-        : middlewares;
+      if (setupMiddlewares) {
+        return setupMiddlewares(middlewares, devServer);
+      }
+
+      return middlewares;
     };
   }
 
@@ -50,6 +52,7 @@ function makeDevServerV5Compatible(devServerConfig) {
     if (onListening) {
       onListening(devServer);
     }
+
     if (onAfterSetupMiddleware) {
       onAfterSetupMiddleware(devServer);
     }
@@ -59,14 +62,14 @@ function makeDevServerV5Compatible(devServerConfig) {
 }
 
 // Conditionally load health check modules only if enabled
-let WebpackHealthPlugin;
+let webpackHealthPlugin;
 let setupHealthEndpoints;
 let healthPluginInstance;
 
 if (config.enableHealthCheck) {
-  WebpackHealthPlugin = require("./plugins/health-check/webpack-health-plugin");
+  webpackHealthPlugin = require("./plugins/health-check/webpack-health-plugin");
   setupHealthEndpoints = require("./plugins/health-check/health-endpoints");
-  healthPluginInstance = new WebpackHealthPlugin();
+  healthPluginInstance = new webpackHealthPlugin();
 }
 
 let webpackConfig = {
@@ -81,20 +84,20 @@ let webpackConfig = {
   },
   webpack: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      "@": path.resolve(__dirname, "src"),
+      "lib": path.resolve(__dirname, "src/lib"),
     },
     configure: (webpackConfig) => {
-
       // Add ignored patterns to reduce watched directories
-        webpackConfig.watchOptions = {
-          ...webpackConfig.watchOptions,
-          ignored: [
-            '**/node_modules/**',
-            '**/.git/**',
-            '**/build/**',
-            '**/dist/**',
-            '**/coverage/**',
-            '**/public/**',
+      webpackConfig.watchOptions = {
+        ...webpackConfig.watchOptions,
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/coverage/**",
+          "**/public/**",
         ],
       };
 
@@ -102,30 +105,30 @@ let webpackConfig = {
       if (config.enableHealthCheck && healthPluginInstance) {
         webpackConfig.plugins.push(healthPluginInstance);
       }
+
       return webpackConfig;
     },
   },
-};
+  devServer: (devServerConfig) => {
+    // Add health check endpoints if enabled
+    if (config.enableHealthCheck && setupHealthEndpoints) {
+      const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
 
-webpackConfig.devServer = (devServerConfig) => {
-  // Add health check endpoints if enabled
-  if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
-    const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
+      devServerConfig.setupMiddlewares = (middlewares, devServer) => {
+        // Call original setup if exists
+        if (originalSetupMiddlewares) {
+          middlewares = originalSetupMiddlewares(middlewares, devServer);
+        }
 
-    devServerConfig.setupMiddlewares = (middlewares, devServer) => {
-      // Call original setup if exists
-      if (originalSetupMiddlewares) {
-        middlewares = originalSetupMiddlewares(middlewares, devServer);
-      }
+        // Setup health endpoints
+        setupHealthEndpoints(devServer, healthPluginInstance);
 
-      // Setup health endpoints
-      setupHealthEndpoints(devServer, healthPluginInstance);
+        return middlewares;
+      };
+    }
 
-      return middlewares;
-    };
-  }
-
-  return devServerConfig;
+    return devServerConfig;
+  },
 };
 
 // Wrap with visual edits (automatically adds babel plugin, dev server, and overlay in dev mode)
@@ -134,9 +137,9 @@ if (isDevServer) {
     const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
     webpackConfig = withVisualEdits(webpackConfig);
   } catch (err) {
-    if (err.code === 'MODULE_NOT_FOUND' && err.message.includes('@emergentbase/visual-edits/craco')) {
+    if (err.code === "MODULE_NOT_FOUND" && err.message.includes("@emergentbase/visual-edits/craco")) {
       console.warn(
-        "[visual-edits] @emergentbase/visual-edits not installed — visual editing disabled."
+        "[visual-edits] @emergentbase/visual-edits not installed - visual editing disabled."
       );
     } else {
       throw err;
@@ -145,7 +148,8 @@ if (isDevServer) {
 }
 
 const configureDevServer = webpackConfig.devServer;
-webpackConfig.devServer = (devServerConfig) =>
-  makeDevServerV5Compatible(configureDevServer(devServerConfig));
+webpackConfig.devServer = (configureDevServer)
+  ? makeDevServerVSCompatible(configureDevServer)
+  : undefined;
 
 module.exports = webpackConfig;
