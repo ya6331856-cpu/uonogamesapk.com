@@ -2,7 +2,7 @@
 // (api.get/post/put/delete returning { data, status }). Used instead of axios
 // because the axios XHR/fetch adapters hang in this runtime environment.
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL || "";
 export const API = `${BACKEND_URL}/api`;
 export const BACKEND = BACKEND_URL;
 
