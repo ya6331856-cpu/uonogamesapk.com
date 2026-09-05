@@ -1,5 +1,5 @@
-import { PageHeader } from "../../components/admin/adminUI";
-import AppsManager from "../../components/admin/AppsManager";
+import { PageHeader } from "@/components/admin/adminUI";
+import AppsManager from "@/components/admin/AppsManager";
 
 export default function ApksPage() {
   return (
