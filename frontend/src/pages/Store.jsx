@@ -2,30 +2,30 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X } from "lucide-react";
 import { toast } from "sonner";
-import api, { API, resolveUrl } from "../lib/api";
-import SEOHead from "../components/SEOHead";
-import { useSettings, sectionEnabled } from "../context/SettingsContext";
-import Header from "../components/Header";
-import WelcomeTypewriter from "../components/WelcomeTypewriter";
-import FeaturedApps from "../components/FeaturedApps";
-import AppCard from "../components/AppCard";
-import TrendingRow from "../components/TrendingRow";
-import RummyFeatures from "../components/RummyFeatures";
-import AnimatedCounter from "../components/AnimatedCounter";
-import { StoreSkeleton } from "../components/Skeletons";
-import FaqSection from "../components/FaqSection";
-import LegalSection from "../components/LegalSection";
-import LegalDialog from "../components/LegalDialog";
-import SiteFooter from "../components/SiteFooter";
-import AnnouncementBar from "../components/AnnouncementBar";
-import LiveWinners from "../components/LiveWinners";
-import ReviewsSection from "../components/ReviewsSection";
-import RedeemBox from "../components/RedeemBox";
-import AdSlot from "../components/AdSlot";
-import { Input } from "../components/ui/input";
+import api, { API, resolveUrl } from "@/lib/api";
+import SEOHead from "@/components/SEOHead";
+import { useSettings, sectionEnabled } from "@/context/SettingsContext";
+import Header from "@/components/Header";
+import WelcomeTypewriter from "@/components/WelcomeTypewriter";
+import FeaturedApps from "@/components/FeaturedApps";
+import AppCard from "@/components/AppCard";
+import TrendingRow from "@/components/TrendingRow";
+import RummyFeatures from "@/components/RummyFeatures";
+import AnimatedCounter from "@/components/AnimatedCounter";
+import { StoreSkeleton } from "@/components/Skeletons";
+import FaqSection from "@/components/FaqSection";
+import LegalSection from "@/components/LegalSection";
+import LegalDialog from "@/components/LegalDialog";
+import SiteFooter from "@/components/SiteFooter";
+import AnnouncementBar from "@/components/AnnouncementBar";
+import LiveWinners from "@/components/LiveWinners";
+import ReviewsSection from "@/components/ReviewsSection";
+import RedeemBox from "@/components/RedeemBox";
+import AdSlot from "@/components/AdSlot";
+import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "../components/ui/select";
+} from "@/components/ui/select";
 // Collapse a string to lowercase alphanumerics so search is insensitive to
 // spacing, hyphens, dots and other punctuation that APK titles use freely:
 // 'Teen Patti', 'teen-patti' and 'TeenPatti' all become 'teenpatti'.
