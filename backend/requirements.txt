@@ -27,3 +27,4 @@ jq>=1.6.0
 typer>=0.9.0
 google-auth
 google-api-python-client
+firebase-admin
