@@ -4,10 +4,10 @@ import {
   Search, Sparkles, RefreshCw, CheckCircle2, AlertCircle, ExternalLink,
   Loader2, Wand2, FileText, Globe2, Bot, Image as ImageIcon, Wrench,
 } from "lucide-react";
-import api, { API } from "../../lib/api";
-import { PageHeader, Card } from "../../components/admin/adminUI";
-import RippleButton from "../../components/RippleButton";
-import { Input } from "../../components/ui/input";
+import api, { API } from "@/lib/api";
+import { PageHeader, Card } from "@/components/admin/adminUI";
+import RippleButton from "@/components/RippleButton";
+import { Input } from "@/components/ui/input";
 
 const Stat = ({ label, value, tone = "default", testId }) => {
   const toneMap = {
