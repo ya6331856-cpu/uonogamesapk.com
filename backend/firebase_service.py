@@ -12,11 +12,18 @@ from datetime import datetime, timezone
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as fb_auth, storage as fb_storage
 
-_CRED_PATH = os.environ["FIREBASE_CREDENTIALS_PATH"]
+import json
+
+cred_input = os.environ.get("FIREBASE_CREDENTIALS") or os.environ.get("FIREBASE_CREDENTIALS_PATH", "")
 _BUCKET_NAME = os.environ.get("FIREBASE_STORAGE_BUCKET")
 
 if not firebase_admin._apps:
-    _cred = credentials.Certificate(_CRED_PATH)
+    if cred_input.strip().startswith("{"):
+        cred_dict = json.loads(cred_input)
+        _cred = credentials.Certificate(cred_dict)
+    else:
+        _cred = credentials.Certificate(cred_input)
+        
     firebase_admin.initialize_app(_cred, {"storageBucket": _BUCKET_NAME})
 
 fs = firestore.client()
