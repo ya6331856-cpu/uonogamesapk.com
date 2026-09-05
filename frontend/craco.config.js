@@ -76,23 +76,16 @@ let webpackConfig = {
   },
   webpack: {
     configure: (webpackConfig) => {
-      // Universal plugin to handle ALL @/ and lib/ imports automatically
-      const webpack = require("webpack");
-      webpackConfig.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(
-          /^@\/|[\\/]lib[\\/]/,
-          (resource) => {
-            const req = resource.request;
-            if (req.startsWith("@/")) {
-              const subPath = req.replace(/^@\//, "");
-              resource.request = path.resolve(__dirname, "src", subPath);
-            } else if (req.includes("lib/")) {
-              const subPath = req.split("lib/").pop();
-              resource.request = path.resolve(__dirname, "src/lib", subPath);
-            }
-          }
-        )
-      );
+      // Native Webpack Aliases for bulletproof path resolution
+      webpackConfig.resolve = webpackConfig.resolve || {};
+      webpackConfig.resolve.alias = {
+        ...(webpackConfig.resolve.alias || {}),
+        "@": path.resolve(__dirname, "src"),
+        "lib": path.resolve(__dirname, "src/lib"),
+        "@lib": path.resolve(__dirname, "src/lib"),
+        "components": path.resolve(__dirname, "src/components"),
+        "context": path.resolve(__dirname, "src/context"),
+      };
 
       // Add ignored patterns to reduce watched directories
       webpackConfig.watchOptions = {
