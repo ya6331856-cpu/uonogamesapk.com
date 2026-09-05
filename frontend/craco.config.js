@@ -2,7 +2,6 @@ const path = require("path");
 require("dotenv").config();
 
 // Check if we're in development/preview mode (not production build)
-// Craco sets NODE_ENV=development for start, NODE_ENV=production for build
 const isDevServer = process.env.NODE_ENV !== "production";
 
 // Environment variable overrides
@@ -37,22 +36,18 @@ function makeDevServerV5Compatible(devServerConfig) {
       if (onBeforeSetupMiddleware) {
         onBeforeSetupMiddleware(devServer);
       }
-
       if (setupMiddlewares) {
         return setupMiddlewares(middlewares, devServer);
       }
-
       return middlewares;
     };
   }
 
   compatibleConfig.onListening = (devServer) => {
     devServer.close ??= (callback) => devServer.stopCallback(callback);
-
     if (onListening) {
       onListening(devServer);
     }
-
     if (onAfterSetupMiddleware) {
       onAfterSetupMiddleware(devServer);
     }
@@ -83,11 +78,19 @@ let webpackConfig = {
     },
   },
   webpack: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-      "lib": path.resolve(__dirname, "src/lib"),
-    },
     configure: (webpackConfig) => {
+      // =========================================================
+      // NAYA FIX 1: Jabardasti Alias Inject karo 
+      // (Isse koi plugin ise ignore nahi kar payega)
+      // =========================================================
+      webpackConfig.resolve = webpackConfig.resolve || {};
+      webpackConfig.resolve.alias = {
+        ...(webpackConfig.resolve.alias || {}),
+        "@": path.resolve(__dirname, "src"),
+        "lib": path.resolve(__dirname, "src/lib")
+      };
+      // =========================================================
+
       // Add ignored patterns to reduce watched directories
       webpackConfig.watchOptions = {
         ...webpackConfig.watchOptions,
@@ -102,9 +105,9 @@ let webpackConfig = {
       };
 
       // =========================================================
-      // NAYA FIX: React ko src/ ke bahar se import karne do
+      // NAYA FIX 2: React ko src/ ke bahar se import karne do
       // =========================================================
-      const scopePluginIndex = webpackConfig.resolve.plugins.findIndex(
+      const scopePluginIndex = (webpackConfig.resolve.plugins || []).findIndex(
         ({ constructor }) => constructor && constructor.name === 'ModuleScopePlugin'
       );
       if (scopePluginIndex > -1) {
@@ -130,14 +133,11 @@ let webpackConfig = {
         if (originalSetupMiddlewares) {
           middlewares = originalSetupMiddlewares(middlewares, devServer);
         }
-
         // Setup health endpoints
         setupHealthEndpoints(devServer, healthPluginInstance);
-
         return middlewares;
       };
     }
-
     return devServerConfig;
   },
 };
