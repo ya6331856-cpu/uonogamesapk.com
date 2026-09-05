@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck, User } from "lucide-react";
 import { toast } from "sonner";
-import api from "../../lib/api";
-import { PageHeader, Card, Field, SaveBar, Spinner } from "../../components/admin/adminUI";
+import api from "@/lib/api";
+import { PageHeader, Card, Field, SaveBar, Spinner } from "@/components/admin/adminUI";
 
 export function UsersPage() {
   const [users, setUsers] = useState(null);
