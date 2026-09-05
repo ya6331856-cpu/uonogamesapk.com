@@ -1,10 +1,8 @@
 const path = require("path");
 require("dotenv").config();
 
-// Check if we're in development/preview mode (not production build)
 const isDevServer = process.env.NODE_ENV !== "production";
 
-// Environment variable overrides
 const config = {
   enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === "true",
 };
@@ -56,7 +54,6 @@ function makeDevServerV5Compatible(devServerConfig) {
   return compatibleConfig;
 }
 
-// Conditionally load health check modules only if enabled
 let webpackHealthPlugin;
 let setupHealthEndpoints;
 let healthPluginInstance;
@@ -79,7 +76,7 @@ let webpackConfig = {
   },
   webpack: {
     configure: (webpackConfig) => {
-      // Bulletproof Alias Injection (Supports @, lib, and @lib)
+      // Bulletproof Alias Injection inside configure
       webpackConfig.resolve = webpackConfig.resolve || {};
       webpackConfig.resolve.alias = {
         ...(webpackConfig.resolve.alias || {}),
@@ -88,7 +85,6 @@ let webpackConfig = {
         "@lib": path.resolve(__dirname, "src/lib")
       };
 
-      // Add ignored patterns to reduce watched directories
       webpackConfig.watchOptions = {
         ...webpackConfig.watchOptions,
         ignored: [
@@ -101,7 +97,6 @@ let webpackConfig = {
         ],
       };
 
-      // Bypass ModuleScopePlugin restrictions
       const scopePluginIndex = (webpackConfig.resolve.plugins || []).findIndex(
         ({ constructor }) => constructor && constructor.name === 'ModuleScopePlugin'
       );
@@ -109,7 +104,6 @@ let webpackConfig = {
         webpackConfig.resolve.plugins.splice(scopePluginIndex, 1);
       }
 
-      // Add health check plugin to webpack if enabled
       if (config.enableHealthCheck && healthPluginInstance) {
         webpackConfig.plugins.push(healthPluginInstance);
       }
@@ -118,7 +112,6 @@ let webpackConfig = {
     },
   },
   devServer: (devServerConfig) => {
-    // Add health check endpoints if enabled
     if (config.enableHealthCheck && setupHealthEndpoints) {
       const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
 
@@ -134,7 +127,6 @@ let webpackConfig = {
   },
 };
 
-// Wrap with visual edits (automatically adds babel plugin, dev server, and overlay in dev mode)
 if (isDevServer) {
   try {
     const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
