@@ -6,24 +6,36 @@ Storage is used for uploads when the project's bucket is provisioned (Blaze plan
 """
 import os
 import re
+import json
 import asyncio
 from datetime import datetime, timezone
 
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as fb_auth, storage as fb_storage
 
-import json
-
+# Robust credential loading for Render environment variables (JSON string or file path)
 cred_input = os.environ.get("FIREBASE_CREDENTIALS") or os.environ.get("FIREBASE_CREDENTIALS_PATH", "")
+cred_input = cred_input.strip()
 _BUCKET_NAME = os.environ.get("FIREBASE_STORAGE_BUCKET")
 
 if not firebase_admin._apps:
-    if cred_input.strip().startswith("{"):
-        cred_dict = json.loads(cred_input)
-        _cred = credentials.Certificate(cred_dict)
-    else:
-        _cred = credentials.Certificate(cred_input)
-        
+    if not cred_input:
+        raise ValueError("CRITICAL: FIREBASE_CREDENTIALS environment variable is missing or empty in Render!")
+    
+    try:
+        if cred_input.startswith("{"):
+            cred_dict = json.loads(cred_input)
+            _cred = credentials.Certificate(cred_dict)
+        else:
+            try:
+                cred_dict = json.loads(cred_input)
+                _cred = credentials.Certificate(cred_dict)
+            except json.JSONDecodeError:
+                _cred = credentials.Certificate(cred_input)
+    except Exception as e:
+        print(f"Failed to load Firebase credentials: {e}")
+        raise
+
     firebase_admin.initialize_app(_cred, {"storageBucket": _BUCKET_NAME})
 
 fs = firestore.client()
