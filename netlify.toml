@@ -1,5 +1,5 @@
 [build]
   base = "frontend"
-  command = "npm install --legacy-peer-deps && npm install ajv ajv-keywords ajv-formats --no-save && CI=false craco build"
+  command = "npm install --legacy-peer-deps && npm install ajv ajv-keywords ajv-formats --no-save && npm run build"
   publish = "build"
   
