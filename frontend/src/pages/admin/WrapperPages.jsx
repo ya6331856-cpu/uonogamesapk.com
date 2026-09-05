@@ -1,8 +1,8 @@
-import { PageHeader } from "../../components/admin/adminUI";
-import AdminReviews from "../../components/admin/AdminReviews";
-import AdminFaqs from "../../components/admin/AdminFaqs";
-import AdminWinners from "../../components/admin/AdminWinners";
-import AdminCodes from "../../components/admin/AdminCodes";
+import { PageHeader } from "@/components/admin/adminUI";
+import AdminReviews from "@/components/admin/AdminReviews";
+import AdminFaqs from "@/components/admin/AdminFaqs";
+import AdminWinners from "@/components/admin/AdminWinners";
+import AdminCodes from "@/components/admin/AdminCodes";
 
 export function ReviewsPage() {
   return <div><PageHeader title="Reviews" desc="Approve, edit and manage user testimonials." /><AdminReviews /></div>;
