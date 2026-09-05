@@ -30,7 +30,7 @@ import AdminReviews from "@/components/admin/AdminReviews";
 import AdminWinners from "@/components/admin/AdminWinners";
 import AdminCodes from "@/components/admin/AdminCodes";
 import AdminAnalytics from "@/components/admin/AdminAnalytics";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const CATEGORIES = ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"];
 
