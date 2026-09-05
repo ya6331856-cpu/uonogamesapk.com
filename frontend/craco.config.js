@@ -76,15 +76,18 @@ let webpackConfig = {
   },
   webpack: {
     configure: (webpackConfig) => {
-      // Bulletproof replacement plugin to handle any variation of lib/ imports (/lib, lib, @lib, etc.)
+      // Universal plugin to handle ALL @/ and lib/ imports automatically
       const webpack = require("webpack");
       webpackConfig.plugins.push(
         new webpack.NormalModuleReplacementPlugin(
-          /[\\/]lib[\\/]/,
+          /^@\/|[\\/]lib[\\/]/,
           (resource) => {
-            const requestPath = resource.request;
-            if (requestPath.includes("lib/")) {
-              const subPath = requestPath.split("lib/").pop();
+            const req = resource.request;
+            if (req.startsWith("@/")) {
+              const subPath = req.replace(/^@\//, "");
+              resource.request = path.resolve(__dirname, "src", subPath);
+            } else if (req.includes("lib/")) {
+              const subPath = req.split("lib/").pop();
               resource.request = path.resolve(__dirname, "src/lib", subPath);
             }
           }
