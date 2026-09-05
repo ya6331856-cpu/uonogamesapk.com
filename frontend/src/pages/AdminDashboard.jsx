@@ -6,13 +6,13 @@ import {
   Upload, Loader2, Package, ArrowLeft, X,
 } from "lucide-react";
 import { toast } from "sonner";
-import api, { resolveUrl } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import { formatCount } from "../lib/format";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
-import { Switch } from "../components/ui/switch";
+import api, { resolveUrl } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { formatCount } from "@/lib/format";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../components/ui/select";
@@ -23,13 +23,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "../components/ui/alert-dialog";
-import RippleButton from "../components/RippleButton";
-import AdminFaqs from "../components/AdminFaqs";
-import AdminSettings from "../components/admin/AdminSettings";
-import AdminReviews from "../components/admin/AdminReviews";
-import AdminWinners from "../components/admin/AdminWinners";
-import AdminCodes from "../components/admin/AdminCodes";
-import AdminAnalytics from "../components/admin/AdminAnalytics";
+import RippleButton from "@/components/RippleButton";
+import AdminFaqs from "@/components/AdminFaqs";
+import AdminSettings from "@/components/admin/AdminSettings";
+import AdminReviews from "@/components/admin/AdminReviews";
+import AdminWinners from "@/components/admin/AdminWinners";
+import AdminCodes from "@/components/admin/AdminCodes";
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 
 const CATEGORIES = ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"];
