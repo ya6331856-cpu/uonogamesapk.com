@@ -4,9 +4,9 @@ import {
   Download, Package, MessageSquare, Ticket, TrendingUp, Star, Plus,
   HelpCircle, Trophy, ArrowUpRight, Clock,
 } from "lucide-react";
-import api, { resolveUrl } from "../../lib/api";
-import { formatFull, formatCount } from "../../lib/format";
-import { Card, Spinner } from "../../components/admin/adminUI";
+import api, { resolveUrl } from "@/lib/api";
+import { formatFull, formatCount } from "@/lib/format";
+import { Card, Spinner } from "@/components/admin/adminUI";
 
 const CHART_COLORS = ["#FFC107", "#FFB300", "#22C55E", "#229ED9", "#EC4899", "#8B5CF6"];
 
