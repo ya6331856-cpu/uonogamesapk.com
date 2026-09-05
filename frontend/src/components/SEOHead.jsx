@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://newyono.games";
-const SITE_NAME = "NEW YONO GAMES";
+const SITE_NAME = "YOWO GAMES";
 const DEFAULT_OG = `${SITE_URL}/logo-v2.png`;
 
 function absUrl(u) {
@@ -29,14 +29,14 @@ export function canonicalize(input) {
 }
 
 export default function SEOHead({ title, description, image, canonical }) {
-  const seoTitle = title ? `${title} | ${ New Yono Games}` : SITE_NAME;
-  const seoDescription = description || "Play amazing games on YOOO GAMES.";
+  const seoTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME;
+  const seoDescription = description || "Play amazing games on YOWO GAMES.";
   const seoImage = image ? absUrl(image) : DEFAULT_OG;
   const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
 
   return (
     <Helmet>
-      <title>{YONO GAMES}</title>
+      <title>{seoTitle}</title>
       <meta name="description" content={seoDescription} />
       <link rel="canonical" href={seoCanonical} />
       <meta property="og:title" content={seoTitle} />
