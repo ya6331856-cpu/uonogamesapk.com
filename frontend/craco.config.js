@@ -10,7 +10,7 @@ const config = {
   enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === "true",
 };
 
-function makeDevServerVSCompatible(devServerConfig) {
+function makeDevServerV5Compatible(devServerConfig) {
   const {
     https,
     onAfterSetupMiddleware,
@@ -101,6 +101,17 @@ let webpackConfig = {
         ],
       };
 
+      // =========================================================
+      // NAYA FIX: React ko src/ ke bahar se import karne do
+      // =========================================================
+      const scopePluginIndex = webpackConfig.resolve.plugins.findIndex(
+        ({ constructor }) => constructor && constructor.name === 'ModuleScopePlugin'
+      );
+      if (scopePluginIndex > -1) {
+        webpackConfig.resolve.plugins.splice(scopePluginIndex, 1);
+      }
+      // =========================================================
+
       // Add health check plugin to webpack if enabled
       if (config.enableHealthCheck && healthPluginInstance) {
         webpackConfig.plugins.push(healthPluginInstance);
@@ -148,8 +159,8 @@ if (isDevServer) {
 }
 
 const configureDevServer = webpackConfig.devServer;
-webpackConfig.devServer = (configureDevServer)
-  ? makeDevServerVSCompatible(configureDevServer)
+webpackConfig.devServer = configureDevServer
+  ? (devServerConfig) => makeDevServerV5Compatible(configureDevServer(devServerConfig))
   : undefined;
 
 module.exports = webpackConfig;
