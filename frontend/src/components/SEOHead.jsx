@@ -1,30 +1,48 @@
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { resolveUrl } from "/lib/api";
 
 const SITE_URL = "https://newyono.games";
-const SITE_NAME = "YONO GAMES";
+const SITE_NAME = "NEW YONO GAMES";
 const DEFAULT_OG = `${SITE_URL}/logo-v2.png`;
 
 function absUrl(u) {
-  /*...*/
+  if (!u) return SITE_URL;
+  if (u.startsWith("http")) return u;
+  return `${SITE_URL}${u.startsWith("/") ? "" : "/"}${u}`;
 }
 
-/**
- * Normalise any URL into the one canonical form Google should see:
- *   - always the non-www apex origin
- *   - query strings and hash fragments stripped (?utm_source=... must not
- *     create a second canonical for the same page)
- *   - no trailing slash, except on the root document
- *
- * Every canonical and og:url on the site flows through this function, so there
- * is a single place where URL shape is decided.
- */
 export function canonicalize(input) {
-  /*...*/
+  if (!input) return SITE_URL;
+  try {
+    const url = new URL(input, SITE_URL);
+    url.hash = "";
+    url.search = "";
+    let p = url.pathname;
+    if (p.length > 1 && p.endsWith("/")) {
+      p = p.slice(0, -1);
+    }
+    url.pathname = p;
+    return url.toString();
+  } catch (e) {
+    return input;
+  }
 }
 
-/**
- * Remove duplicate/conflicting meta/link tags NOT managed by react-helmet-async
- * (e.g. those injected by third-party scripts before mount). Called once per
- /*...*/
+export default function SEOHead({ title, description, image, canonical }) {
+  const seoTitle = title ? `${title} | ${ New Yono Games}` : SITE_NAME;
+  const seoDescription = description || "Play amazing games on YOOO GAMES.";
+  const seoImage = image ? absUrl(image) : DEFAULT_OG;
+  const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
+
+  return (
+    <Helmet>
+      <title>{YONO GAMES}</title>
+      <meta name="description" content={seoDescription} />
+      <link rel="canonical" href={seoCanonical} />
+      <meta property="og:title" content={seoTitle} />
+      <meta property="og:description" content={seoDescription} />
+      <meta property="og:image" content={seoImage} />
+      <meta property="og:url" content={seoCanonical} />
+    </Helmet>
+  );
+}
