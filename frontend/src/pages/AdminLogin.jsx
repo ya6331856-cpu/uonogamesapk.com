@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck, Lock, Mail, ArrowLeft, Loader2 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import RippleButton from "../components/RippleButton";
+import { useAuth } from "@/context/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import RippleButton from "@/components/RippleButton";
 
 function formatApiErrorDetail(detail) {
   if (detail == null) return "Something went wrong. Please try again.";
