@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import api from "../lib/api";
+import api from "@/lib/api";
 
 const AuthContext = createContext(null);
 
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const [{ signInWithEmailAndPassword }, { firebaseAuth }] = await Promise.all([
                 import("firebase/auth"),
-                import("../lib/firebase"),
+                import("@/lib/firebase"),
             ]);
             const cred = await signInWithEmailAndPassword(firebaseAuth, em, password);
             const idToken = await cred.user.getIdToken();
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem("uono_token");
         setUser(false);
-        import("../lib/firebase")
+        import("@/lib/firebase")
             .then(({ firebaseAuth }) => import("firebase/auth").then(({ signOut }) => signOut(firebaseAuth)))
             .catch(() => {});
     };
