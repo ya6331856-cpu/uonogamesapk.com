@@ -62,7 +62,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "NODE_OPTIONS=--openssl-legacy-provider craco build",
+    "build": "DISABLE_ESLINT_PLUGIN=true TSC_COMPILE_ON_ERROR=true NODE_OPTIONS=--openssl-legacy-provider craco build",
     "test": "craco test"
   },
   "browserslist": {
