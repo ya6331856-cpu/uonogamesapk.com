@@ -31,7 +31,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Store />} />
                 <Route path="/app/:id" element={<LegacyAppRedirect />} />
-                <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
