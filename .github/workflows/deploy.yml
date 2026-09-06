@@ -18,12 +18,14 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
 
       - name: Install & Build
         working-directory: ./frontend
         run: |
-          yarn install
+          yarn install --ignore-engines
           yarn build
 
       - name: Publish to Cloudflare Pages
