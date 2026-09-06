@@ -73,18 +73,17 @@ export default function Store() {
       if (!prev) return prev;
       const bump = (a) => (a.id === app.id ? { ...a, downloads: a.downloads + 1 } : a);
       return {
-        ...prev,
-        featured: prev.featured.map(bump),
-        apps: prev.apps.map(bump),
+              return {
+       ...prev,
+        featured: (prev.featured || []).map(bump),
+        apps: (prev.apps || []).map(bump),
         trending: (prev.trending || []).map(bump),
       };
-    });
-  };
 
   const categories = useMemo(() => {
     if (!data) return ["All"];
     const set = new Set();
-    [...data.featured, ...data.apps].forEach((a) => a.category && set.add(a.category));
+    [...(data.featured || []), ...data.apps].forEach((a) => a.category && set.add(a.category));
     return ["All", ...Array.from(set)];
   }, [data]);
 
@@ -95,7 +94,7 @@ export default function Store() {
     if (!data) return [];
     const q = normalize(deferredSearch);
     const hasFilter = category !== "All" || q;
-    let list = hasFilter ? [...data.featured, ...data.apps] : [...data.apps];
+    let list = hasFilter ? [...(data.featured || []), ...data.apps] : [...data.apps];
     if (category !== "All") list = list.filter((a) => a.category === category);
 
     if (q) {
@@ -135,7 +134,7 @@ export default function Store() {
 
   const trending = useMemo(() => {
     if (!data) return [];
-    const t = data.trending && data.trending.length ? data.trending : [...data.featured, ...data.apps];
+    const t = data.trending && data.trending.length ? data.trending : [...(data.featured || []), ...data.apps];
     return t.slice().sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 8);
   }, [data]);
 
