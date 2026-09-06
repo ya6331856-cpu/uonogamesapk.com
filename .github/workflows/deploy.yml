@@ -32,4 +32,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 2a6d241fbed2387410
           projectName: newyonogames
-          directory: frontend/dist
+          directory: frontend/build
