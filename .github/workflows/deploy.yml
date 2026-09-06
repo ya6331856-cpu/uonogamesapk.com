@@ -18,18 +18,16 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
-      - name: Install & Buil
+      - name: Install & Build
         working-directory: ./frontend
         run: |
           yarn install --ignore-engines
           yarn --ignore-engines build
 
-      - name: Publish to Cloudflare Pages
-        uses: cloudflare/pages-action@1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 2a6d241fbed2387410d57963f45141d
-          projectName: newyonogames
-          directory: frontend/build
+      - name: Deploy to Cloudflare Pages via Wrangler
+        run: npx wrangler pages deploy frontend/build --project-name=newyonogames
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 2a6d241fbed2387410d57963f45141d
