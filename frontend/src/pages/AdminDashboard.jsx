@@ -102,10 +102,14 @@ export default function AdminDashboard() {
     if (ready && !user) navigate("/admin/login");
   }, [ready, user, navigate]);
 
-  const fetchApps = async () => {
+    const fetchApps = async () => {
     try {
       const { data } = await api.get("/apps", { params: { include_hidden: true } });
-      setApps([...data.featured, ...data.apps]);
+      if (Array.isArray(data)) {
+        setApps(data);
+      } else {
+        setApps([...(data.featured || []), ...(data.apps || [])]);
+      }
     } catch (e) {
       toast.error("Failed to load apps");
     } finally {
