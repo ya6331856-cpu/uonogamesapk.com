@@ -23,9 +23,8 @@ jobs:
       - name: Install & Build
         working-directory: ./frontend
         run: |
-          rm -f package-lock.json
-          npm install --legacy-peer-deps --force
-          npm run build
+          yarn install
+          yarn build
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@1
