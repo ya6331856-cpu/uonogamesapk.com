@@ -2,7 +2,7 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: [ main, master, fix/appmanager-useeffect ]
+    branches: [ main, master, fix/appmanager-useEffect ]
   workflow_dispatch:
 
 jobs:
@@ -30,4 +30,4 @@ jobs:
         run: npx wrangler pages deploy frontend/build --project-name=newyonogames
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: 2a6d241fbed2387410d57963f45141d
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
