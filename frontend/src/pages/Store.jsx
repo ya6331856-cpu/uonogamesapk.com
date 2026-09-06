@@ -26,9 +26,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-// Collapse a string to lowercase alphanumerics so search is insensitive to
-// spacing, hyphens, dots and other punctuation that APK titles use freely:
-// 'Teen Patti', 'teen-patti' and 'TeenPatti' all become 'teenpatti'.
+
 function normalize(s) {
   return String(s || "")
     .toLowerCase()
@@ -73,34 +71,31 @@ export default function Store() {
       if (!prev) return prev;
       const bump = (a) => (a.id === app.id ? { ...a, downloads: a.downloads + 1 } : a);
       return {
-              return {
-       ...prev,
+        ...prev,
         featured: (prev.featured || []).map(bump),
         apps: (prev.apps || []).map(bump),
         trending: (prev.trending || []).map(bump),
       };
+    });
+  };
 
   const categories = useMemo(() => {
     if (!data) return ["All"];
     const set = new Set();
-    [...(data.featured || []), ...data.apps].forEach((a) => a.category && set.add(a.category));
+    [...(data.featured || []), ...(data.apps || [])].forEach((a) => a.category && set.add(a.category));
     return ["All", ...Array.from(set)];
   }, [data]);
 
-  // Deferred so typing stays responsive while a long list re-filters.
   const deferredSearch = useDeferredValue(search);
 
   const filtered = useMemo(() => {
     if (!data) return [];
     const q = normalize(deferredSearch);
     const hasFilter = category !== "All" || q;
-    let list = hasFilter ? [...(data.featured || []), ...data.apps] : [...data.apps];
+    let list = hasFilter ? [...(data.featured || []), ...(data.apps || [])] : [...(data.apps || [])];
     if (category !== "All") list = list.filter((a) => a.category === category);
 
     if (q) {
-      // Match on normalized text so "teenpatti", "Teen Patti" and "teen-patti"
-      // all find the same app — punctuation and spacing in APK names is
-      // inconsistent, and the old exact-substring match on `name` missed them.
       const scored = [];
       for (const a of list) {
         const name = normalize(a.name);
@@ -113,11 +108,8 @@ export default function Store() {
         else continue;
         scored.push({ a, score });
       }
-      // Best match first; downloads as the tiebreaker inside each tier.
       scored.sort((x, y) => x.score - y.score || (y.a.downloads || 0) - (x.a.downloads || 0));
       list = scored.map((s) => s.a);
-      // A relevance-ranked result set must not be re-sorted by the dropdown,
-      // or the closest name match gets buried.
       return list;
     }
 
@@ -129,12 +121,12 @@ export default function Store() {
 
   const totalDownloads = useMemo(() => {
     if (!data) return 0;
-    return [...data.featured, ...data.apps].reduce((s, a) => s + (a.downloads || 0), 0);
+    return [...(data.featured || []), ...(data.apps || [])].reduce((s, a) => s + (a.downloads || 0), 0);
   }, [data]);
 
   const trending = useMemo(() => {
     if (!data) return [];
-    const t = data.trending && data.trending.length ? data.trending : [...(data.featured || []), ...data.apps];
+    const t = data.trending && data.trending.length ? data.trending : [...(data.featured || []), ...(data.apps || [])];
     return t.slice().sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 8);
   }, [data]);
 
@@ -199,7 +191,6 @@ export default function Store() {
     </section>
   );
 
-  // Section renderers keyed by id (order controlled by settings.sections)
   const renderers = {
     featured: isDefaultView && en("featured") ? <FeaturedApps key="featured" apps={data?.featured} onDownload={handleDownload} /> : null,
     rummy: isDefaultView && en("rummy") ? <RummyFeatures key="rummy" /> : null,
@@ -224,7 +215,6 @@ export default function Store() {
   };
 
   const order = (settings?.sections || []).map((s) => s.id);
-  // Ensure 'apps' is always present even if settings missing
   const finalOrder = order.includes("apps") ? order : [...order, "apps"];
 
   return (
@@ -240,7 +230,6 @@ export default function Store() {
       <Header />
       <WelcomeTypewriter />
 
-      {/* Hero banner */}
       {hero.enabled !== false && (
         <div className="px-4 pt-4">
           <motion.div
@@ -261,13 +250,12 @@ export default function Store() {
         </div>
       )}
 
-      {/* Stats row */}
       {stats.enabled !== false && (
         <div className="grid grid-cols-3 gap-2 px-4 pt-4">
           {(stats.items || []).slice(0, 3).map((s, i) => {
             const Icon = [Download, ShieldCheck, TrendingUp][i] || Sparkles;
             const color = ["#FFC107", "#22C55E", "#FFB300"][i] || "#FFC107";
-            const autoVal = i === 0 ? totalDownloads : (data ? [...data.featured, ...data.apps].length : 0);
+            const autoVal = i === 0 ? totalDownloads : (data ? [...(data.featured || []), ...(data.apps || [])].length : 0);
             const isAuto = s.value === "auto";
             return (
               <div key={i} className="rounded-[16px] border border-[#E5E7EB] bg-white p-3 text-center shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
@@ -283,7 +271,6 @@ export default function Store() {
         </div>
       )}
 
-      {/* Search */}
       <div className="sticky top-[57px] z-30 bg-[#F8F9FA]/90 px-4 py-3 backdrop-blur-md">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777777]" />
@@ -298,8 +285,6 @@ export default function Store() {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setSearch("")}
             placeholder="Search apps & games..."
-            /* text-base (16px) is deliberate: anything smaller makes iOS Safari
-               zoom the page on focus, which wrecks the sticky search bar. */
             className="h-11 rounded-full border-[#E5E7EB] bg-white pl-10 pr-10 text-base shadow-[0_4px_14px_rgba(0,0,0,0.03)] focus-visible:ring-[#FFC107] sm:text-sm"
           />
           {search && (
