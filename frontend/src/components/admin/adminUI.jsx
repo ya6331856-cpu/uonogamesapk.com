@@ -28,14 +28,14 @@ export const Card = ({ children, className = "", ...rest }) => (
 export const Field = ({ label, value, onChange, placeholder, type = "text", testId }) => (
   <div className="space-y-1.5">
     <Label className="text-xs font-semibold text-[#555555]">{label}</Label>
-    <Input data-testid={testId} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} className="rounded-xl" />
+    <Input data-testid={testId} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} />
   </div>
 );
 
 export const Area = ({ label, value, onChange, placeholder, rows = 3, testId }) => (
   <div className="space-y-1.5">
     <Label className="text-xs font-semibold text-[#555555]">{label}</Label>
-    <Textarea data-testid={testId} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="rounded-xl" />
+    <Textarea data-testid={testId} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} />
   </div>
 );
 
@@ -50,20 +50,23 @@ export const Toggle = ({ label, checked, onChange, testId }) => (
  * Hook to load/edit/save the site settings singleton.
  */
 export const useSettingsEditor = () => {
-  const { refreshSettings } = useSettings();
-  const [s, setS] = useState(null);
+  const refreshSettings = useSettings();
+  const [s, setS] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.get("/settings").then((r) => setS(r.data)).catch(() => setS({}));
+    api.get('/settings').then((r) => setS(r.data || {})).catch(() => setS({}));
   }, []);
 
   const set = (path, value) => {
     setS((prev) => {
-      const next = structuredClone(prev);
+      const next = structuredClone(prev || {});
       let obj = next;
       const keys = path.split(".");
-      for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]] = obj[keys[i]] || {};
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]]) obj[keys[i]] = {};
+        obj = obj[keys[i]];
+      }
       obj[keys[keys.length - 1]] = value;
       return next;
     });
@@ -72,26 +75,25 @@ export const useSettingsEditor = () => {
   const save = async () => {
     setSaving(true);
     try {
-      await api.put("/admin/settings", s);
+      await api.put('/admin/settings', s);
       await refreshSettings();
       toast.success("Saved successfully");
-    } catch (e) {
+    } catch {
       toast.error("Failed to save");
     } finally {
       setSaving(false);
     }
   };
 
-  return { s, setS, set, save, saving, ready: !!s };
+  return { s, set, save, saving, ready: !!s };
 };
 
 export const SaveBar = ({ onSave, saving, testId = "save-btn" }) => (
-  <RippleButton onClick={onSave} disabled={saving} data-testid={testId}
-    className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] px-6 py-2.5 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)] disabled:opacity-60">
+  <RippleButton onClick={onSave} disabled={saving} data-testid={testId} className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] px-6 py-2.5 text-sm font-bold text-white shadow-md">
     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Changes
   </RippleButton>
 );
 
 export const Spinner = () => (
-  <div className="py-20 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" /></div>
+  <div className="py-20 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-[#FFC107]" /></div>
 );
