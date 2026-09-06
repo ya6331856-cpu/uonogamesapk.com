@@ -158,10 +158,14 @@ const FeaturedSecondary = ({ app, onDownload, delay }) => {
   );
 };
 
-export const FeaturedApps = ({ apps, onDownload }) => {
-  if (!apps || apps.length === 0) return null;
-  const [first, second, third] = apps;
-  return (
+export const FeaturedApps = ({ apps = [], onDownload }) => {
+  const safeApps = apps || [];
+  if (safeApps.length === 0) return null;
+  const [first, second, third] = safeApps;
+  return 
+
+    (
+  
     <section data-testid="featured-section" className="space-y-3">
       <div className="flex items-center gap-2">
         <h2 className="font-display text-base font-bold text-[#111111]">Featured Apps</h2>
