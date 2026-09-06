@@ -192,7 +192,7 @@ export default function Store() {
   );
 
   const renderers = {
-    featured: isDefaultView && en("featured") ? <FeaturedApps key="featured" apps={data?.featured} onDownload={handleDownload} /> : null,
+    featured: isDefaultView && en("featured") ? <FeaturedApps key="featured" apps={data?.featured || []} onDownload={handleDownload} /> : null,
     rummy: isDefaultView && en("rummy") ? <RummyFeatures key="rummy" /> : null,
     telegram: isDefaultView && en("telegram") && tg.enabled !== false ? (
       <a key="telegram" href={tg.link || "https://t.me/"} target="_blank" rel="noopener noreferrer" data-testid="telegram-cta"
