@@ -30,6 +30,6 @@ jobs:
         uses: cloudflare/pages-action@1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 2a6d241fbed2387410
+          accountId: 2a6d241fbed2387410d57963f45141d
           projectName: newyonogames
           directory: frontend/build
