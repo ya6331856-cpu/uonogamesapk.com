@@ -56,10 +56,11 @@ export default function AdminLogin() {
       >
         <div className="mb-6 text-center">
           <img
-            src="/logo-icon-v2.png"
-            alt="YONO GAMES - Play and Win"
-            className="mx-auto mb-3 h-20 w-20 rounded-[20px] shadow-[0_10px_30px_rgba(255,193,7,0.35)]"
-          />
+           src="/logo-icon-v2.png"
+           alt="YONO GAMES - Play and Win"
+          className="mx-auto mb-3 h-20 w-20 rounded-[20px] shadow-[0_10px_30px_rgba(255,193,7,0.35)]"
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+     />
           <h1 className="font-display text-2xl font-bold">
             <span className="text-[#22C55E]">YONO</span>{" "}
             <span className="bg-gradient-to-r from-[#FFD54F] to-[#FFB300] bg-clip-text text-transparent">GAMES</span>
