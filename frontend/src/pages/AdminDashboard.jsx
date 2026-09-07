@@ -1,3 +1,4 @@
+import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar, Cell } from "recharts";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -236,17 +237,17 @@ export default function AdminDashboard() {
             </RippleButton>
           </div>
 
-          <main className="space-y-3 px-4 pt-4">
-            {loading ? (
-              <div className="py-16 text-center">
-                <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" />
-              </div>
-            ) : apps.length === 0 ? (
-              <div className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-14 text-center">
-                <Package className="mx-auto h-8 w-8 text-[#CCCCCC]" />
-                <p className="mt-2 text-sm text-[#777777]">No apps yet. Add your first one.</p>
-              </div>
-            ) : (
+          <<main className="space-y-3 px-4 pt-4">
+  {loading ? (
+    <div className="py-16 text-center">
+      <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" />
+    </div>
+  ) : (apps || []).length === 0 ? (
+    <div className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-14 text-center">
+      <Package className="mx-auto h-8 w-8 text-[#CCCCCC]" />
+      <p className="mt-2 text-sm text-[#777777]">No apps yet. Add your first one.</p>
+    </div>
+  ) : (
               apps.map((app) => (
             <motion.div
               key={app.id}
