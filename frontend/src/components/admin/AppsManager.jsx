@@ -32,6 +32,7 @@ const EMPTY = {
   signup_bonus: "₹51", min_withdraw: "₹100",
   slug: "", seo_title: "", meta_description: "", keywords: "",
   focus_keyword: "", og_image: "", noindex: false, faq_items: [],
+  screenshots: [],
 };
 
 function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
@@ -39,7 +40,6 @@ function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Client-side size guard
     const maxMB = isImage ? 15 : 100;
     if (file.size > maxMB * 1024 * 1024) {
       toast.error(`File too large — max ${maxMB} MB`);
@@ -63,12 +63,12 @@ function FileUpload({ label, testId, accept, value, onUploaded, isImage }) {
         : status === 413
           ? "File is too large."
           : status === 415
-            ? detail  // "Unsupported or corrupt file type…"
+            ? detail
             : detail;
       toast.error(msg);
     } finally {
       setUploading(false);
-      e.target.value = "";  // allow same file re-upload after error
+      e.target.value = "";
     }
   };
   return (
@@ -97,36 +97,51 @@ export default function AppsManager({ featuredOnly = false }) {
   const [deleteId, setDeleteId] = useState(null);
   const [reorderMode, setReorderMode] = useState(false);
 
+  const fetchApps = async () => {
+    try {
+      const { data } = await api.get("/apps", { params: { include_hidden: true } });
+      let list = [...data.featured, ...data.apps];
+      if (featuredOnly) list = list.filter((a) => a.featured);
+      setApps(list);
+    } finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    const fetchApps = async () => {
-      try {
-        const { data } = await api.get("/apps", { params: { include_hidden: true } });
-        let list = [...data.featured, ...data.apps];
-        if (featuredOnly) list = list.filter((a) => a.featured);
-        setApps(list);
-      } finally { setLoading(false); }
-    };
     fetchApps();
   }, [featuredOnly]);
 
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const openNew = () => { setForm({ ...EMPTY, featured: featuredOnly }); setEditingId(null); setOpen(true); };
-  const openEdit = (a) => { setForm({ ...EMPTY, ...a }); setEditingId(a.id); setOpen(true); };
+  const openEdit = (a) => { 
+    setForm({ 
+      ...EMPTY, 
+      ...a, 
+      features: Array.isArray(a.features) ? a.features : [],
+      permissions: Array.isArray(a.permissions) ? a.permissions : [],
+      screenshots: Array.isArray(a.screenshots) ? a.screenshots : []
+    }); 
+    setEditingId(a.id); 
+    setOpen(true); 
+  };
 
   const save = async () => {
     if (!form.name.trim()) { toast.error("App name required"); return; }
     setSaving(true);
     const payload = {
-      ...form, rating: parseFloat(form.rating) || 0, downloads: parseInt(form.downloads) || 0,
+      ...form, 
+      rating: parseFloat(form.rating) || 0, 
+      downloads: parseInt(form.downloads) || 0,
       featured_order: form.featured ? (parseInt(form.featured_order) || 1) : null,
       features: Array.isArray(form.features) ? form.features : [],
       permissions: Array.isArray(form.permissions) ? form.permissions : [],
+      screenshots: Array.isArray(form.screenshots) ? form.screenshots : [],
     };
     try {
       if (editingId) await api.put(`/admin/apps/${editingId}`, payload);
       else await api.post("/admin/apps", payload);
       toast.success(editingId ? "App updated" : "App created");
-      setOpen(false); fetchApps();
+      setOpen(false); 
+      fetchApps();
     } catch (err) {
       const detail = err?.response?.data?.detail || "Failed to save app";
       toast.error(detail);
@@ -134,8 +149,14 @@ export default function AppsManager({ featuredOnly = false }) {
   };
 
   const confirmDelete = async () => {
-    try { await api.delete(`/admin/apps/${deleteId}`); toast.success("Deleted"); setDeleteId(null); fetchApps(); }
-    catch { toast.error("Failed"); }
+    try { 
+      await api.delete(`/admin/apps/${deleteId}`); 
+      toast.success("Deleted"); 
+      setDeleteId(null); 
+      fetchApps(); 
+    } catch { 
+      toast.error("Failed"); 
+    }
   };
 
   return (
