@@ -232,12 +232,14 @@ export default function AdminDashboard() {
               onClick={openNew}
               data-testid="add-app-btn"
               className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-3 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]"
-            >
+           
+              <
+      
               <Plus className="h-4 w-4" /> Add New App
             </RippleButton>
           </div>
 
-          <<main className="space-y-3 px-4 pt-4">
+          <main className="space-y-3 px-4 pt-4">
   {loading ? (
     <div className="py-16 text-center">
       <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#FFC107]" />
