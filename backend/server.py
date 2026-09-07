@@ -1047,8 +1047,12 @@ async def blog_meta():
         for t in d.get("tags") or []:
             if t:
                 tags.add(t)
-    return {"categories": sorted(cats), "tags": sorted(tags)}
-
+return {"categories": sorted(cats), "tags": sorted(tags)}
+@api_router.get("/admin/faqs")
+async def admin_list_faqs(admin: dict = Depends(get_current_admin)):
+    docs = await db.faqs.find().sort("order", 1).to_list(1000)
+    return [serialize_faq(d) for d in docs]
+    
 
 # ---------------------------------------------------------------------------
 # Related apps (public)
@@ -1181,7 +1185,10 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
 @api_router.get("/")
 async def root():
     return {"message": "YONO GAMES API"}
-
+@api_router.get("/admin/winners")
+async def admin_list_winners(admin: dict = Depends(get_current_admin)):
+    docs = await db.winners.find().sort("created_at", -1).to_list(500)
+    return [serialize_doc(d) for d in docs]
 
 # ---------------------------------------------------------------------------
 # Site Settings (single CMS document) — controls branding, hero, theme,
