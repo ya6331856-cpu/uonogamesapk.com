@@ -15,22 +15,34 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
 
   useEffect(() => {
-    api.get("/admin/analytics").then((r) => setData(r.data)).catch(() => setData({}));
-    api.get("/apps", { params: { include_hidden: true } }).then((r) => {
-      const all = [...r.data.featured, ...r.data.apps].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-      setRecent(all.slice(0, 5));
-    }).catch(() => {});
+    api.get("/admin/analytics")
+      .then((r) => setData(r.data))
+      .catch(() => setData({ total_downloads: 0, total_apps: 0, total_reviews: 0, total_codes: 0, by_category: {}, top_apps: [] }));
+      
+    api.get("/apps", { params: { include_hidden: true } })
+      .then((r) => {
+        let allApps = [];
+        if (Array.isArray(r.data)) {
+          allApps = r.data;
+        } else if (r.data && typeof r.data === 'object') {
+          allApps = [...(r.data.featured || []), ...(r.data.apps || [])];
+        }
+        const sorted = allApps.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+        setRecent(sorted.slice(0, 5));
+      })
+      .catch(() => setRecent([]));
   }, []);
 
   if (!data) return <Spinner />;
 
   const cards = [
-    { icon: Download, label: "Total Downloads", value: formatFull(data.total_downloads), color: "#FFC107", bg: "#FFF8E1" },
-    { icon: Package, label: "Total Apps", value: data.total_apps, color: "#229ED9", bg: "#E8F6FD" },
-    { icon: MessageSquare, label: "Reviews", value: data.total_reviews, color: "#22C55E", bg: "#F0FDF4" },
-    { icon: Ticket, label: "Redeem Codes", value: data.total_codes, color: "#EC4899", bg: "#FDF2F8" },
+    { icon: Download, label: "Total Downloads", value: formatFull(data?.total_downloads || 0), color: "#FFC107", bg: "#FFF8E1" },
+    { icon: Package, label: "Total Apps", value: data?.total_apps || 0, color: "#229ED9", bg: "#E8F6FD" },
+    { icon: MessageSquare, label: "Reviews", value: data?.total_reviews || 0, color: "#22C55E", bg: "#F0FDF4" },
+    { icon: Ticket, label: "Redeem Codes", value: data?.total_codes || 0, color: "#EC4899", bg: "#FDF2F8" },
   ];
-  const chartData = Object.entries(data.by_category || {}).map(([name, value]) => ({ name, value }));
+  
+  const chartData = Object.entries(data?.by_category || {}).map(([name, value]) => ({ name, value }));
   const quick = [
     { to: "/admin/apks", label: "Add App", icon: Plus },
     { to: "/admin/faq", label: "Add FAQ", icon: HelpCircle },
@@ -98,7 +110,7 @@ export default function Dashboard() {
         <Card>
           <h3 className="mb-3 flex items-center gap-1.5 font-display text-sm font-bold text-[#111111]"><Star className="h-4 w-4 text-[#FFC107]" /> Top Apps</h3>
           <div className="space-y-2.5">
-            {(data.top_apps || []).map((a, i) => (
+            {(data?.top_apps || []).map((a, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2 text-[#111111]"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFF8E1] text-xs font-bold text-[#FFB300]">{i + 1}</span>{a.name}</span>
                 <span className="font-semibold text-[#777777]">{formatFull(a.downloads)}</span>
