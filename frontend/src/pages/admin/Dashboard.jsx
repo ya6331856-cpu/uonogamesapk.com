@@ -4,6 +4,7 @@ import {
   Download, Package, MessageSquare, Ticket, TrendingUp, Star, Plus,
   HelpCircle, Trophy, ArrowUpRight, Clock,
 } from "lucide-react";
+import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar, Cell } from "recharts";
 import api, { resolveUrl } from "@/lib/api";
 import { formatFull, formatCount } from "@/lib/format";
 import { Card, Spinner } from "@/components/admin/adminUI";
@@ -77,8 +78,8 @@ export default function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <h3 className="mb-4 flex items-center gap-1.5 font-display text-sm font-bold text-[#111111]"><TrendingUp className="h-4 w-4 text-[#FFC107]" /> Downloads by Category</h3>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-56 w-full min-w-[240px]">
+            <ResponsiveContainer width="99%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: -18 }}>
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#777" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#999" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCount(v)} />
