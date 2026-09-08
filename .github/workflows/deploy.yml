@@ -23,6 +23,7 @@ jobs:
       - name: Install & Build
         working-directory: ./frontend
         run: |
+          rm -f yarn.lock
           yarn install --ignore-engines
           CI=false yarn --ignore-engines build
 
