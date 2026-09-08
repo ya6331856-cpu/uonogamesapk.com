@@ -35,7 +35,6 @@ export default function AdminLogin() {
       const token = res.data?.token || res.data?.access_token || (typeof res.data === "string" ? res.data : null);
       if (token) {
         localStorage.setItem("uono_token", token);
-        localStorage.setItem("token", token);
       }
       try {
         await login(email, password);
