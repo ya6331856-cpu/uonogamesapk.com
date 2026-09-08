@@ -30,7 +30,7 @@ export default function SeoDashboardPage() {
   const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState(null); 
+  const [busy, setBusy] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [auditBusy, setAuditBusy] = useState(false);
   const [repairBusy, setRepairBusy] = useState(false);
@@ -38,14 +38,17 @@ export default function SeoDashboardPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [o, a, m] = await Promise.all([
+      const [o, a, m] = await Promise.allSettled([
         api.get("/admin/seo/overview"),
         api.get("/admin/seo/apps"),
         api.get("/admin/media/audit"),
       ]);
-      setOverview(o.data);
-      setApps(a.data || []);
-      setAudit(m.data);
+      
+      // Safely access data even if one of the API calls fails
+      setOverview(o.status === "fulfilled" ? o.value.data : {});
+      setApps(a.status === "fulfilled" && Array.isArray(a.value.data) ? a.value.data : []);
+      setAudit(m.status === "fulfilled" ? m.value.data : null);
+      
     } catch (e) {
       toast.error("Failed to load SEO data");
     } finally {
@@ -72,7 +75,7 @@ export default function SeoDashboardPage() {
     setBulkBusy(true);
     try {
       const res = await api.post("/admin/seo/bulk-fix");
-      toast.success(`Fixed ${res.data.fixed}/${res.data.total} apps`);
+      toast.success(`Fixed ${res.data?.fixed || 0}/${res.data?.total || 0} apps`);
       await load();
     } catch {
       toast.error("Bulk fix failed");
@@ -100,7 +103,7 @@ export default function SeoDashboardPage() {
     setRepairBusy(true);
     try {
       const res = await api.post("/admin/media/repair");
-      toast.success(`Cleared ${res.data.cleared} broken reference(s)`);
+      toast.success(`Cleared ${res.data?.cleared || 0} broken reference(s)`);
       await load();
     } catch {
       toast.error("Repair failed");
@@ -113,12 +116,13 @@ export default function SeoDashboardPage() {
   const openRobots = () => window.open(`${API}/robots.txt`, "_blank");
   const openSearchConsole = () => window.open("https://search.google.com/search-console", "_blank");
 
-  // FIXED: Added fallback values (|| "") to prevent crash on null/undefined names or slugs
+  // Ultra-safe filtering
   const filtered = (apps || []).filter((a) => {
-    const q = query.trim().toLowerCase();
+    if (!a) return false;
+    const q = (query || "").trim().toLowerCase();
     if (!q) return true;
-    const nameMatch = (a?.name || "").toLowerCase().includes(q);
-    const slugMatch = (a?.slug || "").toLowerCase().includes(q);
+    const nameMatch = String(a.name || "").toLowerCase().includes(q);
+    const slugMatch = String(a.slug || "").toLowerCase().includes(q);
     return nameMatch || slugMatch;
   });
 
@@ -130,6 +134,9 @@ export default function SeoDashboardPage() {
 
   const score = overview?.seo_score ?? 0;
   const scoreTone = score >= 80 ? "good" : score >= 50 ? "warn" : "bad";
+
+  // Safely get duplicate slugs
+  const duplicateSlugs = Array.isArray(overview?.duplicate_slugs) ? overview.duplicate_slugs : [];
 
   return (
     <div data-testid="seo-dashboard">
@@ -194,20 +201,20 @@ export default function SeoDashboardPage() {
         </p>
       </Card>
 
-      {/* Duplicate slugs warning */}
-      {(overview?.duplicate_slugs?.length > 0) && (
+      {/* Duplicate slugs warning safely handled */}
+      {duplicateSlugs.length > 0 && (
         <Card className="mb-4 border-[#FECACA] bg-[#FEF2F2]">
           <h3 className="flex items-center gap-2 font-display text-sm font-bold text-[#991B1B]">
             <AlertCircle className="h-4 w-4" /> Duplicate slugs detected
           </h3>
           <p className="mt-1 text-xs text-[#7F1D1D]">
-            Fix these to avoid duplicate content: {(overview?.duplicate_slugs || []).join(", ")}
+            Fix these to avoid duplicate content: {duplicateSlugs.join(", ")}
           </p>
         </Card>
       )}
 
-      {/* Media health */}
-      <Card className={`mb-4 space-y-3 ${audit && audit.broken_count > 0 ? "border-[#FDE68A] bg-[#FFFBEB]" : ""}`} data-testid="media-audit-card">
+      {/* Media health safely handled */}
+      <Card className={`mb-4 space-y-3 ${audit?.broken_count > 0 ? "border-[#FDE68A] bg-[#FFFBEB]" : ""}`} data-testid="media-audit-card">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="flex items-center gap-2 font-display text-sm font-bold text-[#111]">
             <ImageIcon className="h-4 w-4 text-[#FFC107]" /> Media Health
@@ -221,7 +228,7 @@ export default function SeoDashboardPage() {
               {auditBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Re-audit
             </RippleButton>
-            {audit && audit.broken_count > 0 && (
+            {audit?.broken_count > 0 && (
               <RippleButton onClick={runRepair} disabled={repairBusy} data-testid="media-audit-repair"
                 className="flex items-center gap-1.5 rounded-full bg-[#111] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60">
                 {repairBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5" />}
@@ -230,11 +237,10 @@ export default function SeoDashboardPage() {
             )}
           </div>
         </div>
-        {audit && audit.broken_count > 0 && (
+        {audit?.broken_count > 0 && (
           <div className="max-h-48 overflow-y-auto rounded-lg bg-white/80 p-2">
             <ul className="space-y-1 text-[11px] text-[#7F1D1D]">
-              {/* FIXED: Optional chaining on broken array */}
-              {(audit?.broken || []).slice(0, 20).map((b, i) => (
+              {(Array.isArray(audit?.broken) ? audit.broken : []).slice(0, 20).map((b, i) => (
                 <li key={i} className="flex items-center gap-2">
                   <AlertCircle className="h-3 w-3" /> {b?.kind || "Unknown"}: <b>{b?.name || "Unknown"}</b> · {b?.field || "Unknown"} · <code className="opacity-70">{b?.url || ""}</code>
                 </li>
@@ -248,7 +254,7 @@ export default function SeoDashboardPage() {
         </p>
       </Card>
 
-      {/* Per-app SEO table */}
+      {/* Per-app SEO table safely handled */}
       <Card className="space-y-3">
         <div className="flex items-center gap-2">
           <h3 className="flex items-center gap-2 font-display text-sm font-bold text-[#111]">
@@ -275,7 +281,7 @@ export default function SeoDashboardPage() {
             </thead>
             <tbody className="divide-y divide-[#F1F2F4]">
               {filtered.map((a) => (
-                <tr key={a.id} data-testid={`seo-row-${a.id}`}>
+                <tr key={a?.id || Math.random()} data-testid={`seo-row-${a?.id || 'unknown'}`}>
                   <td className="py-2 pr-2 font-semibold text-[#111]">{a?.name || "Unnamed"}</td>
                   <td className="py-2 pr-2 text-[#555]">
                     <code className="rounded bg-[#F1F2F4] px-1.5 py-0.5">{a?.slug || "—"}</code>
@@ -299,16 +305,16 @@ export default function SeoDashboardPage() {
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => autoGenerate(a.id)}
-                        disabled={busy === a.id}
-                        data-testid={`seo-generate-${a.id}`}
+                        onClick={() => a?.id && autoGenerate(a.id)}
+                        disabled={!a?.id || busy === a?.id}
+                        data-testid={`seo-generate-${a?.id}`}
                         className="flex items-center gap-1 rounded-full border border-[#FFE082] bg-[#FFFBEB] px-2 py-1 text-[10px] font-semibold text-[#92400E] disabled:opacity-50"
                       >
-                        {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
+                        {busy === a?.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
                         Auto-Fill
                       </button>
                       <a
-                        href={`/${a?.slug || a?.id}`}
+                        href={`/${a?.slug || a?.id || ''}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-1 text-[10px] font-semibold text-[#555]"
