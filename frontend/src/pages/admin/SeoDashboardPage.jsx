@@ -30,7 +30,7 @@ export default function SeoDashboardPage() {
   const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState(null); // app id being generated
+  const [busy, setBusy] = useState(null); 
   const [bulkBusy, setBulkBusy] = useState(false);
   const [auditBusy, setAuditBusy] = useState(false);
   const [repairBusy, setRepairBusy] = useState(false);
@@ -44,7 +44,7 @@ export default function SeoDashboardPage() {
         api.get("/admin/media/audit"),
       ]);
       setOverview(o.data);
-      setApps(a.data);
+      setApps(a.data || []);
       setAudit(m.data);
     } catch (e) {
       toast.error("Failed to load SEO data");
@@ -86,9 +86,9 @@ export default function SeoDashboardPage() {
     try {
       const res = await api.get("/admin/media/audit");
       setAudit(res.data);
-      toast.success(res.data.broken_count === 0
+      toast.success(res.data?.broken_count === 0
         ? "Media audit clean — all images OK"
-        : `${res.data.broken_count} broken image reference(s) found`);
+        : `${res.data?.broken_count || 0} broken image reference(s) found`);
     } catch {
       toast.error("Audit failed");
     } finally {
@@ -113,11 +113,14 @@ export default function SeoDashboardPage() {
   const openRobots = () => window.open(`${API}/robots.txt`, "_blank");
   const openSearchConsole = () => window.open("https://search.google.com/search-console", "_blank");
 
-  const filtered = apps.filter((a) =>
-    !query.trim() ||
-    a.name.toLowerCase().includes(query.toLowerCase()) ||
-    a.slug.toLowerCase().includes(query.toLowerCase())
-  );
+  // FIXED: Added fallback values (|| "") to prevent crash on null/undefined names or slugs
+  const filtered = (apps || []).filter((a) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    const nameMatch = (a?.name || "").toLowerCase().includes(q);
+    const slugMatch = (a?.slug || "").toLowerCase().includes(q);
+    return nameMatch || slugMatch;
+  });
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
@@ -192,13 +195,13 @@ export default function SeoDashboardPage() {
       </Card>
 
       {/* Duplicate slugs warning */}
-      {overview?.duplicate_slugs?.length > 0 && (
+      {(overview?.duplicate_slugs?.length > 0) && (
         <Card className="mb-4 border-[#FECACA] bg-[#FEF2F2]">
           <h3 className="flex items-center gap-2 font-display text-sm font-bold text-[#991B1B]">
             <AlertCircle className="h-4 w-4" /> Duplicate slugs detected
           </h3>
           <p className="mt-1 text-xs text-[#7F1D1D]">
-            Fix these to avoid duplicate content: {overview.duplicate_slugs.join(", ")}
+            Fix these to avoid duplicate content: {(overview?.duplicate_slugs || []).join(", ")}
           </p>
         </Card>
       )}
@@ -230,12 +233,13 @@ export default function SeoDashboardPage() {
         {audit && audit.broken_count > 0 && (
           <div className="max-h-48 overflow-y-auto rounded-lg bg-white/80 p-2">
             <ul className="space-y-1 text-[11px] text-[#7F1D1D]">
-              {audit.broken.slice(0, 20).map((b, i) => (
+              {/* FIXED: Optional chaining on broken array */}
+              {(audit?.broken || []).slice(0, 20).map((b, i) => (
                 <li key={i} className="flex items-center gap-2">
-                  <AlertCircle className="h-3 w-3" /> {b.kind}: <b>{b.name}</b> · {b.field} · <code className="opacity-70">{b.url}</code>
+                  <AlertCircle className="h-3 w-3" /> {b?.kind || "Unknown"}: <b>{b?.name || "Unknown"}</b> · {b?.field || "Unknown"} · <code className="opacity-70">{b?.url || ""}</code>
                 </li>
               ))}
-              {audit.broken.length > 20 && <li>…and {audit.broken.length - 20} more</li>}
+              {(audit?.broken?.length || 0) > 20 && <li>…and {audit.broken.length - 20} more</li>}
             </ul>
           </div>
         )}
@@ -272,19 +276,19 @@ export default function SeoDashboardPage() {
             <tbody className="divide-y divide-[#F1F2F4]">
               {filtered.map((a) => (
                 <tr key={a.id} data-testid={`seo-row-${a.id}`}>
-                  <td className="py-2 pr-2 font-semibold text-[#111]">{a.name}</td>
+                  <td className="py-2 pr-2 font-semibold text-[#111]">{a?.name || "Unnamed"}</td>
                   <td className="py-2 pr-2 text-[#555]">
-                    <code className="rounded bg-[#F1F2F4] px-1.5 py-0.5">{a.slug || "—"}</code>
+                    <code className="rounded bg-[#F1F2F4] px-1.5 py-0.5">{a?.slug || "—"}</code>
                   </td>
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-1">
-                      <span className={`font-bold ${a.score >= 80 ? "text-[#065F46]" : a.score >= 50 ? "text-[#92400E]" : "text-[#991B1B]"}`}>
-                        {a.score}%
+                      <span className={`font-bold ${(a?.score || 0) >= 80 ? "text-[#065F46]" : (a?.score || 0) >= 50 ? "text-[#92400E]" : "text-[#991B1B]"}`}>
+                        {a?.score || 0}%
                       </span>
                     </div>
                   </td>
                   <td className="py-2 pr-2">
-                    {a.noindex || a.hidden ? (
+                    {a?.noindex || a?.hidden ? (
                       <span className="rounded-full bg-[#FEF2F2] px-2 py-0.5 text-[10px] font-semibold text-[#991B1B]">Noindex</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[10px] font-semibold text-[#065F46]">
@@ -304,7 +308,7 @@ export default function SeoDashboardPage() {
                         Auto-Fill
                       </button>
                       <a
-                        href={`/${a.slug || a.id}`}
+                        href={`/${a?.slug || a?.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 rounded-full border border-[#E5E7EB] bg-white px-2 py-1 text-[10px] font-semibold text-[#555]"
