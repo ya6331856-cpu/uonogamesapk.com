@@ -21,7 +21,7 @@ async function request(method, path, body, config = {}) {
   const url = buildUrl(path, config.params);
   const headers = { ...(config.headers || {}) };
 
-  const token = localStorage.getItem("uono_token");
+  const token = localStorage.getItem("token") || localStorage.getItem("uono_token");
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   let payload;
@@ -53,6 +53,7 @@ async function request(method, path, body, config = {}) {
   if (!res.ok) {
     if (res.status === 401 && !path.includes("/auth/login")) {
       localStorage.removeItem("uono_token");
+      localStorage.removeItem("token");
       const p = window.location.pathname;
       if (p.startsWith("/admin") && !p.includes("/admin/login")) {
         window.location.href = "/admin/login?expired=1";
