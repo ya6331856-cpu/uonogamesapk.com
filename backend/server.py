@@ -1047,7 +1047,9 @@ async def blog_meta():
         for t in d.get("tags") or []:
             if t:
                 tags.add(t)
-return {"categories": sorted(cats), "tags": sorted(tags)}
+    return {"categories": sorted(cats), "tags": sorted(tags)}
+
+
 @api_router.get("/admin/faqs")
 async def admin_list_faqs(admin: dict = Depends(get_current_admin)):
     docs = await db.faqs.find().sort("order", 1).to_list(1000)
@@ -1476,6 +1478,8 @@ async def analytics(admin: dict = Depends(get_current_admin)):
         "total_reviews": await db.reviews.count_documents({}),
         "total_faqs": await db.faqs.count_documents({}),
         "total_codes": await db.codes.count_documents({}),
+        "total_blog": await db.blog.count_documents({}),
+        "total_winners": await db.winners.count_documents({}),
         "by_category": by_category,
         "top_apps": [{"name": a.get("name"), "downloads": a.get("downloads", 0)} for a in top],
     }
@@ -1702,6 +1706,69 @@ async def seed():
     # Seed a sample redeem code
     if await db.codes.count_documents({}) == 0:
         await db.codes.insert_one({"code": "WELCOME100", "reward": "₹100 bonus on first deposit", "expiry": "", "usage_limit": 0, "used_count": 0, "active": True, "created_at": now_iso()})
+
+    # Seed sample blog posts
+    if await db.blog.count_documents({}) == 0:
+        await db.blog.insert_many([
+            {
+                "title": "Top 5 Rummy Tips for Beginners",
+                "slug": "top-5-rummy-tips-for-beginners",
+                "excerpt": "New to rummy? Here are five simple tips to help you start winning more hands.",
+                "content": "Rummy is a game of skill as much as luck. Start by sorting your hand into potential sequences and sets, prioritize pure sequences early, watch what opponents discard, don't hold onto high-value cards too long, and practice with free tables before playing for cash.",
+                "cover_url": "https://images.unsplash.com/photo-1541278107931-e006523892df?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "Guides",
+                "tags": ["rummy", "tips", "beginners"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "Top 5 Rummy Tips for Beginners | YONO GAMES",
+                "meta_description": "Learn five essential rummy tips to improve your game and win more hands as a beginner.",
+                "keywords": "rummy tips, rummy for beginners, how to play rummy",
+                "focus_keyword": "rummy tips for beginners",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+            {
+                "title": "How to Safely Download and Install APK Files",
+                "slug": "how-to-safely-download-and-install-apk-files",
+                "excerpt": "A quick guide to downloading APKs safely and avoiding common installation errors.",
+                "content": "Always download APKs from a trusted source, check that the app shows a verified badge, enable 'Install from unknown sources' only for the app you're installing from, and keep Google Play Protect turned on for an extra layer of security.",
+                "cover_url": "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "Tutorials",
+                "tags": ["apk", "android", "safety"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "How to Safely Download and Install APK Files | YONO GAMES",
+                "meta_description": "Follow this quick guide to download and install APK files safely on your Android device.",
+                "keywords": "apk download, install apk safely, android apk guide",
+                "focus_keyword": "download apk safely",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+            {
+                "title": "What's New This Month: App Updates & Releases",
+                "slug": "whats-new-this-month-app-updates-releases",
+                "excerpt": "A roundup of the latest app updates and new releases on the store this month.",
+                "content": "This month we rolled out performance improvements across our top titles, added new levels to several puzzle games, and welcomed a handful of new apps to the store. Check the app list for the latest versions and whats-new notes.",
+                "cover_url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "News",
+                "tags": ["updates", "news"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "What's New This Month: App Updates & Releases | YONO GAMES",
+                "meta_description": "See the latest app updates and new releases added to YONO GAMES this month.",
+                "keywords": "app updates, new apk releases, whats new",
+                "focus_keyword": "app updates this month",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+        ])
+        logger.info("Seeded sample blog posts")
 
 
 @app.on_event("startup")
