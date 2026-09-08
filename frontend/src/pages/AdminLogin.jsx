@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck, Lock, Mail, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import RippleButton from "@/components/RippleButton";
@@ -30,7 +31,17 @@ export default function AdminLogin() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      const res = await api.post("/admin/login", { email, password });
+      const token = res.data?.token || res.data?.access_token || (typeof res.data === "string" ? res.data : null);
+      if (token) {
+        localStorage.setItem("uono_token", token);
+        localStorage.setItem("token", token);
+      }
+      try {
+        await login(email, password);
+      } catch {
+        // Fallback if context login wrapper makes an extra call
+      }
       navigate("/admin/dashboard");
     } catch (err) {
       setError(formatApiErrorDetail(err.response?.data?.detail) || err.message);
