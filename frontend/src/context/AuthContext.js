@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     try {
-      const { data } = await api.get("/auth/me");[span_0](start_span)[span_0](end_span)
+      const { data } = await api.get("/auth/me");
       setUser(data);
     } catch (e) {
       localStorage.removeItem("uono_token");
@@ -44,11 +44,11 @@ export const AuthProvider = ({ children }) => {
       const idToken = await cred.user.getIdToken();
       localStorage.setItem("uono_token", idToken);
       localStorage.setItem("token", idToken);
-      const { data } = await api.get("/auth/me");[span_1](start_span)[span_1](end_span)
+      const { data } = await api.get("/auth/me");
       setUser(data);
       return data;
     } catch (fbErr) {
-      const { data } = await api.post("/auth/login", { email: en, password });[span_2](start_span)[span_2](end_span)
+      const { data } = await api.post("/auth/login", { email: en, password });
       const token = data.token || data.access_token || data;
       localStorage.setItem("uono_token", token);
       localStorage.setItem("token", token);
