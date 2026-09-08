@@ -8,17 +8,18 @@ export const AuthProvider = ({ children }) => {
   const [ready, setReady] = useState(false);
 
   const check = useCallback(async () => {
-    const token = localStorage.getItem("yono_token");
+    const token = localStorage.getItem("uono_token") || localStorage.getItem("token");
     if (!token) {
       setUser(false);
       setReady(true);
       return;
     }
     try {
-      const { data } = await api.get("/auth/me");
+      const { data } = await api.get("/admin/me");
       setUser(data);
     } catch (e) {
-      localStorage.removeItem("yono_token");
+      localStorage.removeItem("uono_token");
+      localStorage.removeItem("token");
       setUser(false);
     } finally {
       setReady(true);
@@ -41,20 +42,22 @@ export const AuthProvider = ({ children }) => {
 
       const cred = await signInWithEmailAndPassword(firebaseAuth, en, password);
       const idToken = await cred.user.getIdToken();
-      localStorage.setItem("yono_token", idToken);
-      const { data } = await api.get("/auth/me");
+      localStorage.setItem("uono_token", idToken);
+      const { data } = await api.get("/admin/me");
       setUser(data);
       return data;
     } catch (fbErr) {
-      const { data } = await api.post("/auth/login", { email: en, password });
-      localStorage.setItem("yono_token", data.token);
-      setUser(data.user);
-      return data.user;
+      const { data } = await api.post("/admin/login", { email: en, password });
+      const token = data.token || data.access_token || data;
+      localStorage.setItem("uono_token", token);
+      setUser(data.user || data);
+      return data.user || data;
     }
   };
 
   const logout = () => {
-    localStorage.removeItem("yono_token");
+    localStorage.removeItem("uono_token");
+    localStorage.removeItem("token");
     setUser(false);
     import("@/lib/firebase").then(({ signOut, firebaseAuth }) => signOut(firebaseAuth))
       .catch(() => {});
