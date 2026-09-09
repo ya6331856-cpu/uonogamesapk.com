@@ -39,12 +39,53 @@ JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 
 # ---------------------------------------------------------------------------
-# App / Router
+# App / Router Setup (Must be initialized before any route decorators)
 # ---------------------------------------------------------------------------
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Model helpers
+# ---------------------------------------------------------------------------
+PyObjectId = Annotated[str, BeforeValidator(str)]
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+# ---------------------------------------------------------------------------
+# Auth helpers & Password hashing
+# ---------------------------------------------------------------------------
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+
+
+def create_access_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "type": "access",
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+# ---------------------------------------------------------------------------
+# Force Create Admin Route (Registered properly under api_router)
+# ---------------------------------------------------------------------------
 @api_router.get("/admin/force-create")
 async def force_create_admin():
     admin_email = os.environ.get("ADMIN_EMAIL", "arfuu9@gmail.com").lower().strip()
@@ -68,23 +109,6 @@ async def force_create_admin():
             "created_at": now_iso()
         })
         return {"success": True, "message": "Admin user created successfully!"}
-
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Model helpers
-# ---------------------------------------------------------------------------
-PyObjectId = Annotated[str, BeforeValidator(str)]
-
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 class AppModel(BaseModel):
@@ -239,27 +263,6 @@ def to_object_id(app_id: str) -> ObjectId:
         raise HTTPException(status_code=400, detail="Invalid app id")
 
 
-# ---------------------------------------------------------------------------
-# Auth helpers
-# ---------------------------------------------------------------------------
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-
-
-def create_access_token(user_id: str, email: str) -> str:
-    payload = {
-        "sub": user_id,
-        "email": email,
-        "type": "access",
-        "exp": datetime.now(timezone.utc) + timedelta(days=7),
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-
-
 async def get_current_admin(request: Request) -> dict:
     token = request.cookies.get("access_token")
     if not token:
@@ -269,7 +272,6 @@ async def get_current_admin(request: Request) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # 1) Try Firebase ID token (primary auth)
     try:
         decoded = await asyncio.to_thread(fbs.verify_id_token, token)
         uid = decoded.get("uid") or decoded.get("user_id")
@@ -283,7 +285,6 @@ async def get_current_admin(request: Request) -> dict:
     except Exception:
         pass
 
-    # 2) Fallback: legacy JWT (kept for transition)
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "access":
@@ -325,8 +326,6 @@ async def me(admin: dict = Depends(get_current_admin)):
 # Public app routes
 # ---------------------------------------------------------------------------
 def _invert_ts(ts: str) -> tuple:
-    """Sort key that makes an ISO timestamp order NEWEST-first inside an
-    otherwise ascending tuple key (no reverse=True available there)."""
     return tuple(-ord(c) for c in (ts or ""))
 
 
@@ -444,6 +443,9 @@ def _guess_content_type(filename: str) -> str:
     }.get(ext, "application/octet-stream")
 
 
+# ---------------------------------------------------------------------------
+# Admin app routes
+# ---------------------------------------------------------------------------
 @api_router.post("/admin/upload")
 async def upload_file(
     file: UploadFile = File(...),
@@ -574,6 +576,9 @@ async def list_categories():
     return await fbs.list_categories()
 
 
+# ---------------------------------------------------------------------------
+# Media audit / repair
+# ---------------------------------------------------------------------------
 def _extract_upload_filename(url: str) -> str | None:
     if not url or not isinstance(url, str):
         return None
@@ -1519,21 +1524,21 @@ SAMPLE_APPS = [
 
 
 DEFAULT_FAQS = [
-    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing."},
-    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly."},
-    {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1)."},
-    {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity and tested for stability."},
-    {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above."},
-    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app."},
-    {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. Enable 'Allow from this source' in settings."},
-    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES is completely free and does not require any account."},
-    {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or via our official Telegram channel."},
-    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours."},
+    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
+    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly. Once finished, open the file from your notification bar or your device's Downloads folder and tap 'Install'. The entire process usually takes less than a minute on a normal connection."},
+    {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
+    {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
+    {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
+    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
+    {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
+    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (uonogamesapk.com) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
+    {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
+    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
 ]
 
 
 async def seed():
-    admin_email = os.environ["ADMIN_EMAIL"].lower()
+    admin_email = os.environ["ADMIN_EMAIL"].lower().strip()
     admin_password = os.environ["ADMIN_PASSWORD"]
     await db.users.delete_many({"role": "admin", "email": {"$ne": admin_email}})
     existing = await db.users.find_one({"email": admin_email})
@@ -1553,6 +1558,22 @@ async def seed():
         docs = [{**a, "created_at": now_iso()} for a in SAMPLE_APPS]
         await db.apps.insert_many(docs)
         logger.info("Seeded %d sample apps", len(docs))
+
+    default_shots = [
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+        "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+    ]
+    await db.apps.update_many(
+        {"developer": {"$exists": False}},
+        {"$set": {
+            "developer": "Uonogames Studios",
+            "package_name": "com.uonogames.app",
+            "min_android": "Android 6.0+",
+            "whats_new": "Performance improvements, new levels and bug fixes for a smoother experience.",
+            "screenshots": default_shots,
+        }},
+    )
 
     if await db.faqs.count_documents({}) == 0:
         faq_docs = [{**f, "order": i, "created_at": now_iso()} for i, f in enumerate(DEFAULT_FAQS)]
@@ -1597,7 +1618,7 @@ async def seed():
                 "title": "Top 5 Rummy Tips for Beginners",
                 "slug": "top-5-rummy-tips-for-beginners",
                 "excerpt": "New to rummy? Here are five simple tips to help you start winning more hands.",
-                "content": "Rummy is a game of skill as much as luck. Start by sorting your hand into potential sequences and sets.",
+                "content": "Rummy is a game of skill as much as luck. Start by sorting your hand into potential sequences and sets, prioritize pure sequences early, watch what opponents discard, don't hold onto high-value cards too long, and practice with free tables before playing for cash.",
                 "cover_url": "https://images.unsplash.com/photo-1541278107931-e006523892df?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
                 "published": True,
                 "category": "Guides",
@@ -1605,14 +1626,53 @@ async def seed():
                 "author": "YONO GAMES Team",
                 "scheduled_at": "",
                 "seo_title": "Top 5 Rummy Tips for Beginners | YONO GAMES",
-                "meta_description": "Learn five essential rummy tips to improve your game.",
-                "keywords": "rummy tips, rummy for beginners",
+                "meta_description": "Learn five essential rummy tips to improve your game and win more hands as a beginner.",
+                "keywords": "rummy tips, rummy for beginners, how to play rummy",
                 "focus_keyword": "rummy tips for beginners",
                 "og_image": "",
                 "noindex": False,
                 "created_at": now_iso(),
-            }
+            },
+            {
+                "title": "How to Safely Download and Install APK Files",
+                "slug": "how-to-safely-download-and-install-apk-files",
+                "excerpt": "A quick guide to downloading APKs safely and avoiding common installation errors.",
+                "content": "Always download APKs from a trusted source, check that the app shows a verified badge, enable 'Install from unknown sources' only for the app you're installing from, and keep Google Play Protect turned on for an extra layer of security.",
+                "cover_url": "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "Tutorials",
+                "tags": ["apk", "android", "safety"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "How to Safely Download and Install APK Files | YONO GAMES",
+                "meta_description": "Follow this quick guide to download and install APK files safely on your Android device.",
+                "keywords": "apk download, install apk safely, android apk guide",
+                "focus_keyword": "download apk safely",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+            {
+                "title": "What's New This Month: App Updates & Releases",
+                "slug": "whats-new-this-month-app-updates-releases",
+                "excerpt": "A roundup of the latest app updates and new releases on the store this month.",
+                "content": "This month we rolled out performance improvements across our top titles, added new levels to several puzzle games, and welcomed a handful of new apps to the store. Check the app list for the latest versions and whats-new notes.",
+                "cover_url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "News",
+                "tags": ["updates", "news"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "What's New This Month: App Updates & Releases | YONO GAMES",
+                "meta_description": "See the latest app updates and new releases added to YONO GAMES this month.",
+                "keywords": "app updates, new apk releases, whats new",
+                "focus_keyword": "app updates this month",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
         ])
+        logger.info("Seeded sample blog posts")
 
 
 @app.on_event("startup")
@@ -1676,3 +1736,4 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
