@@ -1399,11 +1399,59 @@ SAMPLE_APPS = [
         "apk_url": "https://example.com/apk/neon-puzzle.apk",
         "featured": True, "featured_order": 3,
     },
+    {
+        "name": "Sky Warriors: Air Combat", "version": "4.5.2", "size": "210 MB", "rating": 4.6,
+        "downloads": 560000, "verified": True, "category": "Games",
+        "description": "Take to the skies in intense aerial dogfights.",
+        "icon_url": "https://images.unsplash.com/photo-1740059030535-a75661748bc8?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "apk_url": "https://example.com/apk/sky-warriors.apk",
+        "featured": False,
+    },
+    {
+        "name": "Crypto Miner Tycoon", "version": "1.8.7", "size": "62 MB", "rating": 4.3,
+        "downloads": 320000, "verified": True, "category": "Simulation",
+        "description": "Build your crypto empire in this idle tycoon simulator.",
+        "icon_url": "https://images.unsplash.com/photo-1633419461186-7d40a38105ec?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "apk_url": "https://example.com/apk/crypto-miner.apk",
+        "featured": False,
+    },
+    {
+        "name": "Word Quest Adventure", "version": "6.0.1", "size": "38 MB", "rating": 4.5,
+        "downloads": 780000, "verified": True, "category": "Puzzle",
+        "description": "Expand your vocabulary while exploring magical lands.",
+        "icon_url": "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "apk_url": "https://example.com/apk/word-quest.apk",
+        "featured": False,
+    },
+    {
+        "name": "Battle Royale Legends", "version": "12.3.0", "size": "1.2 GB", "rating": 4.4,
+        "downloads": 5400000, "verified": True, "category": "Games",
+        "description": "Drop in, gear up, and be the last one standing.",
+        "icon_url": "https://images.unsplash.com/photo-1685381949388-bb0402fbe133?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "apk_url": "https://example.com/apk/battle-royale.apk",
+        "featured": False,
+    },
+    {
+        "name": "Zen Garden Idle", "version": "2.4.9", "size": "54 MB", "rating": 4.7,
+        "downloads": 410000, "verified": True, "category": "Simulation",
+        "description": "Relax and grow your own peaceful zen garden.",
+        "icon_url": "https://images.unsplash.com/photo-1659885785824-3e72856b8fef?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "apk_url": "https://example.com/apk/zen-garden.apk",
+        "featured": False,
+    },
 ]
 
 DEFAULT_FAQS = [
-    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing."},
-    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly."},
+    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
+    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly. Once finished, open the file from your notification bar or your device's Downloads folder and tap 'Install'. The entire process usually takes less than a minute on a normal connection."},
+    {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
+    {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
+    {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
+    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
+    {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
+    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (uonogamesapk.com) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
+    {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
+    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
 ]
 
 async def seed():
@@ -1426,14 +1474,122 @@ async def seed():
     if await db.apps.count_documents({}) == 0:
         docs = [{**a, "created_at": now_iso()} for a in SAMPLE_APPS]
         await db.apps.insert_many(docs)
-        logger.info("Seeded sample apps")
+        logger.info("Seeded %d sample apps", len(docs))
+
+    default_shots = [
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+        "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
+    ]
+    await db.apps.update_many(
+        {"developer": {"$exists": False}},
+        {"$set": {
+            "developer": "Uonogames Studios",
+            "package_name": "com.uonogames.app",
+            "min_android": "Android 6.0+",
+            "whats_new": "Performance improvements, new levels and bug fixes for a smoother experience.",
+            "screenshots": default_shots,
+        }},
+    )
 
     if await db.faqs.count_documents({}) == 0:
         faq_docs = [{**f, "order": i, "created_at": now_iso()} for i, f in enumerate(DEFAULT_FAQS)]
         await db.faqs.insert_many(faq_docs)
-        logger.info("Seeded FAQs")
+        logger.info("Seeded %d FAQs", len(faq_docs))
+
+    if await db.apps.count_documents({"trending": True}) == 0:
+        cursor = db.apps.find({"featured": {"$ne": True}}).sort("downloads", -1).limit(4)
+        async for a in cursor:
+            await db.apps.update_one({"_id": a["_id"]}, {"$set": {"trending": True}})
 
     await get_settings_doc()
+    defaults = default_settings()
+    current_settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
+    to_add = {k: v for k, v in defaults.items() if k not in current_settings}
+    if to_add:
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
+    if not current_settings.get("categories") and "categories" not in to_add:
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": {"categories": defaults["categories"]}})
+
+    if await db.reviews.count_documents({}) == 0:
+        await db.reviews.insert_many([
+            {"name": "Rahul S.", "rating": 5, "text": "Super fast downloads and totally safe. Best APK store!", "photo_url": "", "approved": True, "created_at": now_iso()},
+            {"name": "Priya M.", "rating": 5, "text": "Won real cash on rummy and withdrawal was instant. Loved it.", "photo_url": "", "approved": True, "created_at": now_iso()},
+            {"name": "Aman K.", "rating": 4, "text": "Great collection of games, easy to install. Recommended.", "photo_url": "", "approved": True, "created_at": now_iso()},
+        ])
+
+    if await db.winners.count_documents({}) == 0:
+        await db.winners.insert_many([
+            {"name": "Vikram", "amount": "₹12,500", "game": "Points Rummy", "created_at": now_iso()},
+            {"name": "Sneha", "amount": "₹8,200", "game": "Pool Rummy", "created_at": now_iso()},
+            {"name": "Arjun", "amount": "₹25,000", "game": "Deals Rummy", "created_at": now_iso()},
+            {"name": "Neha", "amount": "₹5,750", "game": "Points Rummy", "created_at": now_iso()},
+        ])
+
+    if await db.codes.count_documents({}) == 0:
+        await db.codes.insert_one({"code": "WELCOME100", "reward": "₹100 bonus on first deposit", "expiry": "", "usage_limit": 0, "used_count": 0, "active": True, "created_at": now_iso()})
+
+    if await db.blog.count_documents({}) == 0:
+        await db.blog.insert_many([
+            {
+                "title": "Top 5 Rummy Tips for Beginners",
+                "slug": "top-5-rummy-tips-for-beginners",
+                "excerpt": "New to rummy? Here are five simple tips to help you start winning more hands.",
+                "content": "Rummy is a game of skill as much as luck. Start by sorting your hand into potential sequences and sets, prioritize pure sequences early, watch what opponents discard, don't hold onto high-value cards too long, and practice with free tables before playing for cash.",
+                "cover_url": "https://images.unsplash.com/photo-1541278107931-e006523892df?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "Guides",
+                "tags": ["rummy", "tips", "beginners"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "Top 5 Rummy Tips for Beginners | YONO GAMES",
+                "meta_description": "Learn five essential rummy tips to improve your game and win more hands as a beginner.",
+                "keywords": "rummy tips, rummy for beginners, how to play rummy",
+                "focus_keyword": "rummy tips for beginners",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+            {
+                "title": "How to Safely Download and Install APK Files",
+                "slug": "how-to-safely-download-and-install-apk-files",
+                "excerpt": "A quick guide to downloading APKs safely and avoiding common installation errors.",
+                "content": "Always download APKs from a trusted source, check that the app shows a verified badge, enable 'Install from unknown sources' only for the app you're installing from, and keep Google Play Protect turned on for an extra layer of security.",
+                "cover_url": "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "Tutorials",
+                "tags": ["apk", "android", "safety"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "How to Safely Download and Install APK Files | YONO GAMES",
+                "meta_description": "Follow this quick guide to download and install APK files safely on your Android device.",
+                "keywords": "apk download, install apk safely, android apk guide",
+                "focus_keyword": "download apk safely",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+            {
+                "title": "What's New This Month: App Updates & Releases",
+                "slug": "whats-new-this-month-app-updates-releases",
+                "excerpt": "A roundup of the latest app updates and new releases on the store this month.",
+                "content": "This month we rolled out performance improvements across our top titles, added new levels to several puzzle games, and welcomed a handful of new apps to the store. Check the app list for the latest versions and whats-new notes.",
+                "cover_url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
+                "published": True,
+                "category": "News",
+                "tags": ["updates", "news"],
+                "author": "YONO GAMES Team",
+                "scheduled_at": "",
+                "seo_title": "What's New This Month: App Updates & Releases | YONO GAMES",
+                "meta_description": "See the latest app updates and new releases added to YONO GAMES this month.",
+                "keywords": "app updates, new apk releases, whats new",
+                "focus_keyword": "app updates this month",
+                "og_image": "",
+                "noindex": False,
+                "created_at": now_iso(),
+            },
+        ])
+        logger.info("Seeded sample blog posts")
 
 @app.on_event("startup")
 async def on_startup():
@@ -1444,6 +1600,15 @@ async def on_startup():
         logger.info("Emergent Object Storage ready")
     except Exception as e:
         logger.error("Object storage init failed: %s", e)
+    try:
+        uid = await asyncio.to_thread(
+            fbs.ensure_admin_user,
+            os.environ["ADMIN_EMAIL"],
+            os.environ["ADMIN_PASSWORD"],
+        )
+        logger.info("Firebase admin ensured: %s", uid)
+    except Exception as e:
+        logger.error("Failed to ensure Firebase admin user: %s", e)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
