@@ -1,7 +1,7 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import Toaster from "./components/ui/sonner";
+import { Toaster } from "./components/ui/sonner";
 import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import Store from "./pages/Store";
@@ -15,6 +15,12 @@ import ApksPage from "./pages/admin/ApksPage";
 import FeaturedAppsPage from "./pages/admin/FeaturedAppsPage";
 import BlogPage from "./pages/admin/BlogPage";
 import MediaLibraryPage from "./pages/admin/MediaLibraryPage";
+
+// Naye missing pages ko yahan import kiya gaya hai
+import SeoDashboardPage from "./pages/admin/SeoDashboardPage";
+import BackupPage from "./pages/admin/BackupPage";
+import SettingsPage from "./pages/admin/SettingsPage";
+import UsersSecurityPage from "./pages/admin/UsersSecurityPage";
 
 function LegacyAppRedirect() {
   const { id } = useParams();
@@ -39,6 +45,12 @@ function App() {
                   <Route path="featured-apps" element={<FeaturedAppsPage />} />
                   <Route path="blog" element={<BlogPage />} />
                   <Route path="media-library" element={<MediaLibraryPage />} />
+                  
+                  {/* Naye routes yahan add kiye gaye hain */}
+                  <Route path="seo-dashboard" element={<SeoDashboardPage />} />
+                  <Route path="backup" element={<BackupPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="users" element={<UsersSecurityPage />} />
                 </Route>
                 <Route path="/:slug" element={<AppDetail />} />
               </Routes>
