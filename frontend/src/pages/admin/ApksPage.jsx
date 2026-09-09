@@ -25,10 +25,12 @@ function ApksPageInner() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [uploadingImg, setUploadingImg] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     version: "1.0.0",
+    size: "45 MB",
     category: "Games",
     description: "",
     icon_url: "",
@@ -37,7 +39,13 @@ function ApksPageInner() {
     seo_title: "",
     meta_description: "",
     keywords: "",
-    downloads: 500000
+    downloads: 500000,
+    featured: false,
+    featured_order: 1,
+    pinned: false,
+    signup_bonus: "₹501",
+    min_withdraw: "₹100",
+    badge: "HOT"
   });
 
   const fetchApps = async () => {
@@ -68,11 +76,35 @@ function ApksPageInner() {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    uploadData.append("kind", "auto");
+    try {
+      setUploadingImg(true);
+      toast.loading("Uploading image...");
+      const res = await api.post("/admin/upload", uploadData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      toast.dismiss();
+      toast.success("Image uploaded successfully!");
+      setFormData(prev => ({ ...prev, icon_url: res.data.url }));
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Image upload failed");
+    } finally {
+      setUploadingImg(false);
+    }
+  };
+
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
       name: "",
       version: "1.0.0",
+      size: "45 MB",
       category: "Games",
       description: "",
       icon_url: "",
@@ -81,7 +113,13 @@ function ApksPageInner() {
       seo_title: "",
       meta_description: "",
       keywords: "",
-      downloads: 500000
+      downloads: 500000,
+      featured: false,
+      featured_order: 1,
+      pinned: false,
+      signup_bonus: "₹501",
+      min_withdraw: "₹100",
+      badge: "HOT"
     });
     setShowModal(true);
   };
@@ -91,6 +129,7 @@ function ApksPageInner() {
     setFormData({
       name: app.name || "",
       version: app.version || "1.0.0",
+      size: app.size || "45 MB",
       category: app.category || "Games",
       description: app.description || "",
       icon_url: app.icon_url || "",
@@ -99,7 +138,13 @@ function ApksPageInner() {
       seo_title: app.seo_title || "",
       meta_description: app.meta_description || "",
       keywords: app.keywords || "",
-      downloads: app.downloads || 500000
+      downloads: app.downloads || 500000,
+      featured: !!app.featured,
+      featured_order: app.featured_order || 1,
+      pinned: !!app.pinned,
+      signup_bonus: app.signup_bonus || "₹501",
+      min_withdraw: app.min_withdraw || "₹100",
+      badge: app.badge || "HOT"
     });
     setShowModal(true);
   };
@@ -109,7 +154,7 @@ function ApksPageInner() {
     try {
       if (editingId) {
         await api.put(`/admin/apps/${editingId}`, formData);
-        toast.success("App updated successfully!");
+        toast.success("App updated successfully on live website!");
       } else {
         await api.post("/admin/apps", formData);
         toast.success("New app created successfully!");
@@ -124,7 +169,7 @@ function ApksPageInner() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <PageHeader title="APK Manager" desc="Manage all your apps, versions, SEO, and download links." />
+        <PageHeader title="APK Manager" desc="Manage apps, featured games, SEO, image uploads & real download links." />
         <button 
           onClick={handleOpenAdd}
           className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold flex items-center space-x-2 transition-colors cursor-pointer shadow-sm"
@@ -168,7 +213,11 @@ function ApksPageInner() {
                       </div>
                     )}
                     <div>
-                      <h4 className="text-xs font-semibold text-[#111]">{app.name}</h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-xs font-semibold text-[#111]">{app.name}</h4>
+                        {app.featured && <span className="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.5 rounded font-bold">Featured</span>}
+                        {app.badge && <span className="bg-red-100 text-red-600 text-[9px] px-1.5 py-0.5 rounded font-bold">{app.badge}</span>}
+                      </div>
                       <p className="text-[10px] text-[#555]">v{app.version || "1.0.0"} • {app.category || "Games"} • {app.downloads || 0} downloads</p>
                     </div>
                   </div>
@@ -180,7 +229,7 @@ function ApksPageInner() {
                     )}
                     <button 
                       onClick={() => handleOpenEdit(app)}
-                      title="Edit App & SEO"
+                      title="Edit App & Options"
                       className="p-1.5 text-blue-500 hover:text-blue-700 rounded-lg transition-colors cursor-pointer"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -206,7 +255,7 @@ function ApksPageInner() {
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 my-8 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-sm text-[#111]">
-                {editingId ? "Edit App & SEO Details" : "Add New APK & Details"}
+                {editingId ? "Edit App, Images & Live Settings" : "Add New App & Live Settings"}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -223,7 +272,7 @@ function ApksPageInner() {
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="e.g. Rummy Nabob"
+                    placeholder="e.g. Love Rummy"
                   />
                 </div>
                 <div>
@@ -233,18 +282,27 @@ function ApksPageInner() {
                     value={formData.slug} 
                     onChange={(e) => setFormData({...formData, slug: e.target.value})}
                     className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="e.g. rummy-nabob-apk"
+                    placeholder="e.g. love-rummy"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-3">
                 <div>
                   <label className="block font-medium mb-1 text-gray-700">Version</label>
                   <input 
                     type="text" 
                     value={formData.version} 
                     onChange={(e) => setFormData({...formData, version: e.target.value})}
+                    className="w-full border rounded-lg p-2 text-xs" 
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1 text-gray-700">Size</label>
+                  <input 
+                    type="text" 
+                    value={formData.size} 
+                    onChange={(e) => setFormData({...formData, size: e.target.value})}
                     className="w-full border rounded-lg p-2 text-xs" 
                   />
                 </div>
@@ -258,6 +316,39 @@ function ApksPageInner() {
                   />
                 </div>
                 <div>
+                  <label className="block font-medium mb-1 text-gray-700">Badge</label>
+                  <input 
+                    type="text" 
+                    value={formData.badge} 
+                    onChange={(e) => setFormData({...formData, badge: e.target.value})}
+                    className="w-full border rounded-lg p-2 text-xs" 
+                    placeholder="HOT / NEW"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-medium mb-1 text-gray-700">Signup Bonus</label>
+                  <input 
+                    type="text" 
+                    value={formData.signup_bonus} 
+                    onChange={(e) => setFormData({...formData, signup_bonus: e.target.value})}
+                    className="w-full border rounded-lg p-2 text-xs" 
+                    placeholder="e.g. ₹501"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1 text-gray-700">Min Withdraw</label>
+                  <input 
+                    type="text" 
+                    value={formData.min_withdraw} 
+                    onChange={(e) => setFormData({...formData, min_withdraw: e.target.value})}
+                    className="w-full border rounded-lg p-2 text-xs" 
+                    placeholder="e.g. ₹100"
+                  />
+                </div>
+                <div>
                   <label className="block font-medium mb-1 text-gray-700">Downloads Count</label>
                   <input 
                     type="number" 
@@ -268,27 +359,78 @@ function ApksPageInner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-medium mb-1 text-gray-700">Icon Image URL</label>
-                  <input 
-                    type="text" 
-                    value={formData.icon_url} 
-                    onChange={(e) => setFormData({...formData, icon_url: e.target.value})}
-                    className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="https://..."
-                  />
+              {/* Featured & Pinned Toggles */}
+              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2 cursor-pointer font-medium text-amber-900">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({...formData, featured: e.target.checked})}
+                      className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4"
+                    />
+                    <span>Show in Top 3 Featured Games</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer font-medium text-amber-900">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.pinned}
+                      onChange={(e) => setFormData({...formData, pinned: e.target.checked})}
+                      className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4"
+                    />
+                    <span>Pin to Top</span>
+                  </label>
                 </div>
-                <div>
-                  <label className="block font-medium mb-1 text-gray-700">Real APK Download Link</label>
-                  <input 
-                    type="text" 
-                    value={formData.apk_url} 
-                    onChange={(e) => setFormData({...formData, apk_url: e.target.value})}
-                    className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="https://... or /api/uploads/..."
-                  />
+                {formData.featured && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[11px] font-bold text-amber-800">Featured Order (1-3):</span>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="3"
+                      value={formData.featured_order}
+                      onChange={(e) => setFormData({...formData, featured_order: Number(e.target.value)})}
+                      className="w-14 border rounded p-1 text-center text-xs bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Image Upload Section */}
+              <div className="border border-dashed border-gray-300 p-3 rounded-xl bg-gray-50 space-y-2">
+                <label className="block font-medium text-gray-700">App Icon Image</label>
+                <div className="flex items-center space-x-3">
+                  {formData.icon_url && (
+                    <img src={formData.icon_url} alt="Preview" className="w-12 h-12 rounded-lg object-cover border bg-white" />
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-gray-500">Or paste image URL below:</p>
+                  </div>
                 </div>
+                <input 
+                  type="text" 
+                  value={formData.icon_url} 
+                  onChange={(e) => setFormData({...formData, icon_url: e.target.value})}
+                  className="w-full border rounded-lg p-2 text-xs bg-white" 
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium mb-1 text-gray-700">Real APK Download Link</label>
+                <input 
+                  type="text" 
+                  value={formData.apk_url} 
+                  onChange={(e) => setFormData({...formData, apk_url: e.target.value})}
+                  className="w-full border rounded-lg p-2 text-xs" 
+                  placeholder="https://..."
+                />
               </div>
 
               <div>
@@ -346,10 +488,11 @@ function ApksPageInner() {
                 </button>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex items-center space-x-2 cursor-pointer"
+                  disabled={uploadingImg}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex items-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
-                  <span>Save App Details</span>
+                  <span>Save & Publish Live</span>
                 </button>
               </div>
             </form>
