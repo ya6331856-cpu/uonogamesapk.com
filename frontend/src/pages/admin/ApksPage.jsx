@@ -45,7 +45,10 @@ function ApksPageInner() {
     pinned: false,
     signup_bonus: "₹501",
     min_withdraw: "₹100",
-    badge: "HOT"
+    badge: "HOT",
+    // NEW THEME FIELDS
+    banner_url: "",
+    theme_color: "#FFC107"
   });
 
   const fetchApps = async () => {
@@ -99,27 +102,37 @@ function ApksPageInner() {
     }
   };
 
+  // BANNER UPLOAD FUNCTION
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    uploadData.append("kind", "auto");
+    try {
+      setUploadingImg(true);
+      toast.loading("Uploading banner...");
+      const res = await api.post("/admin/upload", uploadData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      toast.dismiss();
+      toast.success("Banner uploaded successfully!");
+      setFormData(prev => ({ ...prev, banner_url: res.data.url }));
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Banner upload failed");
+    } finally {
+      setUploadingImg(false);
+    }
+  };
+
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
-      name: "",
-      version: "1.0.0",
-      size: "45 MB",
-      category: "Games",
-      description: "",
-      icon_url: "",
-      apk_url: "",
-      slug: "",
-      seo_title: "",
-      meta_description: "",
-      keywords: "",
-      downloads: 500000,
-      featured: false,
-      featured_order: 1,
-      pinned: false,
-      signup_bonus: "₹501",
-      min_withdraw: "₹100",
-      badge: "HOT"
+      name: "", version: "1.0.0", size: "45 MB", category: "Games", description: "",
+      icon_url: "", apk_url: "", slug: "", seo_title: "", meta_description: "", keywords: "",
+      downloads: 500000, featured: false, featured_order: 1, pinned: false,
+      signup_bonus: "₹501", min_withdraw: "₹100", badge: "HOT", banner_url: "", theme_color: "#FFC107"
     });
     setShowModal(true);
   };
@@ -127,24 +140,14 @@ function ApksPageInner() {
   const handleOpenEdit = (app) => {
     setEditingId(app.id || app._id);
     setFormData({
-      name: app.name || "",
-      version: app.version || "1.0.0",
-      size: app.size || "45 MB",
-      category: app.category || "Games",
-      description: app.description || "",
-      icon_url: app.icon_url || "",
-      apk_url: app.apk_url || "",
-      slug: app.slug || "",
-      seo_title: app.seo_title || "",
-      meta_description: app.meta_description || "",
-      keywords: app.keywords || "",
-      downloads: app.downloads || 500000,
-      featured: !!app.featured,
-      featured_order: app.featured_order || 1,
-      pinned: !!app.pinned,
-      signup_bonus: app.signup_bonus || "₹501",
-      min_withdraw: app.min_withdraw || "₹100",
-      badge: app.badge || "HOT"
+      name: app.name || "", version: app.version || "1.0.0", size: app.size || "45 MB",
+      category: app.category || "Games", description: app.description || "",
+      icon_url: app.icon_url || "", apk_url: app.apk_url || "", slug: app.slug || "",
+      seo_title: app.seo_title || "", meta_description: app.meta_description || "",
+      keywords: app.keywords || "", downloads: app.downloads || 500000,
+      featured: !!app.featured, featured_order: app.featured_order || 1, pinned: !!app.pinned,
+      signup_bonus: app.signup_bonus || "₹501", min_withdraw: app.min_withdraw || "₹100",
+      badge: app.badge || "HOT", banner_url: app.banner_url || "", theme_color: app.theme_color || "#FFC107"
     });
     setShowModal(true);
   };
@@ -284,6 +287,46 @@ function ApksPageInner() {
                     className="w-full border rounded-lg p-2 text-xs" 
                     placeholder="e.g. love-rummy"
                   />
+                </div>
+              </div>
+
+              {/* 🔥 NEW PREMIUM THEME SECTION ADDED HERE 🔥 */}
+              <div className="border border-purple-200 p-3 rounded-xl bg-purple-50 space-y-3">
+                <h4 className="font-bold text-purple-900 flex items-center gap-1.5">🎨 Premium Theme Settings</h4>
+                <div className="space-y-2">
+                  <label className="block font-medium text-gray-700">App Background Banner</label>
+                  <div className="flex items-center space-x-3">
+                    {formData.banner_url && (
+                      <img src={formData.banner_url} alt="Banner Preview" className="w-20 h-12 rounded-lg object-cover border bg-white" />
+                    )}
+                    <div className="flex-1 space-y-1">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => handleBannerUpload(e)}
+                        className="w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <input 
+                    type="text" 
+                    value={formData.banner_url || ""} 
+                    onChange={(e) => setFormData({...formData, banner_url: e.target.value})}
+                    className="w-full border rounded-lg p-2 text-xs bg-white" 
+                    placeholder="Leave empty for standard design"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1 text-gray-700">Theme Color</label>
+                  <div className="flex items-center space-x-3">
+                    <input 
+                      type="color" 
+                      value={formData.theme_color || "#FFC107"} 
+                      onChange={(e) => setFormData({...formData, theme_color: e.target.value})}
+                      className="w-16 h-8 cursor-pointer rounded border bg-white p-1" 
+                    />
+                    <span className="text-xs text-gray-500">Used for Download button & highlights</span>
+                  </div>
                 </div>
               </div>
 
