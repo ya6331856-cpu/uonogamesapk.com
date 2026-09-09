@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { PageHeader, Card, Button } from "@/components/admin/adminUI";
+import { PageHeader, Card } from "@/components/admin/adminUI";
 import { Loader2, Plus, Trash2, ExternalLink } from "lucide-react";
 
 class SafeBoundary extends React.Component {
@@ -59,7 +59,12 @@ function ApksPageInner() {
       <Card>
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-sm text-[#111]">All Applications ({apps.length})</h3>
-          <Button onClick={fetchApps} variant="outline" className="text-xs">Refresh</Button>
+          <button 
+            onClick={fetchApps} 
+            className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-[#111] hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            Refresh
+          </button>
         </div>
 
         {loading ? (
