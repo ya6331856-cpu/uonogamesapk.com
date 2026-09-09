@@ -70,8 +70,16 @@ export default function Store() {
   }, []);
 
   const handleDownload = (app) => {
-    toast.success(`Starting download: ${app.name}`, { description: `${app.size} • v${app.version}` });
-    window.open(`${API}/apps/${app.id}/download`, "_blank");
+    toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
+    
+    // DIRECT LINK BYPASS - Render ka wait nahi karna
+    if (app.apk_url && app.apk_url.startsWith("http")) {
+      window.open(app.apk_url, "_blank"); 
+      api.get(`/apps/${app.id}/download`).catch(() => {}); // Silent Tracking
+    } else {
+      window.open(`${API}/apps/${app.id}/download`, "_blank");
+    }
+
     setData((prev) => {
       if (!prev) return prev;
       const bump = (a) => (a.id === app.id ? { ...a, downloads: a.downloads + 1 } : a);
@@ -329,7 +337,7 @@ export default function Store() {
           </>
         )}
 
-        {/* SEO Content Block - Ekdam Niche (Shows only on default view) */}
+        {/* SEO Text Block - Homepage ke ekdum niche */}
         {isDefaultView && (
           <section className="mt-8 mb-4 space-y-4 rounded-[24px] border border-[#E5E7EB] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <h2 className="font-display text-xl font-bold text-[#111111]">
