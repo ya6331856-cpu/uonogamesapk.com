@@ -42,7 +42,7 @@ export default function AppDetail() {
   const key = slug || id;
   const navigate = useNavigate();
 
-  // INSTANT LOAD MAGIC
+  // INSTANT LOAD MAGIC (Main App)
   const getInstantData = () => {
     if (location.state?.app) return location.state.app;
     try {
@@ -56,9 +56,31 @@ export default function AppDetail() {
     return null;
   };
 
+  // INSTANT LOAD MAGIC (Related Apps - Zero Delay)
+  const getInstantRelated = (currentApp) => {
+    if (!currentApp) return [];
+    try {
+      const cache = localStorage.getItem("yono_apps_perm_cache");
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
+        // Same category ki apps pehle dikhao
+        let rel = list.filter(a => String(a.id) !== String(currentApp.id) && a.category === currentApp.category);
+        if (rel.length < 5) {
+          const others = list.filter(a => String(a.id) !== String(currentApp.id) && a.category !== currentApp.category);
+          rel = [...rel, ...others];
+        }
+        // Duplicate apps hatao
+        const uniqueRel = Array.from(new Map(rel.map(item => [item.id, item])).values());
+        return uniqueRel.slice(0, 5);
+      }
+    } catch(e) {}
+    return [];
+  };
+
   const instantApp = getInstantData();
   const [app, setApp] = useState(instantApp);
-  const [related, setRelated] = useState([]);
+  const [related, setRelated] = useState(() => getInstantRelated(instantApp));
   
   const [loading, setLoading] = useState(!instantApp); 
   const [notFound, setNotFound] = useState(false);
@@ -74,13 +96,17 @@ export default function AppDetail() {
     if (!app) setLoading(true);
     setNotFound(false);
 
+    // Background update
     api
       .get(`/apps/${key}`)
       .then((res) => {
         setApp(res.data);
         setLoading(false);
+        // Backend se bhi fresh related apps fetch kar lete hain background mein
         api.get(`/apps/${key}/related`, { params: { limit: 5 } })
-          .then((r) => setRelated(r.data || []))
+          .then((r) => {
+             if(r.data && r.data.length > 0) setRelated(r.data);
+          })
           .catch(() => {});
       })
       .catch(() => {
@@ -228,7 +254,7 @@ export default function AppDetail() {
           <Stat icon={Smartphone} label="Requires" value={(app.min_android || "").replace("Android ", "")} />
         </div>
 
-        {/* Rewards highlight */}
+        {/* Rummy rewards highlight */}
         {(app.signup_bonus || app.min_withdraw) && (
           <div className="flex gap-2" data-testid="detail-rewards">
             {app.signup_bonus && (
@@ -256,7 +282,7 @@ export default function AppDetail() {
           </div>
         )}
 
-        {/* Download button */}
+        {/* Main Download button */}
         <RippleButton
           onClick={handleDownload}
           data-testid="detail-download-btn"
@@ -270,11 +296,11 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* 🔥 YAHAN SHIFT KIYA HAI: RELATED APPS SECTION */}
+        {/* 🔥 YAHAN SHIFT KIYA HAI: NEW PREMIUM "PEOPLE ALSO LIKED" SECTION (0s Delay) */}
         {related.length > 0 && (
-          <section className="space-y-3 pt-2" data-testid="detail-related">
-            <h2 className="flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
-              <Sparkles className="h-5 w-5 text-[#FFC107]" /> You may also like
+          <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
+            <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
+              <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also liked
             </h2>
             <div className="flex flex-col gap-3">
               {related.slice(0, 5).map((r, i) => (
@@ -289,8 +315,8 @@ export default function AppDetail() {
           </section>
         )}
 
-        {/* Game Highlights */}
-        <section className="space-y-2.5 pt-2" data-testid="game-highlights">
+        {/* Game Highlights (About the Game) */}
+        <section className="space-y-2.5 pt-4" data-testid="game-highlights">
           <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
             <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
           </h2>
