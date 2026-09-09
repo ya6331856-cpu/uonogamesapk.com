@@ -42,6 +42,7 @@ export default function AppDetail() {
   const key = slug || id;
   const navigate = useNavigate();
 
+  // INSTANT LOAD MAGIC
   const getInstantData = () => {
     if (location.state?.app) return location.state.app;
     try {
@@ -64,7 +65,6 @@ export default function AppDetail() {
   const [legalId, setLegalId] = useState(null);
 
   useEffect(() => {
-    // Agar route galti se empty aa jaye, toh home bhej do
     if (!key || key === "undefined") {
       navigate("/");
       return;
@@ -113,7 +113,6 @@ export default function AppDetail() {
     } catch (e) {}
   };
 
-  // Smart Back Button: Agar history nahi hai (direct link kholi hai) toh Home pe jayega
   const handleBack = () => {
     if (window.history.length > 2) {
       navigate(-1);
@@ -170,7 +169,7 @@ export default function AppDetail() {
         ]}
       />
       
-      {/* Header with Smart Back Button */}
+      {/* Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E5E7EB] bg-white/85 px-4 py-3 backdrop-blur-xl">
         <button onClick={handleBack} data-testid="detail-back" className="flex items-center gap-1 text-sm font-medium text-[#555555]">
           <ArrowLeft className="h-5 w-5" /> Back
@@ -229,7 +228,7 @@ export default function AppDetail() {
           <Stat icon={Smartphone} label="Requires" value={(app.min_android || "").replace("Android ", "")} />
         </div>
 
-        {/* Rummy rewards highlight */}
+        {/* Rewards highlight */}
         {(app.signup_bonus || app.min_withdraw) && (
           <div className="flex gap-2" data-testid="detail-rewards">
             {app.signup_bonus && (
@@ -271,8 +270,27 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
+        {/* 🔥 YAHAN SHIFT KIYA HAI: RELATED APPS SECTION */}
+        {related.length > 0 && (
+          <section className="space-y-3 pt-2" data-testid="detail-related">
+            <h2 className="flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
+              <Sparkles className="h-5 w-5 text-[#FFC107]" /> You may also like
+            </h2>
+            <div className="flex flex-col gap-3">
+              {related.slice(0, 5).map((r, i) => (
+                <AppCard 
+                  key={r.id} 
+                  app={r} 
+                  index={i} 
+                  onDownload={() => handleRelatedDownload(r)} 
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Game Highlights */}
-        <section className="space-y-2.5" data-testid="game-highlights">
+        <section className="space-y-2.5 pt-2" data-testid="game-highlights">
           <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
             <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
           </h2>
@@ -317,25 +335,6 @@ export default function AppDetail() {
             </h2>
             <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 text-sm leading-relaxed text-[#555555] shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
               {app.whats_new}
-            </div>
-          </section>
-        )}
-
-        {/* RELATED APPS */}
-        {related.length > 0 && (
-          <section className="space-y-3 pt-3" data-testid="detail-related">
-            <h2 className="flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
-              <Sparkles className="h-5 w-5 text-[#FFC107]" /> You may also like
-            </h2>
-            <div className="flex flex-col gap-3">
-              {related.slice(0, 5).map((r, i) => (
-                <AppCard 
-                  key={r.id} 
-                  app={r} 
-                  index={i} 
-                  onDownload={() => handleRelatedDownload(r)} 
-                />
-              ))}
             </div>
           </section>
         )}
