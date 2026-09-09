@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -26,7 +27,7 @@ import object_storage as obs
 import image_utils as imu
 
 # ---------------------------------------------------------------------------
-# Database
+# Database & Environment Setup
 # ---------------------------------------------------------------------------
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -38,12 +39,8 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 
-# ---------------------------------------------------------------------------
-# App / Router Setup (Must be initialized before any route decorators)
-# ---------------------------------------------------------------------------
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
-
 
 @app.get("/health")
 async def health_check():
@@ -57,10 +54,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
-
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
-
 
 # ---------------------------------------------------------------------------
 # Auth helpers & Password hashing
@@ -68,10 +63,8 @@ def now_iso() -> str:
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-
 
 def create_access_token(user_id: str, email: str) -> str:
     payload = {
@@ -82,9 +75,8 @@ def create_access_token(user_id: str, email: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-
 # ---------------------------------------------------------------------------
-# Force Create Admin Route (Registered properly under api_router)
+# Force Create Admin Route
 # ---------------------------------------------------------------------------
 @api_router.get("/admin/force-create")
 async def force_create_admin():
@@ -109,7 +101,6 @@ async def force_create_admin():
             "created_at": now_iso()
         })
         return {"success": True, "message": "Admin user created successfully!"}
-
 
 class AppModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
@@ -152,7 +143,6 @@ class AppModel(BaseModel):
     faq_items: List[dict] = Field(default_factory=list)
     created_at: str = Field(default_factory=now_iso)
 
-
 class AppCreate(BaseModel):
     name: str
     version: str = "1.0.0"
@@ -189,7 +179,6 @@ class AppCreate(BaseModel):
     og_image: str = ""
     noindex: bool = False
     faq_items: List[dict] = Field(default_factory=list)
-
 
 class AppUpdate(BaseModel):
     name: Optional[str] = None
@@ -228,40 +217,33 @@ class AppUpdate(BaseModel):
     noindex: Optional[bool] = None
     faq_items: Optional[List[dict]] = None
 
-
 class LoginInput(BaseModel):
     email: str
     password: str
-
 
 class FaqCreate(BaseModel):
     question: str
     answer: str
     order: Optional[int] = None
 
-
 class FaqUpdate(BaseModel):
     question: Optional[str] = None
     answer: Optional[str] = None
     order: Optional[int] = None
 
-
 class ReorderInput(BaseModel):
     ids: List[str]
-
 
 def serialize_app(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     return doc
 
-
 def to_object_id(app_id: str) -> ObjectId:
     try:
         return ObjectId(app_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid app id")
-
 
 async def get_current_admin(request: Request) -> dict:
     token = request.cookies.get("access_token")
@@ -300,10 +282,10 @@ async def get_current_admin(request: Request) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-
 # ---------------------------------------------------------------------------
-# Auth routes
+# Auth routes (Supporting both /admin/ and /auth/ prefixes)
 # ---------------------------------------------------------------------------
+@api_router.post("/auth/login")
 @api_router.post("/admin/login")
 async def login(payload: LoginInput):
     email = payload.email.lower().strip()
@@ -316,14 +298,16 @@ async def login(payload: LoginInput):
         "user": {"id": str(user["_id"]), "email": email, "name": user.get("name", "Admin"), "role": user.get("role", "admin")},
     }
 
-
+@api_router.get("/auth/me")
 @api_router.get("/admin/me")
 async def me(admin: dict = Depends(get_current_admin)):
     return admin
-import json
-import os
 
+# ---------------------------------------------------------------------------
+# Settings configuration and file storage persistence
+# ---------------------------------------------------------------------------
 SETTINGS_FILE = "settings.json"
+SETTINGS_ID = "site"
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -338,37 +322,91 @@ def save_settings_to_file(data):
     with open(SETTINGS_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-# Get Settings Routes
+def default_settings() -> dict:
+    return {
+        "branding": {
+            "site_name": "YONO GAMES",
+            "logo_text": "YONO GAMES",
+            "logo_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
+            "favicon_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
+            "footer_text": "Premium APK store for safe, verified Android games and apps.",
+            "copyright": "YONO GAMES · uonogamesapk.com",
+        },
+        "contact": {"email": "support@uonogamesapk.com", "whatsapp": "", "instagram": "", "youtube": "", "twitter": ""},
+        "hero": {
+            "enabled": True,
+            "banner_url": "/hero-banner.png",
+            "headline": "Download Premium APK Games",
+            "subtitle": "Fast, safe & verified downloads",
+            "button_text": "Browse Apps",
+            "button_link": "#apps",
+        },
+        "stats": {
+            "enabled": True,
+            "items": [
+                {"label": "Downloads", "value": "10M", "suffix": "+"},
+                {"label": "Verified", "value": "auto", "suffix": ""},
+                {"label": "Rating", "value": "4.8", "suffix": ""},
+            ],
+        },
+        "telegram": {"enabled": True, "link": "https://t.me/", "cta_text": "Join our Telegram", "sub_text": "Get instant updates & new APK releases", "member_count": ""},
+        "announcement": {"enabled": False, "text": "Welcome to YONO GAMES — Play and Win!", "link": ""},
+        "theme": {"primary": "#FFC107", "secondary": "#FFB300", "radius": 20},
+        "sections": [
+            {"id": "featured", "label": "Featured Apps", "enabled": True},
+            {"id": "rummy", "label": "Rummy Features", "enabled": True},
+            {"id": "telegram", "label": "Telegram CTA", "enabled": True},
+            {"id": "winners", "label": "Live Winners", "enabled": True},
+            {"id": "apps", "label": "App List", "enabled": True},
+            {"id": "reviews", "label": "Reviews", "enabled": True},
+            {"id": "faq", "label": "FAQ", "enabled": True},
+            {"id": "legal", "label": "Legal", "enabled": True},
+        ],
+        "categories": ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"],
+        "seo": {
+            "meta_title": "YONO GAMES - Play and Win | Premium APK Store",
+            "meta_description": "Download premium APK games. Fast, safe & verified.",
+            "keywords": "apk, rummy, games, download, android",
+            "og_image": "/hero-banner.png",
+        },
+        "ads": {"enabled": False, "adsense_client": "", "adsense_slot": "", "banner_html": ""},
+        "analytics": {
+            "ga4_id": "",
+            "gsc_verification": "",
+            "bing_verification": "",
+        },
+        "winners_config": {"enabled": True, "scroll_speed": 40},
+        "legal": {},
+    }
+
+async def get_settings_doc() -> dict:
+    doc = await db.settings.find_one({"_id": SETTINGS_ID})
+    if not doc:
+        doc = {"_id": SETTINGS_ID, **default_settings()}
+        await db.settings.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
 @api_router.get("/settings")
 @api_router.get("/admin/settings")
-def get_settings():
-    return load_settings()
+async def get_settings_route():
+    return await get_settings_doc()
 
-# Save/Update Settings Routes
 @api_router.post("/settings")
 @api_router.post("/admin/settings")
 @api_router.put("/settings")
 @api_router.put("/admin/settings")
-def update_settings(data: dict):
-    save_settings_to_file(data)
-    return {"success": True, "message": "Settings saved successfully"}
-@api_router.post("/auth/login")
-@api_router.post("/admin/login")
-async def login(payload: LoginInput):
-    # aapka purana login code wahi rahega
-
-@api_router.get("/auth/me")
-@api_router.get("/admin/me")
-async def get_me(admin: dict = Depends(get_current_admin)):
-    return admin
-    
+async def update_settings_route(payload: dict, admin: dict = Depends(get_current_admin)):
+    payload.pop("_id", None)
+    save_settings_to_file(payload)
+    await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": payload}, upsert=True)
+    return await get_settings_doc()
 
 # ---------------------------------------------------------------------------
 # Public app routes
 # ---------------------------------------------------------------------------
 def _invert_ts(ts: str) -> tuple:
     return tuple(-ord(c) for c in (ts or ""))
-
 
 @api_router.get("/apps")
 async def list_apps(search: Optional[str] = None, category: Optional[str] = None, include_hidden: bool = False):
@@ -401,14 +439,12 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
     )
     return {"featured": featured, "apps": regular, "trending": trending, "total": len(apps)}
 
-
 @api_router.get("/apps/slug/{slug}")
 async def get_app_by_slug(slug: str):
     doc = await fbs.get_app_by_slug(slug)
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
     return doc
-
 
 @api_router.get("/apps/{app_id}")
 async def get_app(app_id: str):
@@ -418,7 +454,6 @@ async def get_app(app_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
     return doc
-
 
 @api_router.get("/apps/{app_id}/download")
 async def download_app(app_id: str):
@@ -451,7 +486,6 @@ async def download_app(app_id: str):
     download_name = f"{doc.get('name', 'app').replace(' ', '_')}.apk"
     return FileResponse(path=str(file_path), filename=download_name, media_type="application/vnd.android.package-archive")
 
-
 @api_router.get("/uploads/{filename}")
 async def serve_upload(filename: str):
     obs_path = obs.build_upload_path(filename)
@@ -473,7 +507,6 @@ async def serve_upload(filename: str):
         return FileResponse(path=str(file_path))
     raise HTTPException(status_code=404, detail="File not found")
 
-
 def _guess_content_type(filename: str) -> str:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     return {
@@ -482,7 +515,6 @@ def _guess_content_type(filename: str) -> str:
         "apk": "application/vnd.android.package-archive",
         "pdf": "application/pdf",
     }.get(ext, "application/octet-stream")
-
 
 # ---------------------------------------------------------------------------
 # Admin app routes
@@ -542,7 +574,6 @@ async def upload_file(
         "warning": "Persistent storage was unavailable — file saved to local disk.",
     }
 
-
 @api_router.post("/admin/apps")
 async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin)):
     doc = payload.model_dump()
@@ -550,7 +581,6 @@ async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin
     if new_doc.get("category"):
         await fbs.upsert_category(new_doc["category"])
     return new_doc
-
 
 @api_router.put("/admin/apps/{app_id}")
 async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_current_admin)):
@@ -576,16 +606,13 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
         await fbs.upsert_category(doc["category"])
     return doc
 
-
 class ReorderItem(BaseModel):
     id: str
     sort_order: int
     pinned: bool = False
 
-
 class ReorderPayload(BaseModel):
     items: List[ReorderItem]
-
 
 @api_router.patch("/admin/apps/reorder")
 async def reorder_apps(payload: ReorderPayload, admin: dict = Depends(get_current_admin)):
@@ -603,7 +630,6 @@ async def reorder_apps(payload: ReorderPayload, admin: dict = Depends(get_curren
     updated = await fbs.bulk_set_order([i.model_dump() for i in payload.items])
     return {"ok": True, "updated": updated}
 
-
 @api_router.delete("/admin/apps/{app_id}")
 async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
     ok = await fbs.delete_app(app_id)
@@ -611,11 +637,9 @@ async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
         raise HTTPException(status_code=404, detail="App not found")
     return {"success": True}
 
-
 @api_router.get("/categories")
 async def list_categories():
     return await fbs.list_categories()
-
 
 # ---------------------------------------------------------------------------
 # Media audit / repair
@@ -630,7 +654,6 @@ def _extract_upload_filename(url: str) -> str | None:
         return url[len(prefix):].split("?")[0]
     return None
 
-
 async def _check_upload_exists(filename: str) -> bool:
     obs_path = obs.build_upload_path(filename)
     try:
@@ -640,7 +663,6 @@ async def _check_upload_exists(filename: str) -> bool:
     except Exception:
         pass
     return (UPLOAD_DIR / filename).exists()
-
 
 @api_router.get("/admin/media/audit")
 async def media_audit(admin: dict = Depends(get_current_admin)):
@@ -681,10 +703,9 @@ async def media_audit(admin: dict = Depends(get_current_admin)):
 
     return {"checked": checked, "broken_count": len(broken), "broken": broken}
 
-
 @api_router.post("/admin/media/repair")
 async def media_repair(admin: dict = Depends(get_current_admin)):
-    audit = await media_audit(admin=admin)  # type: ignore[arg-type]
+    audit = await media_audit(admin=admin)
     cleared = 0
     for issue in audit["broken"]:
         if issue["kind"] == "app":
@@ -703,9 +724,7 @@ async def media_repair(admin: dict = Depends(get_current_admin)):
             cleared += 1
     return {"cleared": cleared, "broken_before": audit["broken_count"]}
 
-
 SITE_URL = os.environ.get("SITE_URL", "https://uonogamesapk.com").rstrip("/")
-
 
 def _xml_escape(text: str) -> str:
     return (
@@ -713,7 +732,6 @@ def _xml_escape(text: str) -> str:
         .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         .replace('"', "&quot;").replace("'", "&apos;")
     )
-
 
 @api_router.get("/sitemap.xml")
 async def sitemap():
@@ -753,7 +771,6 @@ async def sitemap():
         headers={"Cache-Control": "public, max-age=3600"},
     )
 
-
 ROBOTS_TXT = (
     "User-agent: *\n"
     "Allow: /\n\n"
@@ -763,7 +780,6 @@ ROBOTS_TXT = (
     f"Sitemap: {SITE_URL}/api/sitemap.xml\n"
 )
 
-
 @api_router.get("/robots.txt")
 async def robots_txt():
     return Response(
@@ -771,7 +787,6 @@ async def robots_txt():
         media_type="text/plain",
         headers={"Cache-Control": "public, max-age=3600"},
     )
-
 
 @api_router.get("/seo/{slug}")
 async def seo_meta(slug: str):
@@ -791,7 +806,6 @@ async def seo_meta(slug: str):
         "url": f"{SITE_URL}/{a.get('slug', slug)}",
         "name": a.get("name", ""),
     })
-
 
 @api_router.get("/admin/seo/overview")
 async def seo_overview(admin: dict = Depends(get_current_admin)):
@@ -833,7 +847,6 @@ async def seo_overview(admin: dict = Depends(get_current_admin)):
         "robots_url": f"{SITE_URL}/api/robots.txt",
     }
 
-
 @api_router.get("/admin/seo/apps")
 async def seo_apps_list(admin: dict = Depends(get_current_admin)):
     apps = await fbs.list_apps()
@@ -854,7 +867,6 @@ async def seo_apps_list(admin: dict = Depends(get_current_admin)):
             "score": int((score / 6) * 100),
         })
     return result
-
 
 @api_router.post("/admin/seo/auto-generate/{app_id}")
 async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin)):
@@ -888,7 +900,6 @@ async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin
     doc = await fbs.update_app(app_id, updates)
     return doc
 
-
 @api_router.post("/admin/seo/bulk-fix")
 async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
     apps = await fbs.list_apps()
@@ -920,7 +931,6 @@ async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
             fixed += 1
     return {"fixed": fixed, "total": len(apps)}
 
-
 class BlogCreate(BaseModel):
     title: str
     slug: str = ""
@@ -938,7 +948,6 @@ class BlogCreate(BaseModel):
     focus_keyword: str = ""
     og_image: str = ""
     noindex: bool = False
-
 
 class BlogUpdate(BaseModel):
     title: Optional[str] = None
@@ -958,10 +967,8 @@ class BlogUpdate(BaseModel):
     og_image: Optional[str] = None
     noindex: Optional[bool] = None
 
-
 def slugify(text: str) -> str:
     return "".join(c if c.isalnum() else "-" for c in text.lower()).strip("-")
-
 
 def _blog_is_live(doc: dict) -> bool:
     if not doc.get("published"):
@@ -975,7 +982,6 @@ def _blog_is_live(doc: dict) -> bool:
     except Exception:
         return True
 
-
 @api_router.get("/blog")
 async def list_blog(category: Optional[str] = None, tag: Optional[str] = None):
     query: dict = {"published": True}
@@ -986,7 +992,6 @@ async def list_blog(category: Optional[str] = None, tag: Optional[str] = None):
     docs = await db.blog.find(query).sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs if _blog_is_live(d)]
 
-
 @api_router.get("/blog/{slug}")
 async def get_blog(slug: str):
     doc = await db.blog.find_one({"slug": slug})
@@ -994,12 +999,10 @@ async def get_blog(slug: str):
         raise HTTPException(status_code=404, detail="Post not found")
     return serialize_doc(doc)
 
-
 @api_router.get("/admin/blog")
 async def admin_list_blog(admin: dict = Depends(get_current_admin)):
     docs = await db.blog.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/blog")
 async def create_blog(payload: BlogCreate, admin: dict = Depends(get_current_admin)):
@@ -1008,7 +1011,6 @@ async def create_blog(payload: BlogCreate, admin: dict = Depends(get_current_adm
     doc["created_at"] = now_iso()
     res = await db.blog.insert_one(doc)
     return serialize_doc(await db.blog.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/blog/{bid}")
 async def update_blog(bid: str, payload: BlogUpdate, admin: dict = Depends(get_current_admin)):
@@ -1020,14 +1022,12 @@ async def update_blog(bid: str, payload: BlogUpdate, admin: dict = Depends(get_c
         raise HTTPException(status_code=404, detail="Post not found")
     return serialize_doc(await db.blog.find_one({"_id": to_object_id(bid)}))
 
-
 @api_router.delete("/admin/blog/{bid}")
 async def delete_blog(bid: str, admin: dict = Depends(get_current_admin)):
     r = await db.blog.delete_one({"_id": to_object_id(bid)})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Post not found")
     return {"success": True}
-
 
 @api_router.get("/blog-meta")
 async def blog_meta():
@@ -1044,12 +1044,10 @@ async def blog_meta():
                 tags.add(t)
     return {"categories": sorted(cats), "tags": sorted(tags)}
 
-
 @api_router.get("/admin/faqs")
 async def admin_list_faqs(admin: dict = Depends(get_current_admin)):
     docs = await db.faqs.find().sort("order", 1).to_list(1000)
     return [serialize_faq(d) for d in docs]
-
 
 @api_router.get("/apps/{slug_or_id}/related")
 async def related_apps(slug_or_id: str, limit: int = 6):
@@ -1079,7 +1077,6 @@ async def related_apps(slug_or_id: str, limit: int = 6):
     scored.sort(key=lambda t: t[0], reverse=True)
     return [a for _, a in scored[: max(1, min(limit, 20))]]
 
-
 @api_router.get("/admin/media")
 async def list_media(admin: dict = Depends(get_current_admin)):
     files = []
@@ -1093,7 +1090,6 @@ async def list_media(admin: dict = Depends(get_current_admin)):
             })
     return files
 
-
 @api_router.delete("/admin/media/{filename}")
 async def delete_media(filename: str, admin: dict = Depends(get_current_admin)):
     fp = UPLOAD_DIR / filename
@@ -1102,12 +1098,10 @@ async def delete_media(filename: str, admin: dict = Depends(get_current_admin)):
         return {"success": True}
     raise HTTPException(status_code=404, detail="File not found")
 
-
 @api_router.get("/admin/users")
 async def list_users(admin: dict = Depends(get_current_admin)):
     docs = await db.users.find().to_list(100)
     return [{"id": str(u["_id"]), "email": u["email"], "name": u.get("name", ""), "role": u.get("role", "admin"), "created_at": u.get("created_at", "")} for u in docs]
-
 
 @api_router.put("/admin/password")
 async def change_password(payload: dict, admin: dict = Depends(get_current_admin)):
@@ -1121,9 +1115,7 @@ async def change_password(payload: dict, admin: dict = Depends(get_current_admin
     await db.users.update_one({"_id": user["_id"]}, {"$set": {"password_hash": hash_password(new)}})
     return {"success": True}
 
-
 BACKUP_COLLECTIONS = ["apps", "faqs", "reviews", "winners", "codes", "blog"]
-
 
 @api_router.get("/admin/backup")
 async def export_backup(admin: dict = Depends(get_current_admin)):
@@ -1138,7 +1130,6 @@ async def export_backup(admin: dict = Depends(get_current_admin)):
     data["settings"] = settings
     data["exported_at"] = now_iso()
     return data
-
 
 @api_router.post("/admin/backup/restore")
 async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)):
@@ -1157,105 +1148,19 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
         await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": s}, upsert=True)
     return {"success": True}
 
-
 @api_router.get("/")
 async def root():
     return {"message": "YONO GAMES API"}
-
 
 @api_router.get("/admin/winners")
 async def admin_list_winners(admin: dict = Depends(get_current_admin)):
     docs = await db.winners.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
 
-
-SETTINGS_ID = "site"
-
-
-def default_settings() -> dict:
-    return {
-        "branding": {
-            "site_name": "YONO GAMES",
-            "logo_text": "YONO GAMES",
-            "logo_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
-            "favicon_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
-            "footer_text": "Premium APK store for safe, verified Android games and apps.",
-            "copyright": "YONO GAMES · uonogamesapk.com",
-        },
-        "contact": {"email": "support@uonogamesapk.com", "whatsapp": "", "instagram": "", "youtube": "", "twitter": ""},
-        "hero": {
-            "enabled": True,
-            "banner_url": "/hero-banner.png",
-            "headline": "Download Premium APK Games",
-            "subtitle": "Fast, safe & verified downloads",
-            "button_text": "Browse Apps",
-            "button_link": "#apps",
-        },
-        "stats": {
-            "enabled": True,
-            "items": [
-                {"label": "Downloads", "value": "10M", "suffix": "+"},
-                {"label": "Verified", "value": "auto", "suffix": ""},
-                {"label": "Rating", "value": "4.8", "suffix": ""},
-            ],
-        },
-        "telegram": {"enabled": True, "link": "https://t.me/", "cta_text": "Join our Telegram", "sub_text": "Get instant updates & new APK releases", "member_count": ""},
-        "announcement": {"enabled": False, "text": "Welcome to YONO GAMES — Play and Win!", "link": ""},
-        "theme": {"primary": "#FFC107", "secondary": "#FFB300", "radius": 20},
-        "sections": [
-            {"id": "featured", "label": "Featured Apps", "enabled": True},
-            {"id": "rummy", "label": "Rummy Features", "enabled": True},
-            {"id": "telegram", "label": "Telegram CTA", "enabled": True},
-            {"id": "winners", "label": "Live Winners", "enabled": True},
-            {"id": "apps", "label": "App List", "enabled": True},
-            {"id": "reviews", "label": "Reviews", "enabled": True},
-            {"id": "faq", "label": "FAQ", "enabled": True},
-            {"id": "legal", "label": "Legal", "enabled": True},
-        ],
-        "categories": ["Games", "Puzzle", "Simulation", "Tools", "Social", "Entertainment"],
-        "seo": {
-            "meta_title": "YONO GAMES - Play and Win | Premium APK Store",
-            "meta_description": "Download premium APK games. Fast, safe & verified.",
-            "keywords": "apk, rummy, games, download, android",
-            "og_image": "/hero-banner.png",
-        },
-        "ads": {"enabled": False, "adsense_client": "", "adsense_slot": "", "banner_html": ""},
-        "analytics": {
-            "ga4_id": "",
-            "gsc_verification": "",
-            "bing_verification": "",
-        },
-        "winners_config": {"enabled": True, "scroll_speed": 40},
-        "legal": {},
-    }
-
-
-async def get_settings_doc() -> dict:
-    doc = await db.settings.find_one({"_id": SETTINGS_ID})
-    if not doc:
-        doc = {"_id": SETTINGS_ID, **default_settings()}
-        await db.settings.insert_one(doc)
-    doc.pop("_id", None)
-    return doc
-
-
-@api_router.get("/settings")
-async def get_settings():
-    return await get_settings_doc()
-
-
-@api_router.put("/admin/settings")
-async def update_settings(payload: dict, admin: dict = Depends(get_current_admin)):
-    payload.pop("_id", None)
-    await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": payload}, upsert=True)
-    return await get_settings_doc()
-
-
 def serialize_doc(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     return doc
-
 
 class ReviewCreate(BaseModel):
     name: str
@@ -1264,7 +1169,6 @@ class ReviewCreate(BaseModel):
     photo_url: str = ""
     approved: bool = True
 
-
 class ReviewUpdate(BaseModel):
     name: Optional[str] = None
     rating: Optional[int] = None
@@ -1272,18 +1176,15 @@ class ReviewUpdate(BaseModel):
     photo_url: Optional[str] = None
     approved: Optional[bool] = None
 
-
 @api_router.get("/reviews")
 async def list_reviews():
     docs = await db.reviews.find({"approved": True}).sort("created_at", -1).to_list(200)
     return [serialize_doc(d) for d in docs]
 
-
 @api_router.get("/admin/reviews")
 async def admin_list_reviews(admin: dict = Depends(get_current_admin)):
     docs = await db.reviews.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/reviews")
 async def create_review(payload: ReviewCreate, admin: dict = Depends(get_current_admin)):
@@ -1291,7 +1192,6 @@ async def create_review(payload: ReviewCreate, admin: dict = Depends(get_current
     doc["created_at"] = now_iso()
     res = await db.reviews.insert_one(doc)
     return serialize_doc(await db.reviews.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/reviews/{rid}")
 async def update_review(rid: str, payload: ReviewUpdate, admin: dict = Depends(get_current_admin)):
@@ -1301,7 +1201,6 @@ async def update_review(rid: str, payload: ReviewUpdate, admin: dict = Depends(g
         raise HTTPException(status_code=404, detail="Review not found")
     return serialize_doc(await db.reviews.find_one({"_id": to_object_id(rid)}))
 
-
 @api_router.delete("/admin/reviews/{rid}")
 async def delete_review(rid: str, admin: dict = Depends(get_current_admin)):
     r = await db.reviews.delete_one({"_id": to_object_id(rid)})
@@ -1309,24 +1208,20 @@ async def delete_review(rid: str, admin: dict = Depends(get_current_admin)):
         raise HTTPException(status_code=404, detail="Review not found")
     return {"success": True}
 
-
 class WinnerCreate(BaseModel):
     name: str
     amount: str = ""
     game: str = ""
-
 
 class WinnerUpdate(BaseModel):
     name: Optional[str] = None
     amount: Optional[str] = None
     game: Optional[str] = None
 
-
 @api_router.get("/winners")
 async def list_winners():
     docs = await db.winners.find().sort("created_at", -1).to_list(100)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/winners")
 async def create_winner(payload: WinnerCreate, admin: dict = Depends(get_current_admin)):
@@ -1334,7 +1229,6 @@ async def create_winner(payload: WinnerCreate, admin: dict = Depends(get_current
     doc["created_at"] = now_iso()
     res = await db.winners.insert_one(doc)
     return serialize_doc(await db.winners.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/winners/{wid}")
 async def update_winner(wid: str, payload: WinnerUpdate, admin: dict = Depends(get_current_admin)):
@@ -1344,14 +1238,12 @@ async def update_winner(wid: str, payload: WinnerUpdate, admin: dict = Depends(g
         raise HTTPException(status_code=404, detail="Winner not found")
     return serialize_doc(await db.winners.find_one({"_id": to_object_id(wid)}))
 
-
 @api_router.delete("/admin/winners/{wid}")
 async def delete_winner(wid: str, admin: dict = Depends(get_current_admin)):
     r = await db.winners.delete_one({"_id": to_object_id(wid)})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Winner not found")
     return {"success": True}
-
 
 class CodeCreate(BaseModel):
     code: str
@@ -1360,7 +1252,6 @@ class CodeCreate(BaseModel):
     usage_limit: int = 0
     active: bool = True
 
-
 class CodeUpdate(BaseModel):
     code: Optional[str] = None
     reward: Optional[str] = None
@@ -1368,12 +1259,10 @@ class CodeUpdate(BaseModel):
     usage_limit: Optional[int] = None
     active: Optional[bool] = None
 
-
 @api_router.get("/admin/codes")
 async def list_codes(admin: dict = Depends(get_current_admin)):
     docs = await db.codes.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/codes")
 async def create_code(payload: CodeCreate, admin: dict = Depends(get_current_admin)):
@@ -1383,7 +1272,6 @@ async def create_code(payload: CodeCreate, admin: dict = Depends(get_current_adm
     doc["created_at"] = now_iso()
     res = await db.codes.insert_one(doc)
     return serialize_doc(await db.codes.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/codes/{cid}")
 async def update_code(cid: str, payload: CodeUpdate, admin: dict = Depends(get_current_admin)):
@@ -1395,14 +1283,12 @@ async def update_code(cid: str, payload: CodeUpdate, admin: dict = Depends(get_c
         raise HTTPException(status_code=404, detail="Code not found")
     return serialize_doc(await db.codes.find_one({"_id": to_object_id(cid)}))
 
-
 @api_router.delete("/admin/codes/{cid}")
 async def delete_code(cid: str, admin: dict = Depends(get_current_admin)):
     r = await db.codes.delete_one({"_id": to_object_id(cid)})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Code not found")
     return {"success": True}
-
 
 @api_router.post("/redeem")
 async def redeem_code(payload: dict):
@@ -1424,7 +1310,6 @@ async def redeem_code(payload: dict):
     await db.codes.update_one({"_id": doc["_id"]}, {"$inc": {"used_count": 1}})
     return {"success": True, "reward": doc.get("reward", "Reward unlocked!")}
 
-
 @api_router.get("/admin/analytics")
 async def analytics(admin: dict = Depends(get_current_admin)):
     apps = await db.apps.find().to_list(1000)
@@ -1445,18 +1330,15 @@ async def analytics(admin: dict = Depends(get_current_admin)):
         "top_apps": [{"name": a.get("name"), "downloads": a.get("downloads", 0)} for a in top],
     }
 
-
 def serialize_faq(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     return doc
 
-
 @api_router.get("/faqs")
 async def list_faqs():
     docs = await db.faqs.find().sort("order", 1).to_list(1000)
     return [serialize_faq(d) for d in docs]
-
 
 @api_router.post("/admin/faqs")
 async def create_faq(payload: FaqCreate, admin: dict = Depends(get_current_admin)):
@@ -1468,13 +1350,11 @@ async def create_faq(payload: FaqCreate, admin: dict = Depends(get_current_admin
     new_doc = await db.faqs.find_one({"_id": result.inserted_id})
     return serialize_faq(new_doc)
 
-
 @api_router.put("/admin/faqs/reorder")
 async def reorder_faqs(payload: ReorderInput, admin: dict = Depends(get_current_admin)):
     for index, faq_id in enumerate(payload.ids):
         await db.faqs.update_one({"_id": to_object_id(faq_id)}, {"$set": {"order": index}})
     return {"success": True}
-
 
 @api_router.put("/admin/faqs/{faq_id}")
 async def update_faq(faq_id: str, payload: FaqUpdate, admin: dict = Depends(get_current_admin)):
@@ -1487,14 +1367,12 @@ async def update_faq(faq_id: str, payload: FaqUpdate, admin: dict = Depends(get_
     doc = await db.faqs.find_one({"_id": to_object_id(faq_id)})
     return serialize_faq(doc)
 
-
 @api_router.delete("/admin/faqs/{faq_id}")
 async def delete_faq(faq_id: str, admin: dict = Depends(get_current_admin)):
     result = await db.faqs.delete_one({"_id": to_object_id(faq_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="FAQ not found")
     return {"success": True}
-
 
 SAMPLE_APPS = [
     {
@@ -1521,62 +1399,12 @@ SAMPLE_APPS = [
         "apk_url": "https://example.com/apk/neon-puzzle.apk",
         "featured": True, "featured_order": 3,
     },
-    {
-        "name": "Sky Warriors: Air Combat", "version": "4.5.2", "size": "210 MB", "rating": 4.6,
-        "downloads": 560000, "verified": True, "category": "Games",
-        "description": "Take to the skies in intense aerial dogfights.",
-        "icon_url": "https://images.unsplash.com/photo-1740059030535-a75661748bc8?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/sky-warriors.apk",
-        "featured": False,
-    },
-    {
-        "name": "Crypto Miner Tycoon", "version": "1.8.7", "size": "62 MB", "rating": 4.3,
-        "downloads": 320000, "verified": True, "category": "Simulation",
-        "description": "Build your crypto empire in this idle tycoon simulator.",
-        "icon_url": "https://images.unsplash.com/photo-1633419461186-7d40a38105ec?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/crypto-miner.apk",
-        "featured": False,
-    },
-    {
-        "name": "Word Quest Adventure", "version": "6.0.1", "size": "38 MB", "rating": 4.5,
-        "downloads": 780000, "verified": True, "category": "Puzzle",
-        "description": "Expand your vocabulary while exploring magical lands.",
-        "icon_url": "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/word-quest.apk",
-        "featured": False,
-    },
-    {
-        "name": "Battle Royale Legends", "version": "12.3.0", "size": "1.2 GB", "rating": 4.4,
-        "downloads": 5400000, "verified": True, "category": "Games",
-        "description": "Drop in, gear up, and be the last one standing.",
-        "icon_url": "https://images.unsplash.com/photo-1685381949388-bb0402fbe133?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/battle-royale.apk",
-        "featured": False,
-    },
-    {
-        "name": "Zen Garden Idle", "version": "2.4.9", "size": "54 MB", "rating": 4.7,
-        "downloads": 410000, "verified": True, "category": "Simulation",
-        "description": "Relax and grow your own peaceful zen garden.",
-        "icon_url": "https://images.unsplash.com/photo-1659885785824-3e72856b8fef?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/zen-garden.apk",
-        "featured": False,
-    },
 ]
-
 
 DEFAULT_FAQS = [
-    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
-    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly. Once finished, open the file from your notification bar or your device's Downloads folder and tap 'Install'. The entire process usually takes less than a minute on a normal connection."},
-    {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
-    {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
-    {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
-    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
-    {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
-    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (uonogamesapk.com) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
-    {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
-    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
+    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing."},
+    {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly."},
 ]
-
 
 async def seed():
     admin_email = os.environ["ADMIN_EMAIL"].lower().strip()
@@ -1598,123 +1426,14 @@ async def seed():
     if await db.apps.count_documents({}) == 0:
         docs = [{**a, "created_at": now_iso()} for a in SAMPLE_APPS]
         await db.apps.insert_many(docs)
-        logger.info("Seeded %d sample apps", len(docs))
-
-    default_shots = [
-        "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
-        "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
-    ]
-    await db.apps.update_many(
-        {"developer": {"$exists": False}},
-        {"$set": {
-            "developer": "Uonogames Studios",
-            "package_name": "com.uonogames.app",
-            "min_android": "Android 6.0+",
-            "whats_new": "Performance improvements, new levels and bug fixes for a smoother experience.",
-            "screenshots": default_shots,
-        }},
-    )
+        logger.info("Seeded sample apps")
 
     if await db.faqs.count_documents({}) == 0:
         faq_docs = [{**f, "order": i, "created_at": now_iso()} for i, f in enumerate(DEFAULT_FAQS)]
         await db.faqs.insert_many(faq_docs)
-        logger.info("Seeded %d FAQs", len(faq_docs))
-
-    if await db.apps.count_documents({"trending": True}) == 0:
-        cursor = db.apps.find({"featured": {"$ne": True}}).sort("downloads", -1).limit(4)
-        async for a in cursor:
-            await db.apps.update_one({"_id": a["_id"]}, {"$set": {"trending": True}})
+        logger.info("Seeded FAQs")
 
     await get_settings_doc()
-    defaults = default_settings()
-    current_settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
-    to_add = {k: v for k, v in defaults.items() if k not in current_settings}
-    if to_add:
-        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
-    if not current_settings.get("categories") and "categories" not in to_add:
-        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": {"categories": defaults["categories"]}})
-
-    if await db.reviews.count_documents({}) == 0:
-        await db.reviews.insert_many([
-            {"name": "Rahul S.", "rating": 5, "text": "Super fast downloads and totally safe. Best APK store!", "photo_url": "", "approved": True, "created_at": now_iso()},
-            {"name": "Priya M.", "rating": 5, "text": "Won real cash on rummy and withdrawal was instant. Loved it.", "photo_url": "", "approved": True, "created_at": now_iso()},
-            {"name": "Aman K.", "rating": 4, "text": "Great collection of games, easy to install. Recommended.", "photo_url": "", "approved": True, "created_at": now_iso()},
-        ])
-
-    if await db.winners.count_documents({}) == 0:
-        await db.winners.insert_many([
-            {"name": "Vikram", "amount": "₹12,500", "game": "Points Rummy", "created_at": now_iso()},
-            {"name": "Sneha", "amount": "₹8,200", "game": "Pool Rummy", "created_at": now_iso()},
-            {"name": "Arjun", "amount": "₹25,000", "game": "Deals Rummy", "created_at": now_iso()},
-            {"name": "Neha", "amount": "₹5,750", "game": "Points Rummy", "created_at": now_iso()},
-        ])
-
-    if await db.codes.count_documents({}) == 0:
-        await db.codes.insert_one({"code": "WELCOME100", "reward": "₹100 bonus on first deposit", "expiry": "", "usage_limit": 0, "used_count": 0, "active": True, "created_at": now_iso()})
-
-    if await db.blog.count_documents({}) == 0:
-        await db.blog.insert_many([
-            {
-                "title": "Top 5 Rummy Tips for Beginners",
-                "slug": "top-5-rummy-tips-for-beginners",
-                "excerpt": "New to rummy? Here are five simple tips to help you start winning more hands.",
-                "content": "Rummy is a game of skill as much as luck. Start by sorting your hand into potential sequences and sets, prioritize pure sequences early, watch what opponents discard, don't hold onto high-value cards too long, and practice with free tables before playing for cash.",
-                "cover_url": "https://images.unsplash.com/photo-1541278107931-e006523892df?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
-                "published": True,
-                "category": "Guides",
-                "tags": ["rummy", "tips", "beginners"],
-                "author": "YONO GAMES Team",
-                "scheduled_at": "",
-                "seo_title": "Top 5 Rummy Tips for Beginners | YONO GAMES",
-                "meta_description": "Learn five essential rummy tips to improve your game and win more hands as a beginner.",
-                "keywords": "rummy tips, rummy for beginners, how to play rummy",
-                "focus_keyword": "rummy tips for beginners",
-                "og_image": "",
-                "noindex": False,
-                "created_at": now_iso(),
-            },
-            {
-                "title": "How to Safely Download and Install APK Files",
-                "slug": "how-to-safely-download-and-install-apk-files",
-                "excerpt": "A quick guide to downloading APKs safely and avoiding common installation errors.",
-                "content": "Always download APKs from a trusted source, check that the app shows a verified badge, enable 'Install from unknown sources' only for the app you're installing from, and keep Google Play Protect turned on for an extra layer of security.",
-                "cover_url": "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
-                "published": True,
-                "category": "Tutorials",
-                "tags": ["apk", "android", "safety"],
-                "author": "YONO GAMES Team",
-                "scheduled_at": "",
-                "seo_title": "How to Safely Download and Install APK Files | YONO GAMES",
-                "meta_description": "Follow this quick guide to download and install APK files safely on your Android device.",
-                "keywords": "apk download, install apk safely, android apk guide",
-                "focus_keyword": "download apk safely",
-                "og_image": "",
-                "noindex": False,
-                "created_at": now_iso(),
-            },
-            {
-                "title": "What's New This Month: App Updates & Releases",
-                "slug": "whats-new-this-month-app-updates-releases",
-                "excerpt": "A roundup of the latest app updates and new releases on the store this month.",
-                "content": "This month we rolled out performance improvements across our top titles, added new levels to several puzzle games, and welcomed a handful of new apps to the store. Check the app list for the latest versions and whats-new notes.",
-                "cover_url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?crop=entropy&cs=srgb&fm=jpg&w=800&q=80",
-                "published": True,
-                "category": "News",
-                "tags": ["updates", "news"],
-                "author": "YONO GAMES Team",
-                "scheduled_at": "",
-                "seo_title": "What's New This Month: App Updates & Releases | YONO GAMES",
-                "meta_description": "See the latest app updates and new releases added to YONO GAMES this month.",
-                "keywords": "app updates, new apk releases, whats new",
-                "focus_keyword": "app updates this month",
-                "og_image": "",
-                "noindex": False,
-                "created_at": now_iso(),
-            },
-        ])
-        logger.info("Seeded sample blog posts")
-
 
 @app.on_event("startup")
 async def on_startup():
@@ -1725,26 +1444,14 @@ async def on_startup():
         logger.info("Emergent Object Storage ready")
     except Exception as e:
         logger.error("Object storage init failed: %s", e)
-    try:
-        uid = await asyncio.to_thread(
-            fbs.ensure_admin_user,
-            os.environ["ADMIN_EMAIL"],
-            os.environ["ADMIN_PASSWORD"],
-        )
-        logger.info("Firebase admin ensured: %s", uid)
-    except Exception as e:
-        logger.error("Failed to ensure Firebase admin user: %s", e)
-
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
 
-
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap_redirect():
     return RedirectResponse(url=f"{SITE_URL}/api/sitemap.xml", status_code=301)
-
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_root():
@@ -1754,9 +1461,7 @@ async def robots_root():
         headers={"Cache-Control": "public, max-age=3600"},
     )
 
-
 PRIVATE_PATH_PREFIXES = ("/admin", "/apps-manager")
-
 
 @app.middleware("http")
 async def noindex_private_routes(request: Request, call_next):
@@ -1767,7 +1472,6 @@ async def noindex_private_routes(request: Request, call_next):
         response.headers["Cache-Control"] = "no-store"
     return response
 
-
 app.include_router(api_router)
 
 app.add_middleware(
@@ -1777,4 +1481,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
