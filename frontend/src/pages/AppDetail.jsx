@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
@@ -37,28 +37,52 @@ const Stat = ({ icon: Icon, label, value }) => (
 
 export default function AppDetail() {
   const { id, slug } = useParams();
+  const location = useLocation();
   const key = slug || id;
   const navigate = useNavigate();
-  const [app, setApp] = useState(null);
+
+  // INSTANT LOAD MAGIC: Homepage ya Cache se data instantly uthao
+  const getInstantData = () => {
+    if (location.state?.app) return location.state.app;
+    try {
+      const cache = localStorage.getItem("yono_apps_perm_cache");
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
+        return list.find(a => a.slug === key || String(a.id) === String(key)) || null;
+      }
+    } catch(e) {}
+    return null;
+  };
+
+  const instantApp = getInstantData();
+  const [app, setApp] = useState(instantApp);
   const [related, setRelated] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Agar instant data mil gaya to loading screen kabhi dikhegi hi nahi (0s delay)
+  const [loading, setLoading] = useState(!instantApp); 
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setLoading(true);
-    setRelated([]);
+    if (!app) setLoading(true);
+    setNotFound(false);
+
+    // Background update without showing spinner
     api
       .get(`/apps/${key}`)
       .then((res) => {
         setApp(res.data);
+        setLoading(false);
         api.get(`/apps/${key}/related`, { params: { limit: 6 } })
           .then((r) => setRelated(r.data || []))
           .catch(() => {});
       })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!app) setNotFound(true);
+        setLoading(false);
+      });
   }, [key]);
 
   const handleDownload = () => {
@@ -77,9 +101,7 @@ export default function AppDetail() {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
       }
-    } catch (e) {
-      /* user cancelled */
-    }
+    } catch (e) {}
   };
 
   if (loading) {
@@ -129,6 +151,7 @@ export default function AppDetail() {
             answer: `Yes, ${app.name} APK download is completely free on newyono.games.` },
         ]}
       />
+      
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E5E7EB] bg-white/85 px-4 py-3 backdrop-blur-xl">
         <button onClick={() => navigate(-1)} data-testid="detail-back" className="flex items-center gap-1 text-sm font-medium text-[#555555]">
@@ -144,6 +167,7 @@ export default function AppDetail() {
           { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
           { name: app.name, url: `/${app.slug || app.id}` },
         ]} />
+        
         {/* App head */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -153,7 +177,7 @@ export default function AppDetail() {
         >
           <AppIcon
             src={resolveUrl(app.icon_url)}
-            alt={`${app.name} APK icon - ${app.category || "Games"}`}
+            alt={`${app.name} APK icon`}
             className="h-[84px] w-[84px] shrink-0 rounded-[20px] ring-1 ring-black/5"
           />
           <div className="min-w-0 flex-1">
@@ -229,7 +253,7 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* Game Highlights (replaces screenshots) */}
+        {/* Game Highlights */}
         <section className="space-y-2.5" data-testid="game-highlights">
           <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
             <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
@@ -339,15 +363,12 @@ export default function AppDetail() {
             <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
               <Sparkles className="h-4 w-4 text-[#FFC107]" /> You may also like
             </h2>
-            {/* Rendered as real <a href> anchors, not buttons with onClick:
-                a click handler is invisible to crawlers, so this block passed
-                zero internal link equity between APK pages and none of the
-                related games were discoverable through it. */}
             <div className="grid grid-cols-2 gap-2.5">
               {related.slice(0, 6).map((r) => (
                 <Link
                   key={r.id}
                   to={`/${r.slug || r.id}`}
+                  state={{ app: r }}  /* Added instant load support for related apps too */
                   data-testid={`related-${r.id}`}
                   title={`${r.name} APK download`}
                   className="flex items-center gap-2.5 rounded-[16px] border border-[#E5E7EB] bg-white p-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
