@@ -56,7 +56,7 @@ export default function AppDetail() {
     return null;
   };
 
-  // INSTANT LOAD MAGIC (Related Apps - Zero Delay)
+  // INSTANT LOAD MAGIC (Related Apps)
   const getInstantRelated = (currentApp) => {
     if (!currentApp) return [];
     try {
@@ -64,13 +64,11 @@ export default function AppDetail() {
       if (cache) {
         const parsed = JSON.parse(cache);
         const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        // Same category ki apps pehle dikhao
         let rel = list.filter(a => String(a.id) !== String(currentApp.id) && a.category === currentApp.category);
         if (rel.length < 5) {
           const others = list.filter(a => String(a.id) !== String(currentApp.id) && a.category !== currentApp.category);
           rel = [...rel, ...others];
         }
-        // Duplicate apps hatao
         const uniqueRel = Array.from(new Map(rel.map(item => [item.id, item])).values());
         return uniqueRel.slice(0, 5);
       }
@@ -91,18 +89,15 @@ export default function AppDetail() {
       navigate("/");
       return;
     }
-
     window.scrollTo(0, 0);
     if (!app) setLoading(true);
     setNotFound(false);
 
-    // Background update
     api
       .get(`/apps/${key}`)
       .then((res) => {
         setApp(res.data);
         setLoading(false);
-        // Backend se bhi fresh related apps fetch kar lete hain background mein
         api.get(`/apps/${key}/related`, { params: { limit: 5 } })
           .then((r) => {
              if(r.data && r.data.length > 0) setRelated(r.data);
@@ -117,14 +112,28 @@ export default function AppDetail() {
 
   const handleDownload = () => {
     if (!app) return;
-    toast.success(`Starting download: ${app.name}`, { description: `${app.size} • v${app.version}` });
-    window.open(`${API}/apps/${app.id}/download`, "_blank");
+    toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
+    
+    // DIRECT LINK BYPASS - Main App
+    if (app.apk_url && app.apk_url.startsWith("http")) {
+      window.open(app.apk_url, "_blank"); 
+      api.get(`/apps/${app.id}/download`).catch(() => {});
+    } else {
+      window.open(`${API}/apps/${app.id}/download`, "_blank");
+    }
     setApp((p) => (p ? { ...p, downloads: (p.downloads || 0) + 1 } : p));
   };
 
   const handleRelatedDownload = (relApp) => {
-    toast.success(`Starting download: ${relApp.name}`, { description: `${relApp.size} • v${relApp.version}` });
-    window.open(`${API}/apps/${relApp.id}/download`, "_blank");
+    toast.success(`Opening: ${relApp.name}`, { description: `${relApp.size} • v${relApp.version}` });
+    
+    // DIRECT LINK BYPASS - Related Apps
+    if (relApp.apk_url && relApp.apk_url.startsWith("http")) {
+      window.open(relApp.apk_url, "_blank");
+      api.get(`/apps/${relApp.id}/download`).catch(() => {});
+    } else {
+      window.open(`${API}/apps/${relApp.id}/download`, "_blank");
+    }
   };
 
   const handleShare = async () => {
@@ -184,14 +193,6 @@ export default function AppDetail() {
         breadcrumbs={[
           { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
           { name: app.name, url: `/${app.slug || app.id}` },
-        ]}
-        faqItems={(app.faq_items && app.faq_items.length) ? app.faq_items : [
-          { question: `Is ${app.name} safe to download?`,
-            answer: `Yes. ${app.name} is malware-scanned and verified before publishing on Uonogamesapk.com.` },
-          { question: `How to install ${app.name} APK?`,
-            answer: `Download the APK, enable "Install from unknown sources" in your Android settings, then tap the APK file to install.` },
-          { question: `Is ${app.name} free to download?`,
-            answer: `Yes, ${app.name} APK download is completely free on newyono.games.` },
         ]}
       />
       
@@ -282,7 +283,7 @@ export default function AppDetail() {
           </div>
         )}
 
-        {/* Main Download button */}
+        {/* Download button */}
         <RippleButton
           onClick={handleDownload}
           data-testid="detail-download-btn"
@@ -296,14 +297,14 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* 🔥 YAHAN SHIFT KIYA HAI: NEW PREMIUM "PEOPLE ALSO LIKED" SECTION (0s Delay) */}
+        {/* NEW PREMIUM "PEOPLE ALSO LIKED" SECTION */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
               <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also liked
             </h2>
             <div className="flex flex-col gap-3">
-              {related.slice(0, 5).map((r, i) => (
+              {related.map((r, i) => (
                 <AppCard 
                   key={r.id} 
                   app={r} 
