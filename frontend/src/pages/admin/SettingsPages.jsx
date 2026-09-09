@@ -251,3 +251,6 @@ export function GeneralSettingsPage() {
     </div>
   );
 }
+
+// Yeh ek line add ki gayi hai taaki Cloudflare ko Default import mil sake
+export default GeneralSettingsPage;
