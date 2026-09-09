@@ -43,8 +43,8 @@ const SORTS = [
 export default function Store() {
   const { settings } = useSettings();
   
-  // Instant load from sessionStorage cache if available
-  const cachedData = sessionStorage.getItem("yono_apps_cache");
+  // Instant load from localStorage cache (persists across visits & tabs)
+  const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
   const [data, setData] = useState(() => cachedData ? JSON.parse(cachedData) : null);
   const [loading, setLoading] = useState(!cachedData);
   
@@ -57,7 +57,7 @@ export default function Store() {
     try {
       const res = await api.get("/apps?limit=200");
       setData(res.data);
-      sessionStorage.setItem("yono_apps_cache", JSON.stringify(res.data));
+      localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
     } catch (e) {
       if (!data) toast.error("Failed to load apps");
     } finally {
@@ -81,7 +81,7 @@ export default function Store() {
         apps: (prev.apps || []).map(bump),
         trending: (prev.trending || []).map(bump),
       };
-      sessionStorage.setItem("yono_apps_cache", JSON.stringify(updated));
+      localStorage.setItem("yono_apps_perm_cache", JSON.stringify(updated));
       return updated;
     });
   };
