@@ -7,6 +7,9 @@ import { resolveUrl } from "@/lib/api";
 import { formatCount } from "@/lib/format";
 import { getBadge } from "@/lib/badge";
 
+/**
+ * Compact horizontal APK list card (120-140px feel).
+ */
 export const AppCard = ({ app, index = 0, onDownload }) => {
   const navigate = useNavigate();
   const badge = getBadge(app);
@@ -18,7 +21,7 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4), ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
-      // YAHAN MAGIC HAI: navigate karte waqt app data seedha pass kar rahe hain
+      // 👇 YAHAN HAI MAGIC: Page change hone ke sath-sath data bhi instantly pass ho raha hai
       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
       data-testid={`app-card-${app.id}`}
       className="group flex cursor-pointer items-center gap-3 rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
