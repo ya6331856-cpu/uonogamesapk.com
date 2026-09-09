@@ -20,7 +20,7 @@ import BackupPage from "./pages/admin/BackupPage";
 import UsersSecurityPage from "./pages/admin/UsersSecurityPages";
 import AdminReviews from "./components/admin/AdminReviews";
 
-// SettingsPages.jsx se saare sub-pages nikal kar import kar rahe hain
+// SettingsPages.jsx se saare sub-pages aur main settings import ki gayi hai
 import SettingsPage, { HomepagePage, CategoriesPage, AdsPage, NotificationsPage, HeroPage } from "./pages/admin/SettingsPages";
 
 function LegacyAppRedirect() {
@@ -46,11 +46,15 @@ function App() {
                   <Route path="featured-apps" element={<FeaturedAppsPage />} />
                   <Route path="blog" element={<BlogPage />} />
                   <Route path="media-library" element={<MediaLibraryPage />} />
+                  
+                  {/* SEO routes dono formats ke liye handle kiye gaye hain */}
+                  <Route path="seo" element={<SeoDashboardPage />} />
                   <Route path="seo-dashboard" element={<SeoDashboardPage />} />
+                  
                   <Route path="backup" element={<BackupPage />} />
                   <Route path="users" element={<UsersSecurityPage />} />
                   
-                  {/* Yeh rahe aapke bache hue saare pages */}
+                  {/* Settings aur baaki sabhi sub-pages */}
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="homepage" element={<HomepagePage />} />
                   <Route path="categories" element={<CategoriesPage />} />
