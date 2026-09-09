@@ -304,7 +304,7 @@ async def get_current_admin(request: Request) -> dict:
 # ---------------------------------------------------------------------------
 # Auth routes
 # ---------------------------------------------------------------------------
-@api_router.post("/auth/login")
+@api_router.post("/admin/login")
 async def login(payload: LoginInput):
     email = payload.email.lower().strip()
     user = await db.users.find_one({"email": email})
@@ -317,7 +317,7 @@ async def login(payload: LoginInput):
     }
 
 
-@api_router.get("/auth/me")
+@api_router.get("/admin/me")
 async def me(admin: dict = Depends(get_current_admin)):
     return admin
 
