@@ -12,6 +12,7 @@ import SEOHead from "@/components/SEOHead";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
+import AppCard from "@/components/AppCard";
 import FaqSection from "@/components/FaqSection";
 import LegalSection from "@/components/LegalSection";
 import LegalDialog from "@/components/LegalDialog";
@@ -41,7 +42,6 @@ export default function AppDetail() {
   const key = slug || id;
   const navigate = useNavigate();
 
-  // INSTANT LOAD MAGIC: Homepage ya Cache se data instantly uthao
   const getInstantData = () => {
     if (location.state?.app) return location.state.app;
     try {
@@ -59,23 +59,27 @@ export default function AppDetail() {
   const [app, setApp] = useState(instantApp);
   const [related, setRelated] = useState([]);
   
-  // Agar instant data mil gaya to loading screen kabhi dikhegi hi nahi (0s delay)
   const [loading, setLoading] = useState(!instantApp); 
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
   useEffect(() => {
+    // Agar route galti se empty aa jaye, toh home bhej do
+    if (!key || key === "undefined") {
+      navigate("/");
+      return;
+    }
+
     window.scrollTo(0, 0);
     if (!app) setLoading(true);
     setNotFound(false);
 
-    // Background update without showing spinner
     api
       .get(`/apps/${key}`)
       .then((res) => {
         setApp(res.data);
         setLoading(false);
-        api.get(`/apps/${key}/related`, { params: { limit: 6 } })
+        api.get(`/apps/${key}/related`, { params: { limit: 5 } })
           .then((r) => setRelated(r.data || []))
           .catch(() => {});
       })
@@ -83,13 +87,18 @@ export default function AppDetail() {
         if (!app) setNotFound(true);
         setLoading(false);
       });
-  }, [key]);
+  }, [key, navigate]);
 
   const handleDownload = () => {
     if (!app) return;
     toast.success(`Starting download: ${app.name}`, { description: `${app.size} • v${app.version}` });
     window.open(`${API}/apps/${app.id}/download`, "_blank");
     setApp((p) => (p ? { ...p, downloads: (p.downloads || 0) + 1 } : p));
+  };
+
+  const handleRelatedDownload = (relApp) => {
+    toast.success(`Starting download: ${relApp.name}`, { description: `${relApp.size} • v${relApp.version}` });
+    window.open(`${API}/apps/${relApp.id}/download`, "_blank");
   };
 
   const handleShare = async () => {
@@ -102,6 +111,15 @@ export default function AppDetail() {
         toast.success("Link copied to clipboard");
       }
     } catch (e) {}
+  };
+
+  // Smart Back Button: Agar history nahi hai (direct link kholi hai) toh Home pe jayega
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
   };
 
   if (loading) {
@@ -152,9 +170,9 @@ export default function AppDetail() {
         ]}
       />
       
-      {/* Header */}
+      {/* Header with Smart Back Button */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E5E7EB] bg-white/85 px-4 py-3 backdrop-blur-xl">
-        <button onClick={() => navigate(-1)} data-testid="detail-back" className="flex items-center gap-1 text-sm font-medium text-[#555555]">
+        <button onClick={handleBack} data-testid="detail-back" className="flex items-center gap-1 text-sm font-medium text-[#555555]">
           <ArrowLeft className="h-5 w-5" /> Back
         </button>
         <button onClick={handleShare} data-testid="detail-share" aria-label="Share" className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E5E7EB] text-[#555555]">
@@ -303,6 +321,25 @@ export default function AppDetail() {
           </section>
         )}
 
+        {/* RELATED APPS */}
+        {related.length > 0 && (
+          <section className="space-y-3 pt-3" data-testid="detail-related">
+            <h2 className="flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
+              <Sparkles className="h-5 w-5 text-[#FFC107]" /> You may also like
+            </h2>
+            <div className="flex flex-col gap-3">
+              {related.slice(0, 5).map((r, i) => (
+                <AppCard 
+                  key={r.id} 
+                  app={r} 
+                  index={i} 
+                  onDownload={() => handleRelatedDownload(r)} 
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Additional info */}
         <section className="space-y-2">
           <h2 className="font-display text-base font-bold text-[#111111]">Additional Information</h2>
@@ -353,40 +390,6 @@ export default function AppDetail() {
                   </li>
                 ))}
               </ul>
-            </div>
-          </section>
-        )}
-
-        {/* Related apps */}
-        {related.length > 0 && (
-          <section className="space-y-2.5" data-testid="detail-related">
-            <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
-              <Sparkles className="h-4 w-4 text-[#FFC107]" /> You may also like
-            </h2>
-            <div className="grid grid-cols-2 gap-2.5">
-              {related.slice(0, 6).map((r) => (
-                <Link
-                  key={r.id}
-                  to={`/${r.slug || r.id}`}
-                  state={{ app: r }}  /* Added instant load support for related apps too */
-                  data-testid={`related-${r.id}`}
-                  title={`${r.name} APK download`}
-                  className="flex items-center gap-2.5 rounded-[16px] border border-[#E5E7EB] bg-white p-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
-                >
-                  <AppIcon
-                    src={resolveUrl(r.icon_url)}
-                    alt={`${r.name} APK icon`}
-                    className="h-11 w-11 shrink-0 rounded-[12px] ring-1 ring-black/5"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-[13px] font-semibold text-[#111]">{r.name}</p>
-                    <p className="truncate text-[10px] text-[#777]">
-                      <Star className="mr-0.5 inline h-2.5 w-2.5 fill-[#FFC107] text-[#FFC107]" />
-                      {(r.rating || 4.5).toFixed(1)} · {formatCount(r.downloads)}+ dl
-                    </p>
-                  </div>
-                </Link>
-              ))}
             </div>
           </section>
         )}
