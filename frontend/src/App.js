@@ -16,11 +16,11 @@ import FeaturedAppsPage from "./pages/admin/FeaturedAppsPage";
 import BlogPage from "./pages/admin/BlogPage";
 import MediaLibraryPage from "./pages/admin/MediaLibraryPage";
 
-// Naye missing pages ko yahan import kiya gaya hai
+// Naye missing pages (Spelling fixed with 's')
 import SeoDashboardPage from "./pages/admin/SeoDashboardPage";
 import BackupPage from "./pages/admin/BackupPage";
-import SettingsPage from "./pages/admin/SettingsPage";
-import UsersSecurityPage from "./pages/admin/UsersSecurityPage";
+import SettingsPage from "./pages/admin/SettingsPages"; 
+import UsersSecurityPage from "./pages/admin/UsersSecurityPages";
 
 function LegacyAppRedirect() {
   const { id } = useParams();
