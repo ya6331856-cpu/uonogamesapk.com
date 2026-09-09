@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Pencil, Trash2, Star, BadgeCheck, Crown, Upload, Loader2, Package, Gift, ArrowUpDown, Pin } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, BadgeCheck, Crown, Upload, Loader2, Package, Gift, ArrowUpDown, Pin, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api, { resolveUrl } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
@@ -21,6 +21,8 @@ const EMPTY = {
   verified: true, category: "Games",
   description: "India's most trusted rummy & gaming platform. Play Points Rummy, Pool Rummy and Deals Rummy, join real-cash tournaments and win big. Enjoy instant withdrawals, 100% safe & secure gameplay, 24/7 support and exciting daily bonuses.",
   icon_url: "", apk_url: "",
+  // NEW THEME FIELDS ADDED HERE
+  banner_url: "", theme_color: "#FFC107",
   featured: false, featured_order: null, developer: "Uonogamesapk", package_name: "",
   min_android: "Android 5.0+",
   whats_new: "Performance improvements, new tournaments and a smoother, faster gaming experience.",
@@ -217,6 +219,21 @@ export default function AppsManager({ featuredOnly = false }) {
           <DialogHeader><DialogTitle>{editingId ? "Edit App" : "Add New App"}</DialogTitle><DialogDescription className="text-xs text-[#777777]">Upload an icon and APK, or paste URLs.</DialogDescription></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">App Name</Label><Input data-testid="form-name" value={form.name} onChange={(e) => setField("name", e.target.value)} className="rounded-xl" /></div>
+            
+            {/* 🔥 NEW PREMIUM THEME SECTION ADDED HERE 🔥 */}
+            <div className="rounded-2xl border border-[#D8B4FE] bg-[#FAF5FF] p-3 space-y-3">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-[#7E22CE]"><Sparkles className="h-3.5 w-3.5" /> Premium Theme Settings</p>
+              <FileUpload label="App Background Banner (Optional)" testId="upload-banner" accept="image/*" value={form.banner_url} isImage onUploaded={(u) => setField("banner_url", u)} />
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#555555]">Banner URL</Label><Input data-testid="form-banner-url" value={form.banner_url || ""} onChange={(e) => setField("banner_url", e.target.value)} placeholder="Leave empty for standard design" className="rounded-xl bg-white text-xs" /></div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#555555]">Theme Color</Label>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={form.theme_color || "#FFC107"} onChange={(e) => setField("theme_color", e.target.value)} className="h-9 w-16 cursor-pointer rounded bg-white p-1 shadow-sm" />
+                  <span className="text-xs text-gray-500">Pick a color for the download button</span>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-[#FFE082] bg-[#FFFBEB] p-3">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-[#B45309]"><Gift className="h-3.5 w-3.5" /> Rummy Rewards (shown on the app)</p>
               <div className="grid grid-cols-2 gap-3">
