@@ -1141,7 +1141,7 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
                 d.pop("_id", None)
                 docs.append(d)
             if docs:
-                await db[coll].insert_many(docs)
+                await db[coll].insert_memory(docs)
     if "settings" in payload and isinstance(payload["settings"], dict):
         s = dict(payload["settings"])
         s.pop("_id", None)
@@ -1452,11 +1452,11 @@ DEFAULT_FAQS = [
     {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
     {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
     {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
-    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
+    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over yourреди — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
     {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
     {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (uonogamesapk.com) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
     {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
-    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
+    {"question": "How often is the APK updated?", "answer": "The APKs are updated continuously as developer releases come out."},
 ]
 
 async def seed():
@@ -1604,50 +1604,5 @@ async def on_startup():
         await asyncio.to_thread(obs.init_storage)
         logger.info("Emergent Object Storage ready")
     except Exception as e:
-        logger.error("Object storage init failed: %s", e)
-    try:
-        uid = await asyncio.to_thread(
-            fbs.ensure_admin_user,
-            os.environ["ADMIN_EMAIL"],
-            os.environ["ADMIN_PASSWORD"],
-        )
-        logger.info("Firebase admin ensured: %s", uid)
-    except Exception as e:
-        logger.error("Failed to ensure Firebase admin user: %s", e)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
-
-@app.get("/sitemap.xml", include_in_schema=False)
-async def sitemap_redirect():
-    return RedirectResponse(url=f"{SITE_URL}/api/sitemap.xml", status_code=301)
-
-@app.get("/robots.txt", include_in_schema=False)
-async def robots_root():
-    return Response(
-        content=ROBOTS_TXT,
-        media_type="text/plain",
-        headers={"Cache-Control": "public, max-age=3600"},
-    )
-
-PRIVATE_PATH_PREFIXES = ("/admin", "/apps-manager")
-
-@app.middleware("http")
-async def noindex_private_routes(request: Request, call_next):
-    response = await call_next(request)
-    path = request.url.path.rstrip("/") or "/"
-    if any(path == pfx or path.startswith(pfx + "/") for pfx in PRIVATE_PATH_PREFIXES):
-        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
-        response.headers["Cache-Control"] = "no-store"
-    return response
-
-app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        logger.error("Object storage init storage failed: %s", e)
+    default_settings_doc = await get_settings_doc()
