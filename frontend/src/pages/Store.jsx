@@ -1,334 +1,400 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X } from "lucide-react";
+import {
+  ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
+  ShieldCheck, HardDrive, Tag, Smartphone, Building2, Sparkles,
+  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
 import SEOHead from "@/components/SEOHead";
-import { useSettings, sectionEnabled } from "@/context/SettingsContext";
-import Header from "@/components/Header";
-import WelcomeTypewriter from "@/components/WelcomeTypewriter";
-import FeaturedApps from "@/components/FeaturedApps";
-import AppCard from "@/components/AppCard";
-import TrendingRow from "@/components/TrendingRow";
-import RummyFeatures from "@/components/RummyFeatures";
-import AnimatedCounter from "@/components/AnimatedCounter";
-import { StoreSkeleton } from "@/components/Skeletons";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import AppIcon from "@/components/AppIcon";
+import RippleButton from "@/components/RippleButton";
+import AppCard from "@/components/AppCard"; // Humne yahan AppCard import kar liya
 import FaqSection from "@/components/FaqSection";
 import LegalSection from "@/components/LegalSection";
 import LegalDialog from "@/components/LegalDialog";
 import SiteFooter from "@/components/SiteFooter";
-import AnnouncementBar from "@/components/AnnouncementBar";
-import LiveWinners from "@/components/LiveWinners";
-import ReviewsSection from "@/components/ReviewsSection";
-import RedeemBox from "@/components/RedeemBox";
-import AdSlot from "@/components/AdSlot";
-import { Input } from "@/components/ui/input";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { formatCount, formatFull } from "@/lib/format";
 
-function normalize(s) {
-  return String(s || "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "");
-}
-
-const SORTS = [
-  { value: "downloads", label: "Most Downloaded" },
-  { value: "rating", label: "Top Rated" },
-  { value: "newest", label: "Newest" },
+const GAME_HIGHLIGHTS = [
+  { icon: Zap, title: "Smooth 60 FPS", desc: "Optimized for buttery-smooth gameplay on all devices." },
+  { icon: Wifi, title: "Online & Offline", desc: "Play anywhere, with or without an internet connection." },
+  { icon: RefreshCw, title: "Regular Updates", desc: "Fresh content, levels and improvements added often." },
+  { icon: Trophy, title: "Rewards & Leaderboards", desc: "Compete, earn rewards and climb the rankings." },
+  { icon: Lock, title: "Safe & Secure", desc: "Malware-scanned and verified for a worry-free install." },
+  { icon: Gamepad2, title: "Easy Controls", desc: "Intuitive touch controls that are simple to master." },
 ];
 
-export default function Store() {
-  const { settings } = useSettings();
+const Stat = ({ icon: Icon, label, value }) => (
+  <div className="flex min-w-0 flex-1 flex-col items-center rounded-[16px] border border-[#E5E7EB] bg-white px-2 py-3 text-center shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
+    <Icon className="h-4 w-4 text-[#FFB300]" />
+    <span className="mt-1 truncate font-display text-[13px] font-bold text-[#111111]">{value}</span>
+    <span className="text-[10px] text-[#999999]">{label}</span>
+  </div>
+);
+
+export default function AppDetail() {
+  const { id, slug } = useParams();
+  const location = useLocation();
+  const key = slug || id;
+  const navigate = useNavigate();
+
+  // INSTANT LOAD MAGIC
+  const getInstantData = () => {
+    if (location.state?.app) return location.state.app;
+    try {
+      const cache = localStorage.getItem("yono_apps_perm_cache");
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
+        return list.find(a => a.slug === key || String(a.id) === String(key)) || null;
+      }
+    } catch(e) {}
+    return null;
+  };
+
+  const instantApp = getInstantData();
+  const [app, setApp] = useState(instantApp);
+  const [related, setRelated] = useState([]);
   
-  // Instant load from localStorage cache (persists across visits & tabs)
-  const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
-  const [data, setData] = useState(() => cachedData ? JSON.parse(cachedData) : null);
-  const [loading, setLoading] = useState(!cachedData);
-  
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-  const [sort, setSort] = useState("downloads");
+  const [loading, setLoading] = useState(!instantApp); 
+  const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  const fetchApps = async () => {
-    try {
-      const res = await api.get("/apps?limit=200");
-      setData(res.data);
-      localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
-    } catch (e) {
-      if (!data) toast.error("Failed to load apps");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchApps();
-  }, []);
+    window.scrollTo(0, 0);
+    if (!app) setLoading(true);
+    setNotFound(false);
 
-  const handleDownload = (app) => {
+    api
+      .get(`/apps/${key}`)
+      .then((res) => {
+        setApp(res.data);
+        setLoading(false);
+        api.get(`/apps/${key}/related`, { params: { limit: 5 } })
+          .then((r) => setRelated(r.data || []))
+          .catch(() => {});
+      })
+      .catch(() => {
+        if (!app) setNotFound(true);
+        setLoading(false);
+      });
+  }, [key]);
+
+  const handleDownload = () => {
+    if (!app) return;
     toast.success(`Starting download: ${app.name}`, { description: `${app.size} • v${app.version}` });
     window.open(`${API}/apps/${app.id}/download`, "_blank");
-    setData((prev) => {
-      if (!prev) return prev;
-      const bump = (a) => (a.id === app.id ? { ...a, downloads: a.downloads + 1 } : a);
-      const updated = {
-        ...prev,
-        featured: (prev.featured || []).map(bump),
-        apps: (prev.apps || []).map(bump),
-        trending: (prev.trending || []).map(bump),
-      };
-      localStorage.setItem("yono_apps_perm_cache", JSON.stringify(updated));
-      return updated;
-    });
+    setApp((p) => (p ? { ...p, downloads: (p.downloads || 0) + 1 } : p));
   };
 
-  const categories = useMemo(() => {
-    if (!data) return ["All"];
-    const set = new Set();
-    [...(data.featured || []), ...(data.apps || [])].forEach((a) => a.category && set.add(a.category));
-    return ["All", ...Array.from(set)];
-  }, [data]);
+  // Related apps ke download button ke liye alag function
+  const handleRelatedDownload = (relApp) => {
+    toast.success(`Starting download: ${relApp.name}`, { description: `${relApp.size} • v${relApp.version}` });
+    window.open(`${API}/apps/${relApp.id}/download`, "_blank");
+  };
 
-  const deferredSearch = useDeferredValue(search);
-
-  const filtered = useMemo(() => {
-    if (!data) return [];
-    const q = normalize(deferredSearch);
-    const hasFilter = category !== "All" || q;
-    let list = hasFilter ? [...(data.featured || []), ...(data.apps || [])] : [...(data.apps || [])];
-    if (category !== "All") list = list.filter((a) => a.category === category);
-
-    if (q) {
-      const scored = [];
-      for (const a of list) {
-        const name = normalize(a.name);
-        const haystack = `${name} ${normalize(a.slug)} ${normalize(a.category)} ${normalize(a.developer)}`;
-        let score;
-        if (name === q) score = 0;
-        else if (name.startsWith(q)) score = 1;
-        else if (name.includes(q)) score = 2;
-        else if (haystack.includes(q)) score = 3;
-        else continue;
-        scored.push({ a, score });
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: app?.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
       }
-      scored.sort((x, y) => x.score - y.score || (y.a.downloads || 0) - (x.a.downloads || 0));
-      list = scored.map((s) => s.a);
-      return list;
-    }
-
-    if (sort === "downloads") list.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-    else if (sort === "rating") list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    else if (sort === "newest") list.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-    return list;
-  }, [data, category, deferredSearch, sort]);
-
-  const totalDownloads = useMemo(() => {
-    if (!data) return 0;
-    return [...(data.featured || []), ...(data.apps || [])].reduce((s, a) => s + (a.downloads || 0), 0);
-  }, [data]);
-
-  const trending = useMemo(() => {
-    if (!data) return [];
-    const t = data.trending && data.trending.length ? data.trending : [...(data.featured || []), ...(data.apps || [])];
-    return t.slice().sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 8);
-  }, [data]);
-
-  const isDefaultView = !search.trim() && category === "All";
-  const showTrendingBreak = isDefaultView && filtered.length > 4;
-  const hero = settings?.hero || {};
-  const stats = settings?.stats || {};
-  const tg = settings?.telegram || {};
-
-  const en = (id) => sectionEnabled(settings, id);
-
-  const appListSection = (
-    <section key="apps" id="apps" className="space-y-3" data-testid="apps-section">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-[#FFC107]" />
-        <h2 className="font-display text-base font-bold text-[#111111]">
-          {isDefaultView ? "All Apps" : "Results"}
-        </h2>
-        <span className="text-xs text-[#999999]" aria-live="polite">
-          ({filtered.length}{isDefaultView ? "" : filtered.length === 1 ? " match" : " matches"})
-        </span>
-        <div className="ml-auto">
-          <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger data-testid="sort-select" className="h-8 w-auto gap-1 rounded-full border-[#E5E7EB] bg-white px-3 text-xs font-medium text-[#555555] focus:ring-[#FFC107]">
-              <ArrowDownWideNarrow className="h-3.5 w-3.5 text-[#999999]" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORTS.map((s) => (
-                <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div data-testid="empty-state" className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-10 text-center">
-          <p className="text-sm text-[#777777]">No apps found</p>
-        </div>
-      ) : showTrendingBreak ? (
-        <div className="space-y-5">
-          <div className="space-y-3">
-            {filtered.slice(0, 3).map((app, i) => (
-              <AppCard key={app.id} app={app} index={i} onDownload={handleDownload} />
-            ))}
-          </div>
-          <TrendingRow apps={trending} onDownload={handleDownload} />
-          <div className="space-y-3">
-            {filtered.slice(3).map((app, i) => (
-              <AppCard key={app.id} app={app} index={i + 3} onDownload={handleDownload} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((app, i) => (
-            <AppCard key={app.id} app={app} index={i} onDownload={handleDownload} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-
-  const renderers = {
-    featured: isDefaultView && en("featured") ? <FeaturedApps key="featured" apps={data?.featured || []} onDownload={handleDownload} /> : null,
-    rummy: isDefaultView && en("rummy") ? <RummyFeatures key="rummy" /> : null,
-    telegram: isDefaultView && en("telegram") && tg.enabled !== false ? (
-      <a key="telegram" href={tg.link || "https://t.me/"} target="_blank" rel="noopener noreferrer" data-testid="telegram-cta"
-        className="flex items-center gap-3 rounded-[20px] border border-[#229ED9]/20 bg-gradient-to-r from-[#229ED9]/10 to-[#229ED9]/5 p-3.5 transition-transform duration-200 active:scale-[0.98]">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#229ED9] shadow-[0_6px_16px_rgba(34,158,217,0.4)]">
-          <Send className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1">
-          <p className="font-display text-sm font-bold text-[#111111]">{tg.cta_text || "Join our Telegram"}</p>
-          <p className="text-xs text-[#777777]">{tg.sub_text || "Get instant updates & new APK releases"}{tg.member_count ? ` • ${tg.member_count} members` : ""}</p>
-        </div>
-        <span className="rounded-full bg-[#229ED9] px-3 py-1.5 text-xs font-semibold text-white">Join</span>
-      </a>
-    ) : null,
-    winners: isDefaultView && en("winners") ? <LiveWinners key="winners" config={settings?.winners_config} /> : null,
-    apps: appListSection,
-    reviews: isDefaultView && en("reviews") ? <ReviewsSection key="reviews" /> : null,
-    faq: isDefaultView && en("faq") ? <FaqSection key="faq" /> : null,
-    legal: isDefaultView && en("legal") ? <LegalSection key="legal" onOpen={setLegalId} /> : null,
+    } catch (e) {}
   };
 
-  const order = (settings?.sections || []).map((s) => s.id);
-  const finalOrder = order.includes("apps") ? order : [...order, "apps"];
+  if (loading) {
+    return (
+      <div className="app-shell flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[#FFC107]" />
+      </div>
+    );
+  }
+
+  if (notFound || !app) {
+    return (
+      <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="font-display text-lg font-bold text-[#111111]">App not found</p>
+        <RippleButton
+          onClick={() => navigate("/")}
+          data-testid="detail-back-home"
+          className="rounded-full bg-[#FFC107] px-5 py-2.5 text-sm font-bold text-[#111111]"
+        >
+          Back to Store
+        </RippleButton>
+      </div>
+    );
+  }
 
   return (
-    <div className="app-shell pb-10">
+    <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
       <SEOHead
-        title={settings?.seo?.homepage_title || "YONO GAMES - Play and Win | Premium Rummy & Games APK Store"}
-        description={settings?.seo?.homepage_description || "Download the latest Rummy and gaming APK apps for Android free. Fast, safe & verified downloads with sign-up bonuses at YONO GAMES — uonogamesapk.com"}
-        keywords={settings?.seo?.homepage_keywords || "yono games, rummy apk, teen patti apk, real cash rummy, apk download, android games, uono games apk"}
-        canonical="https://uonogamesapk.com/"
-        image="/logo-v2.png"
+        type="app"
+        title={app.seo_title || `${app.name} APK Download - Latest Version | Uonogamesapk.com`}
+        description={app.meta_description || (app.description || "").slice(0, 160) || `Download ${app.name} APK latest version for Android. Fast, safe and verified download at Uonogamesapk.com.`}
+        keywords={app.keywords || `${app.name} apk, ${app.name} download, ${app.category?.toLowerCase()} apk`}
+        canonical={`https://uonogamesapk.com/${app.slug || app.id}`}
+        image={app.og_image || app.icon_url}
+        noindex={!!app.noindex || !!app.hidden}
+        app={app}
+        breadcrumbs={[
+          { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
+          { name: app.name, url: `/${app.slug || app.id}` },
+        ]}
+        faqItems={(app.faq_items && app.faq_items.length) ? app.faq_items : [
+          { question: `Is ${app.name} safe to download?`,
+            answer: `Yes. ${app.name} is malware-scanned and verified before publishing on Uonogamesapk.com.` },
+          { question: `How to install ${app.name} APK?`,
+            answer: `Download the APK, enable "Install from unknown sources" in your Android settings, then tap the APK file to install.` },
+          { question: `Is ${app.name} free to download?`,
+            answer: `Yes, ${app.name} APK download is completely free on newyono.games.` },
+        ]}
       />
-      <AnnouncementBar config={settings?.announcement} />
-      <Header />
-      <WelcomeTypewriter />
+      
+      {/* Header */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E5E7EB] bg-white/85 px-4 py-3 backdrop-blur-xl">
+        <button onClick={() => navigate(-1)} data-testid="detail-back" className="flex items-center gap-1 text-sm font-medium text-[#555555]">
+          <ArrowLeft className="h-5 w-5" /> Back
+        </button>
+        <button onClick={handleShare} data-testid="detail-share" aria-label="Share" className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E5E7EB] text-[#555555]">
+          <Share2 className="h-4 w-4" />
+        </button>
+      </header>
 
-      {hero.enabled !== false && (
-        <div className="px-4 pt-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden rounded-[20px] border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.1)]"
-            data-testid="hero-banner"
-          >
-            <img src={resolveUrl(hero.banner_url || "/hero-banner.png")} alt={hero.headline || "Uonogamesapk.com"} className="block w-full" loading="eager" decoding="async" />
-          </motion.div>
-          {(hero.headline || hero.subtitle) && (
-            <div className="mt-3 text-center">
-              {hero.headline && <h1 className="font-display text-xl font-bold text-[#111111]">{hero.headline}</h1>}
-              {hero.subtitle && <p className="mt-0.5 text-sm text-[#777777]">{hero.subtitle}</p>}
-            </div>
-          )}
-        </div>
-      )}
-
-      {stats.enabled !== false && (
-        <div className="grid grid-cols-3 gap-2 px-4 pt-4">
-          {(stats.items || []).slice(0, 3).map((s, i) => {
-            const Icon = [Download, ShieldCheck, TrendingUp][i] || Sparkles;
-            const color = ["#FFC107", "#22C55E", "#FFB300"][i] || "#FFC107";
-            const autoVal = i === 0 ? totalDownloads : (data ? [...(data.featured || []), ...(data.apps || [])].length : 0);
-            const isAuto = s.value === "auto";
-            return (
-              <div key={i} className="rounded-[16px] border border-[#E5E7EB] bg-white p-3 text-center shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
-                <Icon className="mx-auto h-4 w-4" style={{ color }} />
-                <p className="mt-1 font-display text-base font-bold text-[#111111]">
-                  {isAuto ? <AnimatedCounter value={autoVal} /> : s.value}
-                  {s.suffix || ""}
-                </p>
-                <p className="text-[10px] text-[#777777]">{s.label}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="sticky top-[57px] z-30 bg-[#F8F9FA]/90 px-4 py-3 backdrop-blur-md">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777777]" />
-          <Input
-            data-testid="search-input"
-            type="search"
-            inputMode="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            aria-label="Search apps and games"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setSearch("")}
-            placeholder="Search apps & games..."
-            className="h-11 rounded-full border-[#E5E7EB] bg-white pl-10 pr-10 text-base shadow-[0_4px_14px_rgba(0,0,0,0.03)] focus-visible:ring-[#FFC107] sm:text-sm"
+      <main className="space-y-6 px-4 pt-4">
+        <Breadcrumbs items={[
+          { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
+          { name: app.name, url: `/${app.slug || app.id}` },
+        ]} />
+        
+        {/* App head */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-center gap-4"
+        >
+          <AppIcon
+            src={resolveUrl(app.icon_url)}
+            alt={`${app.name} APK icon`}
+            className="h-[84px] w-[84px] shrink-0 rounded-[20px] ring-1 ring-black/5"
           />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              aria-label="Clear search"
-              data-testid="search-clear"
-              className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#F1F1F1] text-[#777777] hover:bg-[#E5E7EB]"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
-          {categories.map((c) => (
-            <button key={c} data-testid={`category-${c}`} onClick={() => setCategory(c)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors duration-200 ${
-                category === c ? "bg-[#FFC107] text-[#111111] shadow-[0_4px_12px_rgba(255,193,7,0.4)]" : "border border-[#E5E7EB] bg-white text-[#555555]"
-              }`}>
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
+          <div className="min-w-0 flex-1">
+            <h1 data-testid="detail-name" className="font-display text-xl font-bold leading-tight text-[#111111]">
+              {app.name}
+            </h1>
+            {app.developer && (
+              <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#229ED9]">
+                <Building2 className="h-3.5 w-3.5" /> {app.developer}
+              </p>
+            )}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-[#FFF8E1] px-2 py-0.5 text-xs font-semibold text-[#111111]">
+                <Star className="h-3 w-3 fill-[#FFC107] text-[#FFC107]" /> {app.rating?.toFixed(1)}
+              </span>
+              {app.verified && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-[#F0FDF4] px-2 py-0.5 text-xs font-semibold text-[#22C55E]">
+                  <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                </span>
+              )}
+              <span className="rounded-full bg-[#F1F2F4] px-2 py-0.5 text-xs font-medium text-[#555555]">{app.category}</span>
+            </div>
+          </div>
+        </motion.div>
 
-      <main className="space-y-5 px-4 pt-1">
-        {loading ? (
-          <StoreSkeleton />
-        ) : (
-          <>
-            {finalOrder.map((id) => renderers[id]).filter(Boolean)}
-            {isDefaultView && en("winners") && <RedeemBox />}
-            {isDefaultView && <AdSlot ads={settings?.ads} />}
-          </>
+        {/* Stats */}
+        <div className="flex gap-2">
+          <Stat icon={Download} label="Downloads" value={`${formatCount(app.downloads)}+`} />
+          <Stat icon={HardDrive} label="Size" value={app.size} />
+          <Stat icon={Tag} label="Version" value={app.version} />
+          <Stat icon={Smartphone} label="Requires" value={(app.min_android || "").replace("Android ", "")} />
+        </div>
+
+        {/* Rummy rewards highlight */}
+        {(app.signup_bonus || app.min_withdraw) && (
+          <div className="flex gap-2" data-testid="detail-rewards">
+            {app.signup_bonus && (
+              <div className="flex flex-1 items-center gap-2.5 rounded-[16px] border border-[#FFE082] bg-gradient-to-br from-[#FFF8E1] to-[#FFFBEB] px-3 py-3 shadow-[0_6px_20px_rgba(255,193,7,0.12)]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FFC107] to-[#FF9800] shadow-sm">
+                  <Gift className="h-4 w-4 text-white" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-[#B45309]">Sign-up Bonus</p>
+                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{app.signup_bonus}</p>
+                </div>
+              </div>
+            )}
+            {app.min_withdraw && (
+              <div className="flex flex-1 items-center gap-2.5 rounded-[16px] border border-[#BBF7D0] bg-gradient-to-br from-[#F0FDF4] to-white px-3 py-3 shadow-[0_6px_20px_rgba(34,197,94,0.1)]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16A34A] shadow-sm">
+                  <Wallet className="h-4 w-4 text-white" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-[#15803D]">Min. Withdraw</p>
+                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{app.min_withdraw}</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
+
+        {/* Download button */}
+        <RippleButton
+          onClick={handleDownload}
+          data-testid="detail-download-btn"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-4 text-base font-bold text-[#111111] shadow-[0_10px_28px_rgba(255,193,7,0.5)]"
+        >
+          <Download className="h-5 w-5" /> Download APK ({app.size})
+        </RippleButton>
+
+        <div className="flex items-center justify-center gap-1.5 text-xs text-[#999999]">
+          <ShieldCheck className="h-3.5 w-3.5 text-[#22C55E]" />
+          Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
+        </div>
+
+        {/* Game Highlights */}
+        <section className="space-y-2.5" data-testid="game-highlights">
+          <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
+            <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
+          </h2>
+          <p className="text-sm leading-relaxed text-[#555555]">
+            {app.name} is a premium {app.category?.toLowerCase()} experience built for smooth, lag-free
+            play on Android. Enjoy stunning visuals, responsive controls and hours of engaging gameplay —
+            all in a lightweight {app.size} package that installs in seconds. Whether you are a casual
+            player or a hardcore gamer, {app.name} delivers a polished, addictive experience you will keep
+            coming back to.
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {GAME_HIGHLIGHTS.map((h) => (
+              <div
+                key={h.title}
+                className="flex items-start gap-2.5 rounded-[16px] border border-[#E5E7EB] bg-white p-3 shadow-[0_6px_20px_rgba(0,0,0,0.03)]"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#FFF8E1]">
+                  <h.icon className="h-4 w-4 text-[#FFB300]" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-[13px] font-semibold leading-tight text-[#111111]">{h.title}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-[#777777]">{h.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Description */}
+        {app.description && (
+          <section className="space-y-2">
+            <h2 className="font-display text-base font-bold text-[#111111]">About this app</h2>
+            <p data-testid="detail-description" className="text-sm leading-relaxed text-[#555555]">{app.description}</p>
+          </section>
+        )}
+
+        {/* What's new */}
+        {app.whats_new && (
+          <section className="space-y-2">
+            <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
+              <Sparkles className="h-4 w-4 text-[#FFC107]" /> What&apos;s New
+            </h2>
+            <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 text-sm leading-relaxed text-[#555555] shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
+              {app.whats_new}
+            </div>
+          </section>
+        )}
+
+        {/* 🔥 YAHAN SHIFT KIYA HAI: RELATED APPS SECTION (UPGRADED TO APPCARD) */}
+        {related.length > 0 && (
+          <section className="space-y-3 pt-3" data-testid="detail-related">
+            <h2 className="flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
+              <Sparkles className="h-5 w-5 text-[#FFC107]" /> You may also like
+            </h2>
+            <div className="flex flex-col gap-3">
+              {related.slice(0, 5).map((r, i) => (
+                <AppCard 
+                  key={r.id} 
+                  app={r} 
+                  index={i} 
+                  onDownload={() => handleRelatedDownload(r)} 
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Additional info */}
+        <section className="space-y-2">
+          <h2 className="font-display text-base font-bold text-[#111111]">Additional Information</h2>
+          <div className="divide-y divide-[#E5E7EB] rounded-[18px] border border-[#E5E7EB] bg-white px-4 shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
+            {[
+              ["Version", app.version],
+              ["Size", app.size],
+              ["Category", app.category],
+              ["Requires", app.min_android],
+              ["Developer", app.developer || "—"],
+              ["Package", app.package_name || "—"],
+              ["Updated", (app.created_at || "").slice(0, 10) || "—"],
+              ["Requirements", app.requirements || "—"],
+              ["Sign-up Bonus", app.signup_bonus || "—"],
+              ["Min. Withdraw", app.min_withdraw || "—"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between py-2.5 text-sm">
+                <span className="text-[#777777]">{k}</span>
+                <span className="max-w-[60%] truncate font-medium text-[#111111]">{v}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Features */}
+        {app.features?.length > 0 && (
+          <section className="space-y-2" data-testid="detail-features">
+            <h2 className="font-display text-base font-bold text-[#111111]">Features</h2>
+            <div className="flex flex-wrap gap-2">
+              {app.features.map((f, i) => (
+                <span key={i} className="rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-medium text-[#555555] shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+                  {f}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Permissions */}
+        {app.permissions?.length > 0 && (
+          <section className="space-y-2" data-testid="detail-permissions">
+            <h2 className="font-display text-base font-bold text-[#111111]">Permissions</h2>
+            <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
+              <ul className="space-y-1.5">
+                {app.permissions.map((p, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-[#555555]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#FFC107]" /> {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
+        <FaqSection />
+        <LegalSection onOpen={setLegalId} />
       </main>
+
+      {/* Sticky bottom download bar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] border-t border-[#E5E7EB] bg-white/90 p-3 backdrop-blur-xl">
+        <RippleButton
+          onClick={handleDownload}
+          data-testid="detail-download-sticky"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-3.5 text-sm font-bold text-[#111111] shadow-[0_8px_20px_rgba(255,193,7,0.45)]"
+        >
+          <Download className="h-5 w-5" /> Download APK
+        </RippleButton>
+      </div>
 
       <SiteFooter onOpenLegal={setLegalId} />
       <LegalDialog openId={legalId} onClose={() => setLegalId(null)} />
