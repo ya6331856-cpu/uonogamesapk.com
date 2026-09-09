@@ -1,18 +1,26 @@
-import { PageHeader } from "@/components/admin/adminUI";
-import AdminReviews from "@/components/admin/AdminReviews";
-import AdminFaqs from "@/components/admin/AdminFaqs";
-import AdminWinners from "@/components/admin/AdminWinners";
-import AdminCodes from "@/components/admin/AdminCodes";
+import React from "react";
+import { Outlet } from "react-router-dom";
 
-export function ReviewsPage() {
-  return <div><PageHeader title="Reviews" desc="Approve, edit and manage user testimonials." /><AdminReviews /></div>;
+class SafeBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6 m-4 bg-red-50 border border-red-200 rounded-xl text-red-600">
+          <h3 className="font-bold mb-2">Wrapper Crashed</h3>
+          <p className="text-xs font-mono break-all">{String(this.state.error.message)}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
-export function FaqPage() {
-  return <div><PageHeader title="FAQ" desc="Add, edit, delete and reorder FAQs." /><AdminFaqs /></div>;
-}
-export function LiveWinnersPage() {
-  return <div><PageHeader title="Live Winners" desc="Manage the auto-scrolling winners ticker." /><AdminWinners /></div>;
-}
-export function RedeemCodesPage() {
-  return <div><PageHeader title="Redeem Codes" desc="Create promo codes with expiry and usage limits." /><AdminCodes /></div>;
+
+export default function WrapperPages() {
+  return (
+    <SafeBoundary>
+      <Outlet />
+    </SafeBoundary>
+  );
 }
