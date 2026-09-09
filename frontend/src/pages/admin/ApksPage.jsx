@@ -28,7 +28,6 @@ function ApksPageInner() {
     try {
       setLoading(true);
       const res = await api.get("/apps?include_hidden=true");
-      // Backend returns an object with { apps, featured, trending, total } or an array
       const appData = res.data.apps || res.data || [];
       setApps(appData);
     } catch (err) {
@@ -42,10 +41,10 @@ function ApksPageInner() {
     fetchApps();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (appId) => {
     if (!window.confirm("Are you sure you want to delete this app?")) return;
     try {
-      await api.delete(`/admin/apps/${id}`);
+      await api.delete(`/admin/apps/${appId}`);
       toast.success("App deleted successfully");
       fetchApps();
     } catch (err) {
@@ -73,36 +72,39 @@ function ApksPageInner() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {apps.map((app) => (
-              <div key={app.id || app._id} className="py-3 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {app.icon_url ? (
-                    <img src={app.icon_url} alt="" className="w-10 h-10 rounded-lg object-cover border" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                      {app.name?.[0]}
+            {apps.map((app) => {
+              const uniqueId = app.id || app._id;
+              return (
+                <div key={uniqueId} className="py-3 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {app.icon_url ? (
+                      <img src={app.icon_url} alt="" className="w-10 h-10 rounded-lg object-cover border" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                        {app.name?.[0]}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="text-xs font-semibold text-[#111]">{app.name}</h4>
+                      <p className="text-[10px] text-[#555]">v{app.version || "1.0.0"} • {app.category || "Games"} • {app.downloads || 0} downloads</p>
                     </div>
-                  )}
-                  <div>
-                    <h4 className="text-xs font-semibold text-[#111]">{app.name}</h4>
-                    <p className="text-[10px] text-[#555]">v{app.version || "1.0.0"} • {app.category || "Games"} • {app.downloads || 0} downloads</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {app.slug && (
+                      <a href={`/${app.slug}`} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-gray-600">
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button 
+                      onClick={() => handleDelete(uniqueId)}
+                      className="p-1.5 text-red-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {app.slug && (
-                    <a href={`/${app.slug}`} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-gray-600">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                  <button 
-                    onClick={() => handleDelete(app.id || app._id)}
-                    className="p-1.5 text-red-400 hover:text-red-600 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
