@@ -352,6 +352,15 @@ def get_settings():
 def update_settings(data: dict):
     save_settings_to_file(data)
     return {"success": True, "message": "Settings saved successfully"}
+@api_router.post("/auth/login")
+@api_router.post("/admin/login")
+async def login(payload: LoginInput):
+    # aapka purana login code wahi rahega
+
+@api_router.get("/auth/me")
+@api_router.get("/admin/me")
+async def get_me(admin: dict = Depends(get_current_admin)):
+    return admin
     
 
 # ---------------------------------------------------------------------------
