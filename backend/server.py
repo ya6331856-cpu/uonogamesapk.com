@@ -320,7 +320,39 @@ async def login(payload: LoginInput):
 @api_router.get("/admin/me")
 async def me(admin: dict = Depends(get_current_admin)):
     return admin
+import json
+import os
 
+SETTINGS_FILE = "settings.json"
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def save_settings_to_file(data):
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+# Get Settings Routes
+@api_router.get("/settings")
+@api_router.get("/admin/settings")
+def get_settings():
+    return load_settings()
+
+# Save/Update Settings Routes
+@api_router.post("/settings")
+@api_router.post("/admin/settings")
+@api_router.put("/settings")
+@api_router.put("/admin/settings")
+def update_settings(data: dict):
+    save_settings_to_file(data)
+    return {"success": True, "message": "Settings saved successfully"}
+    
 
 # ---------------------------------------------------------------------------
 # Public app routes
