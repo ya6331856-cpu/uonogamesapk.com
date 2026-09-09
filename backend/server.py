@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -20,14 +21,13 @@ from fastapi.responses import FileResponse, RedirectResponse, Response, JSONResp
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
-import json
 
 import firebase_service as fbs
 import object_storage as obs
 import image_utils as imu
 
 # ---------------------------------------------------------------------------
-# Database
+# Database & Environment Setup
 # ---------------------------------------------------------------------------
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -39,12 +39,8 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 
-# ---------------------------------------------------------------------------
-# App / Router Setup (Must be initialized before any route decorators)
-# ---------------------------------------------------------------------------
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
-
 
 @app.get("/health")
 async def health_check():
@@ -58,10 +54,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
-
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
-
 
 # ---------------------------------------------------------------------------
 # Auth helpers & Password hashing
@@ -69,10 +63,8 @@ def now_iso() -> str:
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-
 
 def create_access_token(user_id: str, email: str) -> str:
     payload = {
@@ -83,9 +75,8 @@ def create_access_token(user_id: str, email: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-
 # ---------------------------------------------------------------------------
-# Force Create Admin Route (Registered properly under api_router)
+# Force Create Admin Route
 # ---------------------------------------------------------------------------
 @api_router.get("/admin/force-create")
 async def force_create_admin():
@@ -110,7 +101,6 @@ async def force_create_admin():
             "created_at": now_iso()
         })
         return {"success": True, "message": "Admin user created successfully!"}
-
 
 class AppModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
@@ -153,7 +143,6 @@ class AppModel(BaseModel):
     faq_items: List[dict] = Field(default_factory=list)
     created_at: str = Field(default_factory=now_iso)
 
-
 class AppCreate(BaseModel):
     name: str
     version: str = "1.0.0"
@@ -190,7 +179,6 @@ class AppCreate(BaseModel):
     og_image: str = ""
     noindex: bool = False
     faq_items: List[dict] = Field(default_factory=list)
-
 
 class AppUpdate(BaseModel):
     name: Optional[str] = None
@@ -229,40 +217,33 @@ class AppUpdate(BaseModel):
     noindex: Optional[bool] = None
     faq_items: Optional[List[dict]] = None
 
-
 class LoginInput(BaseModel):
     email: str
     password: str
-
 
 class FaqCreate(BaseModel):
     question: str
     answer: str
     order: Optional[int] = None
 
-
 class FaqUpdate(BaseModel):
     question: Optional[str] = None
     answer: Optional[str] = None
     order: Optional[int] = None
 
-
 class ReorderInput(BaseModel):
     ids: List[str]
-
 
 def serialize_app(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     return doc
 
-
 def to_object_id(app_id: str) -> ObjectId:
     try:
         return ObjectId(app_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid app id")
-
 
 async def get_current_admin(request: Request) -> dict:
     token = request.cookies.get("access_token")
@@ -301,9 +282,8 @@ async def get_current_admin(request: Request) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-
 # ---------------------------------------------------------------------------
-# Auth routes (Supporting both /auth/ and /admin/ prefixes to prevent 404s)
+# Auth routes (Supporting both /admin/ and /auth/ prefixes)
 # ---------------------------------------------------------------------------
 @api_router.post("/auth/login")
 @api_router.post("/admin/login")
@@ -318,15 +298,13 @@ async def login(payload: LoginInput):
         "user": {"id": str(user["_id"]), "email": email, "name": user.get("name", "Admin"), "role": user.get("role", "admin")},
     }
 
-
 @api_router.get("/auth/me")
 @api_router.get("/admin/me")
 async def me(admin: dict = Depends(get_current_admin)):
     return admin
 
-
 # ---------------------------------------------------------------------------
-# Settings & File Persistence
+# Settings configuration and file storage persistence
 # ---------------------------------------------------------------------------
 SETTINGS_FILE = "settings.json"
 SETTINGS_ID = "site"
@@ -409,30 +387,26 @@ async def get_settings_doc() -> dict:
     doc.pop("_id", None)
     return doc
 
-# Get Settings Routes
 @api_router.get("/settings")
 @api_router.get("/admin/settings")
-async def get_settings():
+async def get_settings_route():
     return await get_settings_doc()
 
-# Save/Update Settings Routes
 @api_router.post("/settings")
 @api_router.post("/admin/settings")
 @api_router.put("/settings")
 @api_router.put("/admin/settings")
-async def update_settings(payload: dict, admin: dict = Depends(get_current_admin)):
+async def update_settings_route(payload: dict, admin: dict = Depends(get_current_admin)):
     payload.pop("_id", None)
     save_settings_to_file(payload)
     await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": payload}, upsert=True)
     return await get_settings_doc()
-
 
 # ---------------------------------------------------------------------------
 # Public app routes
 # ---------------------------------------------------------------------------
 def _invert_ts(ts: str) -> tuple:
     return tuple(-ord(c) for c in (ts or ""))
-
 
 @api_router.get("/apps")
 async def list_apps(search: Optional[str] = None, category: Optional[str] = None, include_hidden: bool = False):
@@ -443,7 +417,7 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
         s = search.lower()
         apps = [a for a in apps if s in (a.get("name", "").lower())]
     if category and category != "All":
-        apps = [a for a in apps if a.get("category"] == category]
+        apps = [a for a in apps if a.get("category") == category]
 
     featured = sorted(
         [a for a in apps if a.get("featured")],
@@ -465,14 +439,12 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
     )
     return {"featured": featured, "apps": regular, "trending": trending, "total": len(apps)}
 
-
 @api_router.get("/apps/slug/{slug}")
 async def get_app_by_slug(slug: str):
     doc = await fbs.get_app_by_slug(slug)
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
     return doc
-
 
 @api_router.get("/apps/{app_id}")
 async def get_app(app_id: str):
@@ -482,7 +454,6 @@ async def get_app(app_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
     return doc
-
 
 @api_router.get("/apps/{app_id}/download")
 async def download_app(app_id: str):
@@ -515,7 +486,6 @@ async def download_app(app_id: str):
     download_name = f"{doc.get('name', 'app').replace(' ', '_')}.apk"
     return FileResponse(path=str(file_path), filename=download_name, media_type="application/vnd.android.package-archive")
 
-
 @api_router.get("/uploads/{filename}")
 async def serve_upload(filename: str):
     obs_path = obs.build_upload_path(filename)
@@ -537,7 +507,6 @@ async def serve_upload(filename: str):
         return FileResponse(path=str(file_path))
     raise HTTPException(status_code=404, detail="File not found")
 
-
 def _guess_content_type(filename: str) -> str:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     return {
@@ -546,7 +515,6 @@ def _guess_content_type(filename: str) -> str:
         "apk": "application/vnd.android.package-archive",
         "pdf": "application/pdf",
     }.get(ext, "application/octet-stream")
-
 
 # ---------------------------------------------------------------------------
 # Admin app routes
@@ -606,7 +574,6 @@ async def upload_file(
         "warning": "Persistent storage was unavailable — file saved to local disk.",
     }
 
-
 @api_router.post("/admin/apps")
 async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin)):
     doc = payload.model_dump()
@@ -614,7 +581,6 @@ async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin
     if new_doc.get("category"):
         await fbs.upsert_category(new_doc["category"])
     return new_doc
-
 
 @api_router.put("/admin/apps/{app_id}")
 async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_current_admin)):
@@ -640,16 +606,13 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
         await fbs.upsert_category(doc["category"])
     return doc
 
-
 class ReorderItem(BaseModel):
     id: str
     sort_order: int
     pinned: bool = False
 
-
 class ReorderPayload(BaseModel):
     items: List[ReorderItem]
-
 
 @api_router.patch("/admin/apps/reorder")
 async def reorder_apps(payload: ReorderPayload, admin: dict = Depends(get_current_admin)):
@@ -667,7 +630,6 @@ async def reorder_apps(payload: ReorderPayload, admin: dict = Depends(get_curren
     updated = await fbs.bulk_set_order([i.model_dump() for i in payload.items])
     return {"ok": True, "updated": updated}
 
-
 @api_router.delete("/admin/apps/{app_id}")
 async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
     ok = await fbs.delete_app(app_id)
@@ -675,11 +637,9 @@ async def delete_app(app_id: str, admin: dict = Depends(get_current_admin)):
         raise HTTPException(status_code=404, detail="App not found")
     return {"success": True}
 
-
 @api_router.get("/categories")
 async def list_categories():
     return await fbs.list_categories()
-
 
 # ---------------------------------------------------------------------------
 # Media audit / repair
@@ -694,7 +654,6 @@ def _extract_upload_filename(url: str) -> str | None:
         return url[len(prefix):].split("?")[0]
     return None
 
-
 async def _check_upload_exists(filename: str) -> bool:
     obs_path = obs.build_upload_path(filename)
     try:
@@ -704,7 +663,6 @@ async def _check_upload_exists(filename: str) -> bool:
     except Exception:
         pass
     return (UPLOAD_DIR / filename).exists()
-
 
 @api_router.get("/admin/media/audit")
 async def media_audit(admin: dict = Depends(get_current_admin)):
@@ -745,10 +703,9 @@ async def media_audit(admin: dict = Depends(get_current_admin)):
 
     return {"checked": checked, "broken_count": len(broken), "broken": broken}
 
-
 @api_router.post("/admin/media/repair")
 async def media_repair(admin: dict = Depends(get_current_admin)):
-    audit = await media_audit(admin=admin)  # type: ignore[arg-type]
+    audit = await media_audit(admin=admin)
     cleared = 0
     for issue in audit["broken"]:
         if issue["kind"] == "app":
@@ -767,9 +724,7 @@ async def media_repair(admin: dict = Depends(get_current_admin)):
             cleared += 1
     return {"cleared": cleared, "broken_before": audit["broken_count"]}
 
-
 SITE_URL = os.environ.get("SITE_URL", "https://uonogamesapk.com").rstrip("/")
-
 
 def _xml_escape(text: str) -> str:
     return (
@@ -777,7 +732,6 @@ def _xml_escape(text: str) -> str:
         .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         .replace('"', "&quot;").replace("'", "&apos;")
     )
-
 
 @api_router.get("/sitemap.xml")
 async def sitemap():
@@ -817,7 +771,6 @@ async def sitemap():
         headers={"Cache-Control": "public, max-age=3600"},
     )
 
-
 ROBOTS_TXT = (
     "User-agent: *\n"
     "Allow: /\n\n"
@@ -827,7 +780,6 @@ ROBOTS_TXT = (
     f"Sitemap: {SITE_URL}/api/sitemap.xml\n"
 )
 
-
 @api_router.get("/robots.txt")
 async def robots_txt():
     return Response(
@@ -835,7 +787,6 @@ async def robots_txt():
         media_type="text/plain",
         headers={"Cache-Control": "public, max-age=3600"},
     )
-
 
 @api_router.get("/seo/{slug}")
 async def seo_meta(slug: str):
@@ -855,7 +806,6 @@ async def seo_meta(slug: str):
         "url": f"{SITE_URL}/{a.get('slug', slug)}",
         "name": a.get("name", ""),
     })
-
 
 @api_router.get("/admin/seo/overview")
 async def seo_overview(admin: dict = Depends(get_current_admin)):
@@ -897,7 +847,6 @@ async def seo_overview(admin: dict = Depends(get_current_admin)):
         "robots_url": f"{SITE_URL}/api/robots.txt",
     }
 
-
 @api_router.get("/admin/seo/apps")
 async def seo_apps_list(admin: dict = Depends(get_current_admin)):
     apps = await fbs.list_apps()
@@ -918,7 +867,6 @@ async def seo_apps_list(admin: dict = Depends(get_current_admin)):
             "score": int((score / 6) * 100),
         })
     return result
-
 
 @api_router.post("/admin/seo/auto-generate/{app_id}")
 async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin)):
@@ -952,7 +900,6 @@ async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin
     doc = await fbs.update_app(app_id, updates)
     return doc
 
-
 @api_router.post("/admin/seo/bulk-fix")
 async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
     apps = await fbs.list_apps()
@@ -984,7 +931,6 @@ async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
             fixed += 1
     return {"fixed": fixed, "total": len(apps)}
 
-
 class BlogCreate(BaseModel):
     title: str
     slug: str = ""
@@ -1002,7 +948,6 @@ class BlogCreate(BaseModel):
     focus_keyword: str = ""
     og_image: str = ""
     noindex: bool = False
-
 
 class BlogUpdate(BaseModel):
     title: Optional[str] = None
@@ -1022,10 +967,8 @@ class BlogUpdate(BaseModel):
     og_image: Optional[str] = None
     noindex: Optional[bool] = None
 
-
 def slugify(text: str) -> str:
     return "".join(c if c.isalnum() else "-" for c in text.lower()).strip("-")
-
 
 def _blog_is_live(doc: dict) -> bool:
     if not doc.get("published"):
@@ -1039,7 +982,6 @@ def _blog_is_live(doc: dict) -> bool:
     except Exception:
         return True
 
-
 @api_router.get("/blog")
 async def list_blog(category: Optional[str] = None, tag: Optional[str] = None):
     query: dict = {"published": True}
@@ -1050,7 +992,6 @@ async def list_blog(category: Optional[str] = None, tag: Optional[str] = None):
     docs = await db.blog.find(query).sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs if _blog_is_live(d)]
 
-
 @api_router.get("/blog/{slug}")
 async def get_blog(slug: str):
     doc = await db.blog.find_one({"slug": slug})
@@ -1058,12 +999,10 @@ async def get_blog(slug: str):
         raise HTTPException(status_code=404, detail="Post not found")
     return serialize_doc(doc)
 
-
 @api_router.get("/admin/blog")
 async def admin_list_blog(admin: dict = Depends(get_current_admin)):
     docs = await db.blog.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/blog")
 async def create_blog(payload: BlogCreate, admin: dict = Depends(get_current_admin)):
@@ -1072,7 +1011,6 @@ async def create_blog(payload: BlogCreate, admin: dict = Depends(get_current_adm
     doc["created_at"] = now_iso()
     res = await db.blog.insert_one(doc)
     return serialize_doc(await db.blog.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/blog/{bid}")
 async def update_blog(bid: str, payload: BlogUpdate, admin: dict = Depends(get_current_admin)):
@@ -1084,14 +1022,12 @@ async def update_blog(bid: str, payload: BlogUpdate, admin: dict = Depends(get_c
         raise HTTPException(status_code=404, detail="Post not found")
     return serialize_doc(await db.blog.find_one({"_id": to_object_id(bid)}))
 
-
 @api_router.delete("/admin/blog/{bid}")
 async def delete_blog(bid: str, admin: dict = Depends(get_current_admin)):
     r = await db.blog.delete_one({"_id": to_object_id(bid)})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Post not found")
     return {"success": True}
-
 
 @api_router.get("/blog-meta")
 async def blog_meta():
@@ -1108,12 +1044,10 @@ async def blog_meta():
                 tags.add(t)
     return {"categories": sorted(cats), "tags": sorted(tags)}
 
-
 @api_router.get("/admin/faqs")
 async def admin_list_faqs(admin: dict = Depends(get_current_admin)):
     docs = await db.faqs.find().sort("order", 1).to_list(1000)
     return [serialize_faq(d) for d in docs]
-
 
 @api_router.get("/apps/{slug_or_id}/related")
 async def related_apps(slug_or_id: str, limit: int = 6):
@@ -1143,7 +1077,6 @@ async def related_apps(slug_or_id: str, limit: int = 6):
     scored.sort(key=lambda t: t[0], reverse=True)
     return [a for _, a in scored[: max(1, min(limit, 20))]]
 
-
 @api_router.get("/admin/media")
 async def list_media(admin: dict = Depends(get_current_admin)):
     files = []
@@ -1157,7 +1090,6 @@ async def list_media(admin: dict = Depends(get_current_admin)):
             })
     return files
 
-
 @api_router.delete("/admin/media/{filename}")
 async def delete_media(filename: str, admin: dict = Depends(get_current_admin)):
     fp = UPLOAD_DIR / filename
@@ -1166,12 +1098,10 @@ async def delete_media(filename: str, admin: dict = Depends(get_current_admin)):
         return {"success": True}
     raise HTTPException(status_code=404, detail="File not found")
 
-
 @api_router.get("/admin/users")
 async def list_users(admin: dict = Depends(get_current_admin)):
     docs = await db.users.find().to_list(100)
     return [{"id": str(u["_id"]), "email": u["email"], "name": u.get("name", ""), "role": u.get("role", "admin"), "created_at": u.get("created_at", "")} for u in docs]
-
 
 @api_router.put("/admin/password")
 async def change_password(payload: dict, admin: dict = Depends(get_current_admin)):
@@ -1185,9 +1115,7 @@ async def change_password(payload: dict, admin: dict = Depends(get_current_admin
     await db.users.update_one({"_id": user["_id"]}, {"$set": {"password_hash": hash_password(new)}})
     return {"success": True}
 
-
 BACKUP_COLLECTIONS = ["apps", "faqs", "reviews", "winners", "codes", "blog"]
-
 
 @api_router.get("/admin/backup")
 async def export_backup(admin: dict = Depends(get_current_admin)):
@@ -1202,7 +1130,6 @@ async def export_backup(admin: dict = Depends(get_current_admin)):
     data["settings"] = settings
     data["exported_at"] = now_iso()
     return data
-
 
 @api_router.post("/admin/backup/restore")
 async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)):
@@ -1221,23 +1148,19 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
         await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": s}, upsert=True)
     return {"success": True}
 
-
 @api_router.get("/")
 async def root():
     return {"message": "YONO GAMES API"}
-
 
 @api_router.get("/admin/winners")
 async def admin_list_winners(admin: dict = Depends(get_current_admin)):
     docs = await db.winners.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
 
-
 def serialize_doc(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     return doc
-
 
 class ReviewCreate(BaseModel):
     name: str
@@ -1246,7 +1169,6 @@ class ReviewCreate(BaseModel):
     photo_url: str = ""
     approved: bool = True
 
-
 class ReviewUpdate(BaseModel):
     name: Optional[str] = None
     rating: Optional[int] = None
@@ -1254,18 +1176,15 @@ class ReviewUpdate(BaseModel):
     photo_url: Optional[str] = None
     approved: Optional[bool] = None
 
-
 @api_router.get("/reviews")
 async def list_reviews():
     docs = await db.reviews.find({"approved": True}).sort("created_at", -1).to_list(200)
     return [serialize_doc(d) for d in docs]
 
-
 @api_router.get("/admin/reviews")
 async def admin_list_reviews(admin: dict = Depends(get_current_admin)):
     docs = await db.reviews.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/reviews")
 async def create_review(payload: ReviewCreate, admin: dict = Depends(get_current_admin)):
@@ -1273,7 +1192,6 @@ async def create_review(payload: ReviewCreate, admin: dict = Depends(get_current
     doc["created_at"] = now_iso()
     res = await db.reviews.insert_one(doc)
     return serialize_doc(await db.reviews.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/reviews/{rid}")
 async def update_review(rid: str, payload: ReviewUpdate, admin: dict = Depends(get_current_admin)):
@@ -1283,7 +1201,6 @@ async def update_review(rid: str, payload: ReviewUpdate, admin: dict = Depends(g
         raise HTTPException(status_code=404, detail="Review not found")
     return serialize_doc(await db.reviews.find_one({"_id": to_object_id(rid)}))
 
-
 @api_router.delete("/admin/reviews/{rid}")
 async def delete_review(rid: str, admin: dict = Depends(get_current_admin)):
     r = await db.reviews.delete_one({"_id": to_object_id(rid)})
@@ -1291,24 +1208,20 @@ async def delete_review(rid: str, admin: dict = Depends(get_current_admin)):
         raise HTTPException(status_code=404, detail="Review not found")
     return {"success": True}
 
-
 class WinnerCreate(BaseModel):
     name: str
     amount: str = ""
     game: str = ""
-
 
 class WinnerUpdate(BaseModel):
     name: Optional[str] = None
     amount: Optional[str] = None
     game: Optional[str] = None
 
-
 @api_router.get("/winners")
 async def list_winners():
     docs = await db.winners.find().sort("created_at", -1).to_list(100)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/winners")
 async def create_winner(payload: WinnerCreate, admin: dict = Depends(get_current_admin)):
@@ -1316,7 +1229,6 @@ async def create_winner(payload: WinnerCreate, admin: dict = Depends(get_current
     doc["created_at"] = now_iso()
     res = await db.winners.insert_one(doc)
     return serialize_doc(await db.winners.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/winners/{wid}")
 async def update_winner(wid: str, payload: WinnerUpdate, admin: dict = Depends(get_current_admin)):
@@ -1326,14 +1238,12 @@ async def update_winner(wid: str, payload: WinnerUpdate, admin: dict = Depends(g
         raise HTTPException(status_code=404, detail="Winner not found")
     return serialize_doc(await db.winners.find_one({"_id": to_object_id(wid)}))
 
-
 @api_router.delete("/admin/winners/{wid}")
 async def delete_winner(wid: str, admin: dict = Depends(get_current_admin)):
     r = await db.winners.delete_one({"_id": to_object_id(wid)})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Winner not found")
     return {"success": True}
-
 
 class CodeCreate(BaseModel):
     code: str
@@ -1342,7 +1252,6 @@ class CodeCreate(BaseModel):
     usage_limit: int = 0
     active: bool = True
 
-
 class CodeUpdate(BaseModel):
     code: Optional[str] = None
     reward: Optional[str] = None
@@ -1350,12 +1259,10 @@ class CodeUpdate(BaseModel):
     usage_limit: Optional[int] = None
     active: Optional[bool] = None
 
-
 @api_router.get("/admin/codes")
 async def list_codes(admin: dict = Depends(get_current_admin)):
     docs = await db.codes.find().sort("created_at", -1).to_list(500)
     return [serialize_doc(d) for d in docs]
-
 
 @api_router.post("/admin/codes")
 async def create_code(payload: CodeCreate, admin: dict = Depends(get_current_admin)):
@@ -1365,7 +1272,6 @@ async def create_code(payload: CodeCreate, admin: dict = Depends(get_current_adm
     doc["created_at"] = now_iso()
     res = await db.codes.insert_one(doc)
     return serialize_doc(await db.codes.find_one({"_id": res.inserted_id}))
-
 
 @api_router.put("/admin/codes/{cid}")
 async def update_code(cid: str, payload: CodeUpdate, admin: dict = Depends(get_current_admin)):
@@ -1377,14 +1283,12 @@ async def update_code(cid: str, payload: CodeUpdate, admin: dict = Depends(get_c
         raise HTTPException(status_code=404, detail="Code not found")
     return serialize_doc(await db.codes.find_one({"_id": to_object_id(cid)}))
 
-
 @api_router.delete("/admin/codes/{cid}")
 async def delete_code(cid: str, admin: dict = Depends(get_current_admin)):
     r = await db.codes.delete_one({"_id": to_object_id(cid)})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Code not found")
     return {"success": True}
-
 
 @api_router.post("/redeem")
 async def redeem_code(payload: dict):
@@ -1406,7 +1310,6 @@ async def redeem_code(payload: dict):
     await db.codes.update_one({"_id": doc["_id"]}, {"$inc": {"used_count": 1}})
     return {"success": True, "reward": doc.get("reward", "Reward unlocked!")}
 
-
 @api_router.get("/admin/analytics")
 async def analytics(admin: dict = Depends(get_current_admin)):
     apps = await db.apps.find().to_list(1000)
@@ -1427,18 +1330,15 @@ async def analytics(admin: dict = Depends(get_current_admin)):
         "top_apps": [{"name": a.get("name"), "downloads": a.get("downloads", 0)} for a in top],
     }
 
-
 def serialize_faq(doc: dict) -> dict:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
     return doc
 
-
 @api_router.get("/faqs")
 async def list_faqs():
     docs = await db.faqs.find().sort("order", 1).to_list(1000)
     return [serialize_faq(d) for d in docs]
-
 
 @api_router.post("/admin/faqs")
 async def create_faq(payload: FaqCreate, admin: dict = Depends(get_current_admin)):
@@ -1450,13 +1350,11 @@ async def create_faq(payload: FaqCreate, admin: dict = Depends(get_current_admin
     new_doc = await db.faqs.find_one({"_id": result.inserted_id})
     return serialize_faq(new_doc)
 
-
 @api_router.put("/admin/faqs/reorder")
 async def reorder_faqs(payload: ReorderInput, admin: dict = Depends(get_current_admin)):
     for index, faq_id in enumerate(payload.ids):
         await db.faqs.update_one({"_id": to_object_id(faq_id)}, {"$set": {"order": index}})
     return {"success": True}
-
 
 @api_router.put("/admin/faqs/{faq_id}")
 async def update_faq(faq_id: str, payload: FaqUpdate, admin: dict = Depends(get_current_admin)):
@@ -1469,14 +1367,12 @@ async def update_faq(faq_id: str, payload: FaqUpdate, admin: dict = Depends(get_
     doc = await db.faqs.find_one({"_id": to_object_id(faq_id)})
     return serialize_faq(doc)
 
-
 @api_router.delete("/admin/faqs/{faq_id}")
 async def delete_faq(faq_id: str, admin: dict = Depends(get_current_admin)):
     result = await db.faqs.delete_one({"_id": to_object_id(faq_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="FAQ not found")
     return {"success": True}
-
 
 SAMPLE_APPS = [
     {
@@ -1536,15 +1432,19 @@ SAMPLE_APPS = [
         "featured": False,
     },
     {
-        "name": "Zen Garden Idle", "version": "2.4.9", "size": "54 MB", "rating": 4.7,
-        "downloads": 410000, "verified": True, "category": "Simulation",
+        "name": "Zen Garden Idle",
+        "version": "2.4.9",
+        "size": "54 MB",
+        "rating": 4.7,
+        "downloads": 410000,
+        "verified": True,
+        "category": "Simulation",
         "description": "Relax and grow your own peaceful zen garden.",
         "icon_url": "https://images.unsplash.com/photo-1659885785824-3e72856b8fef?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
         "apk_url": "https://example.com/apk/zen-garden.apk",
         "featured": False,
     },
 ]
-
 
 DEFAULT_FAQS = [
     {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
@@ -1558,7 +1458,6 @@ DEFAULT_FAQS = [
     {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
     {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
 ]
-
 
 async def seed():
     admin_email = os.environ["ADMIN_EMAIL"].lower().strip()
@@ -1697,7 +1596,6 @@ async def seed():
         ])
         logger.info("Seeded sample blog posts")
 
-
 @app.on_event("startup")
 async def on_startup():
     await db.users.create_index("email", unique=True)
@@ -1717,16 +1615,13 @@ async def on_startup():
     except Exception as e:
         logger.error("Failed to ensure Firebase admin user: %s", e)
 
-
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
 
-
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap_redirect():
     return RedirectResponse(url=f"{SITE_URL}/api/sitemap.xml", status_code=301)
-
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_root():
@@ -1736,9 +1631,7 @@ async def robots_root():
         headers={"Cache-Control": "public, max-age=3600"},
     )
 
-
 PRIVATE_PATH_PREFIXES = ("/admin", "/apps-manager")
-
 
 @app.middleware("http")
 async def noindex_private_routes(request: Request, call_next):
@@ -1748,7 +1641,6 @@ async def noindex_private_routes(request: Request, call_next):
         response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
         response.headers["Cache-Control"] = "no-store"
     return response
-
 
 app.include_router(api_router)
 
