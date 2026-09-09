@@ -162,10 +162,7 @@ export const FeaturedApps = ({ apps = [], onDownload }) => {
   const safeApps = apps || [];
   if (safeApps.length === 0) return null;
   const [first, second, third] = safeApps;
-  return 
-
-    (
-  
+  return (
     <section data-testid="featured-section" className="space-y-3">
       <div className="flex items-center gap-2">
         <h2 className="font-display text-base font-bold text-[#111111]">Featured Apps</h2>
@@ -182,4 +179,4 @@ export const FeaturedApps = ({ apps = [], onDownload }) => {
   );
 };
 
-export default FeaturedApps;
+export default FeaturedApps;[span_0](start_span)[span_0](end_span)
