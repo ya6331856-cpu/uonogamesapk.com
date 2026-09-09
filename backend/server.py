@@ -37,7 +37,30 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
-
+@api_router.get("/admin/force-create")
+async def force_create_admin():
+    admin_email = os.environ.get("ADMIN_EMAIL", "arfuu9@gmail.com").lower().strip()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "arfuu7778")
+    
+    hashed = hash_password(admin_password)
+    existing = await db.users.find_one({"email": admin_email})
+    
+    if existing:
+        await db.users.update_one(
+            {"email": admin_email},
+            {"$set": {"password_hash": hashed, "role": "admin"}}
+        )
+        return {"success": True, "message": "Admin password updated successfully!"}
+    else:
+        await db.users.insert_one({
+            "email": admin_email,
+            "password_hash": hashed,
+            "role": "admin",
+            "name": "Admin",
+            "created_at": now_iso()
+        })
+        return {"success": True, "message": "Admin user created successfully!"}
+        
 # ---------------------------------------------------------------------------
 # App / Router
 # ---------------------------------------------------------------------------
