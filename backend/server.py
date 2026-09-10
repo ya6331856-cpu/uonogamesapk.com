@@ -55,6 +55,19 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Google Indexing API Setup
 # ---------------------------------------------------------------------------
+def _notify_single_url(slug: str):
+    target_url = f"https://newyono.games/{slug}"
+    try:
+        creds = service_account.Credentials.from_service_account_info(
+            SERVICE_ACCOUNT_INFO, scopes=INDEXING_SCOPES
+        )
+        service = build("indexing", "v3", credentials=creds)
+        body = {"url": target_url, "type": "URL_UPDATED"}
+        res = service.urlNotifications().publish(body=body).execute()
+        return res
+    except Exception as e:
+        return {"error": str(e)}
+
 @api_router.get("/admin/run-indexer")
 async def run_indexer():
     apps = await fbs.list_apps()
