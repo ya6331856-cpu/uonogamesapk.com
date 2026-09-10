@@ -813,28 +813,42 @@ def _xml_escape(text: str) -> str:
 @api_router.get("/sitemap.xml")
 async def sitemap():
     apps = await fbs.list_apps()
-    apps = [a for a in apps if not a.get("hidden") and not a.get("noindex") and a.get("slug")]
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
     urls = [
         f'  <url><loc>{SITE_URL}/</loc><lastmod>{today}</lastmod>'
         f'<changefreq>daily</changefreq><priority>1.0</priority></url>'
     ]
+    
     for a in apps:
-        loc = f"{SITE_URL}/{_xml_escape(a['slug'])}"
+        if a.get("hidden") or a.get("noindex"):
+            continue
+            
+        slug = a.get("slug") or str(a.get("id", ""))
+        if not slug and a.get("name"):
+            slug = a.get("name").lower().replace(" ", "-")
+            
+        if not slug:
+            continue
+            
+        loc = f"{SITE_URL}/{_xml_escape(slug)}"
         lastmod = (a.get("updated_at") or a.get("created_at") or today)[:10]
         img_url = a.get("icon_url", "") or ""
         if img_url and not img_url.startswith("http"):
             img_url = f"{SITE_URL}{img_url}"
+            
         image_block = ""
         if img_url:
             image_block = (
                 f"<image:image><image:loc>{_xml_escape(img_url)}</image:loc>"
                 f"<image:title>{_xml_escape(a.get('name', ''))}</image:title></image:image>"
             )
+            
         urls.append(
             f"  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod>"
             f"<changefreq>weekly</changefreq><priority>0.8</priority>{image_block}</url>"
         )
+        
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
@@ -845,7 +859,7 @@ async def sitemap():
     return Response(
         content=xml,
         media_type="application/xml",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=86400"},
     )
 
 ROBOTS_TXT = (
