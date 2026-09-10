@@ -84,7 +84,7 @@ def _notify_single_url(slug: str):
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/admin/run-indexer")
+@api_router.get("/admin/run-indexer")
 async def run_indexer():
     apps = await fbs.list_apps()
     success, failed = 0, 0
@@ -1559,7 +1559,7 @@ async def seed():
     current_settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
     to_add = {k: v for k, v in defaults.items() if k not in current_settings}
     if to_add:
-        await db.settings.update_one({"_id": SETSETTINGS_ID}, {"$set": to_add})
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
     if not current_settings.get("categories") and "categories" not in to_add:
         await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": {"categories": defaults["categories"]}})
 
@@ -1698,3 +1698,4 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
