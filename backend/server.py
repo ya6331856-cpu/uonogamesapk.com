@@ -1267,7 +1267,7 @@ class ReviewUpdate(BaseModel):
     photo_url: Optional[str] = None
     approved: Optional[bool] = None
 
-@api_query = None # placeholder
+api_query = None # placeholder
 
 @api_router.get("/reviews")
 async def list_reviews():
