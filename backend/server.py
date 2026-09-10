@@ -1267,6 +1267,8 @@ class ReviewUpdate(BaseModel):
     photo_url: Optional[str] = None
     approved: Optional[bool] = None
 
+@api_query = None # placeholder
+
 @api_router.get("/reviews")
 async def list_reviews():
     docs = await db.reviews.find({"approved": True}).sort("created_at", -1).to_list(200)
@@ -1603,7 +1605,7 @@ async def seed():
     current_settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
     to_add = {k: v for k, v in defaults.items() if k not in current_settings}
     if to_add:
-        await db.settings.update_one({"_id": SETSETTINGS_ID}, {"$set": to_add})
+        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
     if not current_settings.get("categories") and "categories" not in to_add:
         await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": {"categories": defaults["categories"]}})
 
