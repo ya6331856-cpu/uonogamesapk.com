@@ -88,6 +88,7 @@ def _notify_single_url(slug: str):
 async def run_indexer():
     apps = await fbs.list_apps()
     success, failed = 0, 0
+    details = []
     for a in apps:
         slug = a.get("slug") or str(a.get("id"))
         if not slug:
@@ -95,10 +96,12 @@ async def run_indexer():
         res = _notify_single_url(slug)
         if isinstance(res, dict) and "error" in res:
             failed += 1
+            details.append({"slug": slug, "error": res["error"]})
         else:
             success += 1
-    return {"message": "Bulk indexing completed", "success": success, "failed": failed}
-    
+            details.append({"slug": slug, "status": "success"})
+    return {"message": "Bulk indexing completed", "success": success, "failed": failed, "details": details}
+
 # ---------------------------------------------------------------------------
 # Model helpers
 # ---------------------------------------------------------------------------
@@ -1698,4 +1701,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
