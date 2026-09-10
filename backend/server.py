@@ -1267,8 +1267,6 @@ class ReviewUpdate(BaseModel):
     photo_url: Optional[str] = None
     approved: Optional[bool] = None
 
-api_query = None # placeholder
-
 @api_router.get("/reviews")
 async def list_reviews():
     docs = await db.reviews.find({"approved": True}).sort("created_at", -1).to_list(200)
