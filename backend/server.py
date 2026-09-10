@@ -1603,7 +1603,7 @@ async def seed():
     current_settings = await db.settings.find_one({"_id": SETTINGS_ID}) or {}
     to_add = {k: v for k, v in defaults.items() if k not in current_settings}
     if to_add:
-        await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": to_add})
+        await db.settings.update_one({"_id": SETSETTINGS_ID}, {"$set": to_add})
     if not current_settings.get("categories") and "categories" not in to_add:
         await db.settings.update_one({"_id": SETTINGS_ID}, {"$set": {"categories": defaults["categories"]}})
 
