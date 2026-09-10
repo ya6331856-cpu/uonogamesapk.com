@@ -2,7 +2,7 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const path = url.pathname;
 
-  // Embedded games database (Instant load, zero delay, no Render dependency)
+  // Real games database for instant 0-second loading
   const appsData = [
     { id: "mbm-bet", name: "MBM Bet", slug: "mbm-bet", rating: 4.8, downloads: "500K+", bonus: "501", min_withdrawal: "100", icon_url: "/static/icons/mbm-bet.png" },
     { id: "rummy-ludo", name: "Rummy Ludo", slug: "rummy-ludo", rating: 4.8, downloads: "500K+", bonus: "501", min_withdrawal: "100", icon_url: "/static/icons/rummy-ludo.png" },
@@ -26,7 +26,7 @@ export async function onRequest(context) {
     { id: "yono-777", name: "Yono 777", slug: "yono-777", rating: 4.8, downloads: "600K+", bonus: "777", min_withdrawal: "100", icon_url: "/static/icons/yono-777.png" }
   ];
 
-  // 1. Instant Sitemap XML Generation
+  // Sitemap XML
   if (path === '/sitemap.xml') {
     const today = new Date().toISOString().split('T')[0];
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -46,8 +46,8 @@ export async function onRequest(context) {
     });
   }
 
-  // 2. Instant API Interception (No Render delay, zero skeleton loading)
-  if (path === '/api/apps' || path === '/api/apps/') {
+  // Instant API intercept with trailing slash & query support
+  if (path.startsWith('/api/apps')) {
     return new Response(JSON.stringify({ success: true, apps: appsData }), {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
@@ -56,7 +56,6 @@ export async function onRequest(context) {
     });
   }
 
-  // 3. Standard page rendering with dynamic SEO titles
   const response = await context.next();
   if (path.startsWith('/static/') || path.includes('.')) {
     return response;
