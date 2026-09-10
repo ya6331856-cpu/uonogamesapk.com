@@ -22,6 +22,9 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
 import firebase_service as fbs
 import object_storage as obs
 import image_utils as imu
@@ -48,6 +51,38 @@ async def health_check():
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Google Indexing API Setup
+# ---------------------------------------------------------------------------
+INDEXING_SCOPES = ["https://www.googleapis.com/auth/indexing"]
+
+SERVICE_ACCOUNT_INFO = {
+    "type": "service_account",
+    "project_id": "uonogamesapk",
+    "private_key_id": "f02c6f04e58802161f3b5e5b251fe7f22a016ae6",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDlmMpOEoA6dq5E\nSD+YPlgg/5OY4nGFAUXEZPRDJohhWVQuqwt8cFloYM3k1RF+EbPYRye9hFtKpKz0\nEwbdh7TQ8EN/VMvPwI2wsSotBf6rNOmPFQha4pHNxlZi+2X7Yp21YRtR3a0W8Nya\nxlk+0cHKwooa03f3os+p36l0nMY3QtqWsXxGTSpzXTnuCwrYTZOOGM8LeWHQDtVj\nSzF2FLkd7tMH4IcrdxkpRrZ5lH+bybScvgWNjExVsLVlxLSDU+0YfkO+FMPGI1x3\nGfxVx6g7uIioJ0aeV7LcTGmG1pYDgR+rkWCefQTxshTp2l/M8U+DqOhVQgZ0w/tZ\nqMwX6tUpAgMBAAECggEARBXPpGBLI0sveXM9XJ3cT4jK0bMQ++K5ODjB0Kn8FnZB\nhwdVBCVi9heC5yGiKtMAFJphOAuocNWtrkF4Lzh/j9g4A+n2+Jg+zE91VN2qvEWY\nH0Sa8iyvFSkEVBz+DJKddvyhd+D3Y86wdLtuGrlkMQcIolTkhgyDbXo0i66z/w2l\nxqXmj3mIkWPYZMJuVD/hzzVBCY+B8N/+NMTUuX07U0msUJsve/ResFIZunvUVaxr\nya81wDZIhUkvXXDL45xf+JRJrpG23/jbDK7jCkXX8aa+J2KDSwPwOmLwYVdeAPc9\VZqP+yO2KLojzSr1Xmbi10IN26HZ8XZE7d22eKlsswKBgQD+KTEu3Csmw8y7Q8ZD\nzD56XlbQBAFod/8BZHd4FvKScRidwhICZdxXQS+3XvQQUei9J2kLhFcZQpZshAIy\3zhJY3RmThttK9I/xBaEy/ZyEDOTcNDoTUilxKXvfWcN+UFxn9jhVjPYFZrYRyRF\neQHMmrUJRCy7q2jgIwlWNTCijwKBgQDnQhh7IZdIFbK7myfUdEvgE4I2Q4ISFwlx\n6p65jvMxmEf6KgoH1FBAjqUjyBZdDSFyQCKRC8T3l/ADJt+eqULx61GcpNzcNWFB\nMWrO9+hTjsw0Ifgu3M1iHcRGnv++1UJlYcwkjfBxEUb11GGYMUaILwL95qbmQBHe\ncMOkCXgIxwKBgBpGOd5lRlS4kxac2Ac0OxU9YW4Zq+eX2BXVw//3J1Z6OJg+cswq\nqY+fnoYvW73AKfY798EIClUDLDfFodCOgOwdSvA0jONJT2/mHonV6AE8qYhJdl89\ndhAk9x598URhiyFq6+nHlo51FU/ccuR3sPbs22A82v7/plTdal6uGvwDAoGAbP85\HKfrbr1TXZs2fatGq9lmEP9mifIzsG5920WmGCUHH8C6s4/9N0BEU4YWDEuJDRlv\ncV/TuULyi/nBgj2S4QUhlSwbMOsz6I9LITu1U9TFKHkuSaAmaW1QOlzse1x2i+Q5\nXK1Nu20CPhGY4iuva7aEuXkCBxoBkg8iFumjmrcCgYEA6sKEvjaiA7sJkRYl+EDK\nBSEKulFDuKLuCh6pAMowV7+mfBLH9qqBQ02+8uQSAAeNnyQqu68OHQRto7oVF93o\n3kryvynr73KIHrPpRMR+mvQwDwtkPv4FRn6kWESVw57g+QLByc79Wk8X4TjPZeAJ\nhgfLW13lSv2NN2CFKi/cRbE=\n-----END PRIVATE KEY-----",
+    "client_email": "newyono-indexer@uonogamesapk.iam.gserviceaccount.com",
+    "client_id": "112018094980782324050",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/newyono-indexer%40uonogamesapk.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+}
+
+def _notify_single_url(slug: str):
+    target_url = f"https://newyono.games/{slug}"
+    try:
+        creds = service_account.Credentials.from_service_account_info(
+            SERVICE_ACCOUNT_INFO, scopes=INDEXING_SCOPES
+        )
+        service = build("indexing", "v3", credentials=creds)
+        body = {"url": target_url, "type": "URL_UPDATED"}
+        res = service.urlNotifications().publish(body=body).execute()
+        return res
+    except Exception as e:
+        return {"error": str(e)}
 
 # ---------------------------------------------------------------------------
 # Model helpers
@@ -515,8 +550,9 @@ def _guess_content_type(filename: str) -> str:
         "apk": "application/vnd.android.package-archive",
         "pdf": "application/pdf",
     }.get(ext, "application/octet-stream")
+
 # ---------------------------------------------------------------------------
-# Admin app routes & Google Indexing Endpoint
+# Admin app routes & Google Indexing Endpoint (Configured as GET for direct browser trigger)
 # ---------------------------------------------------------------------------
 @api_router.get("/admin/bulk-index-all")
 async def bulk_index_all_apps():
@@ -532,10 +568,7 @@ async def bulk_index_all_apps():
         else:
             success += 1
     return {"message": "Bulk indexing completed", "success": success, "failed": failed}
-    
-# ---------------------------------------------------------------------------
-# Admin app routes
-# ---------------------------------------------------------------------------
+
 @api_router.post("/admin/upload")
 async def upload_file(
     file: UploadFile = File(...),
@@ -741,7 +774,7 @@ async def media_repair(admin: dict = Depends(get_current_admin)):
             cleared += 1
     return {"cleared": cleared, "broken_before": audit["broken_count"]}
 
-SITE_URL = os.environ.get("SITE_URL", "https://uonogamesapk.com").rstrip("/")
+SITE_URL = os.environ.get("SITE_URL", "https://newyono.games").rstrip("/")
 
 def _xml_escape(text: str) -> str:
     return (
@@ -900,13 +933,13 @@ async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin
     desc = a.get("meta_description") or (
         f"Download {name} APK latest version for free. {description[:110]}"
         if description else
-        f"Download {name} APK latest version free from YONO GAMES (uonogamesapk.com). Fast, safe and verified {category.lower()} download."
+        f"Download {name} APK latest version free from YONO GAMES (newyono.games). Fast, safe and verified {category.lower()} download."
     )
     if len(desc) > 160:
         desc = desc[:157] + "..."
     keywords = a.get("keywords") or (
         f"{name} apk, {name} download, {name} latest version, {category.lower()} apk, "
-        f"uono games apk, {name.lower()} free download"
+        f"yono games apk, {name.lower()} free download"
     )
     updates = {
         "seo_title": title,
@@ -934,12 +967,12 @@ async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
         if not a.get("meta_description"):
             d = (f"Download {name} APK latest version for free. {description[:110]}"
                  if description else
-                 f"Download {name} APK latest version free from YONO GAMES (uonogamesapk.com). Fast, safe and verified {category.lower()} download.")
+                 f"Download {name} APK latest version free from YONO GAMES (newyono.games). Fast, safe and verified {category.lower()} download.")
             updates["meta_description"] = d[:160]
         if not a.get("keywords"):
             updates["keywords"] = (
                 f"{name} apk, {name} download, {name} latest version, "
-                f"{category.lower()} apk, uono games apk"
+                f"{category.lower()} apk, yono games apk"
             )
         if not a.get("focus_keyword"):
             updates["focus_keyword"] = f"{name} APK Download"
@@ -1158,7 +1191,7 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
                 d.pop("_id", None)
                 docs.append(d)
             if docs:
-                await db[coll].insert_memory(docs)
+                await db[coll].insert_many(docs)
     if "settings" in payload and isinstance(payload["settings"], dict):
         s = dict(payload["settings"])
         s.pop("_id", None)
@@ -1464,16 +1497,16 @@ SAMPLE_APPS = [
 ]
 
 DEFAULT_FAQS = [
-    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (uonogamesapk.com) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
+    {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (newyono.games) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
     {"question": "How do I download the APK?", "answer": "Simply tap the yellow 'Download APK' button on any app card. The download will begin instantly. Once finished, open the file from your notification bar or your device's Downloads folder and tap 'Install'. The entire process usually takes less than a minute on a normal connection."},
     {"question": "What is the latest APK version?", "answer": "The version number is displayed directly on each app card (for example, v3.2.1). We always publish the most recent stable release, and the version shown is the one you will download. Check back regularly or join our Telegram channel to be notified the moment a new version goes live."},
     {"question": "Is the APK verified?", "answer": "APKs displaying the green 'Verified' badge have been checked for authenticity, tested for stability, and confirmed to be free of malicious code. Verification means the file matches the original developer package and has not been tampered with or repackaged with unwanted software."},
     {"question": "What Android version is supported?", "answer": "Most APKs on our store support Android 6.0 (Marshmallow) and above, with the best experience on Android 8.0+. Some newer titles may require Android 9 or higher. If an app fails to install, your device may be running an unsupported Android version — check Settings > About Phone > Android Version."},
-    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over yourреди — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
+    {"question": "How do I update the APK?", "answer": "To update, return to this page and download the latest version. Install it over your existing app — your data and progress are preserved in most cases. You do not need to uninstall the old version first unless you receive a 'signature mismatch' error, in which case remove the old app and reinstall."},
     {"question": "Why is installation blocked?", "answer": "Android blocks installs from outside the Play Store by default. To fix this, go to Settings > Security (or Apps & Notifications > Special App Access > Install Unknown Apps), select your browser or file manager, and enable 'Allow from this source'. Then reopen the downloaded APK and installation will proceed."},
-    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (uonogamesapk.com) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
+    {"question": "Is registration free?", "answer": "Yes, downloading APKs from YONO GAMES (newyono.games) is completely free and does not require any account or registration. Some individual apps may offer optional in-app registration or purchases, but browsing and downloading from our store never costs anything."},
     {"question": "How do I contact support?", "answer": "You can reach our support team through the Contact link in the footer or by joining our official Telegram channel, where our team responds to questions quickly. For issues with a specific app, please include the app name, version number, and your Android version so we can help you faster."},
-    {"question": "How often is the APK updated?", "answer": "The APKs are updated continuously as developer releases come out."},
+    {"question": "How often is the APK updated?", "answer": "We monitor developer releases continuously and typically publish new versions within 24–72 hours of an official update. Popular titles are updated even faster. Follow our Telegram channel to get instant alerts whenever a new or updated APK becomes available on the store."},
 ]
 
 async def seed():
@@ -1621,5 +1654,50 @@ async def on_startup():
         await asyncio.to_thread(obs.init_storage)
         logger.info("Emergent Object Storage ready")
     except Exception as e:
-        logger.error("Object storage init storage failed: %s", e)
-    default_settings_doc = await get_settings_doc()
+        logger.error("Object storage init failed: %s", e)
+    try:
+        uid = await asyncio.to_thread(
+            fbs.ensure_admin_user,
+            os.environ["ADMIN_EMAIL"],
+            os.environ["ADMIN_PASSWORD"],
+        )
+        logger.info("Firebase admin ensured: %s", uid)
+    except Exception as e:
+        logger.error("Failed to ensure Firebase admin user: %s", e)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_redirect():
+    return RedirectResponse(url=f"{SITE_URL}/api/sitemap.xml", status_code=301)
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_root():
+    return Response(
+        content=ROBOTS_TXT,
+        media_type="text/plain",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+PRIVATE_PATH_PREFIXES = ("/admin", "/apps-manager")
+
+@app.middleware("http")
+async def noindex_private_routes(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path.rstrip("/") or "/"
+    if any(path == pfx or path.startswith(pfx + "/") for pfx in PRIVATE_PATH_PREFIXES):
+        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
