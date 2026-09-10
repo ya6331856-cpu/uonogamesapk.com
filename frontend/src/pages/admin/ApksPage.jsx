@@ -29,7 +29,7 @@ function ApksPageInner() {
 
   const [formData, setFormData] = useState({
     name: "",
-    version: "1.0.0",
+    version: "v2.8 (2026 Edition)",
     size: "45 MB",
     category: "Games",
     description: "",
@@ -38,7 +38,7 @@ function ApksPageInner() {
     slug: "",
     seo_title: "",
     meta_description: "",
-    keywords: "",
+    keywords: "yono games 2026, latest apk download, official app version",
     downloads: 500000,
     featured: false,
     featured_order: 1,
@@ -129,8 +129,11 @@ function ApksPageInner() {
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
-      name: "", version: "1.0.0", size: "45 MB", category: "Games", description: "",
-      icon_url: "", apk_url: "", slug: "", seo_title: "", meta_description: "", keywords: "",
+      name: "", version: "v2.8 (2026 Edition)", size: "45 MB", category: "Games", description: "",
+      icon_url: "", apk_url: "", slug: "", 
+      seo_title: "APK Download 2026 - Latest Version & Bonus", 
+      meta_description: "Download official app latest version 2026. Get instant bonus & secure gameplay.", 
+      keywords: "yono games 2026, latest apk download, official app version", 
       downloads: 500000, featured: false, featured_order: 1, pinned: false,
       signup_bonus: "₹501", min_withdraw: "₹100", badge: "HOT", banner_url: "", theme_color: "#FFC107"
     });
@@ -140,14 +143,26 @@ function ApksPageInner() {
   const handleOpenEdit = (app) => {
     setEditingId(app.id || app._id);
     setFormData({
-      name: app.name || "", version: app.version || "1.0.0", size: app.size || "45 MB",
-      category: app.category || "Games", description: app.description || "",
-      icon_url: app.icon_url || "", apk_url: app.apk_url || "", slug: app.slug || "",
-      seo_title: app.seo_title || "", meta_description: app.meta_description || "",
-      keywords: app.keywords || "", downloads: app.downloads || 500000,
-      featured: !!app.featured, featured_order: app.featured_order || 1, pinned: !!app.pinned,
-      signup_bonus: app.signup_bonus || "₹501", min_withdraw: app.min_withdraw || "₹100",
-      badge: app.badge || "HOT", banner_url: app.banner_url || "", theme_color: app.theme_color || "#FFC107"
+      name: app.name || "", 
+      version: app.version || "v2.8 (2026 Edition)", 
+      size: app.size || "45 MB",
+      category: app.category || "Games", 
+      description: app.description || "",
+      icon_url: app.icon_url || "", 
+      apk_url: app.apk_url || "", 
+      slug: app.slug || "",
+      seo_title: app.seo_title || `${app.name || "App"} APK Download 2026 - Latest Version`, 
+      meta_description: app.meta_description || `Download official ${app.name || "App"} latest version 2026. Secure fast download link.`,
+      keywords: app.keywords || "yono games 2026, latest apk download", 
+      downloads: app.downloads || 500000,
+      featured: !!app.featured, 
+      featured_order: app.featured_order || 1, 
+      pinned: !!app.pinned,
+      signup_bonus: app.signup_bonus || "₹501", 
+      min_withdraw: app.min_withdraw || "₹100",
+      badge: app.badge || "HOT", 
+      banner_url: app.banner_url || "", 
+      theme_color: app.theme_color || "#FFC107"
     });
     setShowModal(true);
   };
@@ -172,7 +187,7 @@ function ApksPageInner() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <PageHeader title="APK Manager" desc="Manage apps, featured games, SEO, image uploads & real download links." />
+        <PageHeader title="APK Manager" desc="Manage apps, featured games, SEO 2026 settings & real download links." />
         <button 
           onClick={handleOpenAdd}
           className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold flex items-center space-x-2 transition-colors cursor-pointer shadow-sm"
@@ -221,7 +236,7 @@ function ApksPageInner() {
                         {app.featured && <span className="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.5 rounded font-bold">Featured</span>}
                         {app.badge && <span className="bg-red-100 text-red-600 text-[9px] px-1.5 py-0.5 rounded font-bold">{app.badge}</span>}
                       </div>
-                      <p className="text-[10px] text-[#555]">v{app.version || "1.0.0"} • {app.category || "Games"} • {app.downloads || 0} downloads</p>
+                      <p className="text-[10px] text-[#555]">v{app.version || "v2.8"} • {app.category || "Games"} • {app.downloads || 0} downloads</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -258,7 +273,7 @@ function ApksPageInner() {
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 my-8 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-sm text-[#111]">
-                {editingId ? "Edit App, Images & Live Settings" : "Add New App & Live Settings"}
+                {editingId ? "Edit App, 2026 SEO & Live Settings" : "Add New App, 2026 SEO & Live Settings"}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -290,7 +305,7 @@ function ApksPageInner() {
                 </div>
               </div>
 
-              {/* 🔥 NEW PREMIUM THEME SECTION ADDED HERE 🔥 */}
+              {/* 🔥 PREMIUM THEME SECTION 🔥 */}
               <div className="border border-purple-200 p-3 rounded-xl bg-purple-50 space-y-3">
                 <h4 className="font-bold text-purple-900 flex items-center gap-1.5">🎨 Premium Theme Settings</h4>
                 <div className="space-y-2">
@@ -332,12 +347,13 @@ function ApksPageInner() {
 
               <div className="grid grid-cols-4 gap-3">
                 <div>
-                  <label className="block font-medium mb-1 text-gray-700">Version</label>
+                  <label className="block font-medium mb-1 text-gray-700">Version (2026)</label>
                   <input 
                     type="text" 
                     value={formData.version} 
                     onChange={(e) => setFormData({...formData, version: e.target.value})}
                     className="w-full border rounded-lg p-2 text-xs" 
+                    placeholder="v2.8 (2026)"
                   />
                 </div>
                 <div>
@@ -487,26 +503,27 @@ function ApksPageInner() {
                 />
               </div>
 
-              <div className="border-t pt-3 space-y-3">
-                <h4 className="font-bold text-gray-900">SEO Settings</h4>
+              {/* 🔥 2026 ADVANCED SEO SETTINGS SECTION 🔥 */}
+              <div className="border border-blue-200 p-3 rounded-xl bg-blue-50 space-y-3">
+                <h4 className="font-bold text-blue-900 flex items-center gap-1.5">🚀 2026 Advanced SEO & Ranking Tools</h4>
                 <div>
-                  <label className="block font-medium mb-1 text-gray-700">SEO Meta Title</label>
+                  <label className="block font-medium mb-1 text-gray-700">SEO Meta Title (2026 Optimized)</label>
                   <input 
                     type="text" 
                     value={formData.seo_title} 
                     onChange={(e) => setFormData({...formData, seo_title: e.target.value})}
-                    className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="App Name APK Download - Latest Version"
+                    className="w-full border rounded-lg p-2 text-xs bg-white" 
+                    placeholder="e.g., App Name APK Download 2026 - Latest Version & Bonus"
                   />
                 </div>
                 <div>
-                  <label className="block font-medium mb-1 text-gray-700">Meta Description</label>
+                  <label className="block font-medium mb-1 text-gray-700">Meta Description (2026)</label>
                   <textarea 
                     rows={2}
                     value={formData.meta_description} 
                     onChange={(e) => setFormData({...formData, meta_description: e.target.value})}
-                    className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="Short description for Google search results..."
+                    className="w-full border rounded-lg p-2 text-xs bg-white" 
+                    placeholder="Short description for Google search results mentioning 2026 edition..."
                   />
                 </div>
                 <div>
@@ -515,8 +532,8 @@ function ApksPageInner() {
                     type="text" 
                     value={formData.keywords} 
                     onChange={(e) => setFormData({...formData, keywords: e.target.value})}
-                    className="w-full border rounded-lg p-2 text-xs" 
-                    placeholder="rummy apk, download rummy, yono games"
+                    className="w-full border rounded-lg p-2 text-xs bg-white" 
+                    placeholder="yono games 2026, apk download, official version"
                   />
                 </div>
               </div>
