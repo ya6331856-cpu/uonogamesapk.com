@@ -55,34 +55,20 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Google Indexing API Setup
 # ---------------------------------------------------------------------------
-INDEXING_SCOPES = ["https://www.googleapis.com/auth/indexing"]
-
-SERVICE_ACCOUNT_INFO = {
-    "type": "service_account",
-    "project_id": "uonogamesapk",
-    "private_key_id": "f02c6f04e58802161f3b5e5b251fe7f22a016ae6",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDlmMpOEoA6dq5E\nSD+YPlgg/5OY4nGFAUXEZPRDJohhWVQuqwt8cFloYM3k1RF+EbPYRye9hFtKpKz0\nEwbdh7TQ8EN/VMvPwI2wsSotBf6rNOmPFQha4pHNxlZi+2X7Yp21YRtR3a0W8Nya\nxlk+0cHKwooa03f3os+p36l0nMY3QtqWsXxGTSpzXTnuCwrYTZOOGM8LeWHQDtVj\nSzF2FLkd7tMH4IcrdxkpRrZ5lH+bybScvgWNjExVsLVlxLSDU+0YfkO+FMPGI1x3\nGfxVx6g7uIioJ0aeV7LcTGmG1pYDgR+rkWCefQTxshTp2l/M8U+DqOhVQgZ0w/tZ\nqMwX6tUpAgMBAAECggEARBXPpGBLI0sveXM9XJ3cT4jK0bMQ++K5ODjB0Kn8FnZB\nhwdVBCVi9heC5yGiKtMAFJphOAuocNWtrkF4Lzh/j9g4A+n2+Jg+zE91VN2qvEWY\nH0Sa8iyvFSkEVBz+DJKddvyhd+D3Y86wdLtuGrlkMQcIolTkhgyDbXo0i66z/w2l\nxqXmj3mIkWPYZMJuVD/hzzVBCY+B8N/+NMTUuX07U0msUJsve/ResFIZunvUVaxr\nya81wDZIhUkvXXDL45xf+JRJrpG23/jbDK7jCkXX8aa+J2KDSwPwOmLwYVdeAPc9\VZqP+yO2KLojzSr1Xmbi10IN26HZ8XZE7d22eKlsswKBgQD+KTEu3Csmw8y7Q8ZD\nzD56XlbQBAFod/8BZHd4FvKScRidwhICZdxXQS+3XvQQUei9J2kLhFcZQpZshAIy\3zhJY3RmThttK9I/xBaEy/ZyEDOTcNDoTUilxKXvfWcN+UFxn9jhVjPYFZrYRyRF\neQHMmrUJRCy7q2jgIwlWNTCijwKBgQDnQhh7IZdIFbK7myfUdEvgE4I2Q4ISFwlx\n6p65jvMxmEf6KgoH1FBAjqUjyBZdDSFyQCKRC8T3l/ADJt+eqULx61GcpNzcNWFB\nMWrO9+hTjsw0Ifgu3M1iHcRGnv++1UJlYcwkjfBxEUb11GGYMUaILwL95qbmQBHe\ncMOkCXgIxwKBgBpGOd5lRlS4kxac2Ac0OxU9YW4Zq+eX2BXVw//3J1Z6OJg+cswq\nqY+fnoYvW73AKfY798EIClUDLDfFodCOgOwdSvA0jONJT2/mHonV6AE8qYhJdl89\ndhAk9x598URhiyFq6+nHlo51FU/ccuR3sPbs22A82v7/plTdal6uGvwDAoGAbP85\HKfrbr1TXZs2fatGq9lmEP9mifIzsG5920WmGCUHH8C6s4/9N0BEU4YWDEuJDRlv\ncV/TuULyi/nBgj2S4QUhlSwbMOsz6I9LITu1U9TFKHkuSaAmaW1QOlzse1x2i+Q5\nXK1Nu20CPhGY4iuva7aEuXkCBxoBkg8iFumjmrcCgYEA6sKEvjaiA7sJkRYl+EDK\nBSEKulFDuKLuCh6pAMowV7+mfBLH9qqBQ02+8uQSAAeNnyQqu68OHQRto7oVF93o\n3kryvynr73KIHrPpRMR+mvQwDwtkPv4FRn6kWESVw57g+QLByc79Wk8X4TjPZeAJ\nhgfLW13lSv2NN2CFKi/cRbE=\n-----END PRIVATE KEY-----",
-    "client_email": "newyono-indexer@uonogamesapk.iam.gserviceaccount.com",
-    "client_id": "112018094980782324050",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/newyono-indexer%40uonogamesapk.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com"
-}
-
-def _notify_single_url(slug: str):
-    target_url = f"https://newyono.games/{slug}"
-    try:
-        creds = service_account.Credentials.from_service_account_info(
-            SERVICE_ACCOUNT_INFO, scopes=INDEXING_SCOPES
-        )
-        service = build("indexing", "v3", credentials=creds)
-        body = {"url": target_url, "type": "URL_UPDATED"}
-        res = service.urlNotifications().publish(body=body).execute()
-        return res
-    except Exception as e:
-        return {"error": str(e)}
+@api_router.get("/admin/run-indexer")
+async def run_indexer():
+    apps = await fbs.list_apps()
+    success, failed = 0, 0
+    for a in apps:
+        slug = a.get("slug") or str(a.get("id"))
+        if not slug:
+            continue
+        res = _notify_single_url(slug)
+        if isinstance(res, dict) and "error" in res:
+            failed += 1
+        else:
+            success += 1
+    return {"message": "Bulk indexing completed", "success": success, "failed": failed}
 
 # ---------------------------------------------------------------------------
 # Model helpers
