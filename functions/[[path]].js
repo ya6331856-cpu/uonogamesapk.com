@@ -2,11 +2,16 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const path = url.pathname;
 
-  // 1. SITEMAP GENERATOR (Direct from MongoDB via Backend API or fallback)
   if (path === '/sitemap.xml') {
     try {
-      // Direct backend API se sitemap ka JSON ya XML data mangwayein
-      const apiRes = await fetch('https://uonogamesapk.com-iou6.onrender.com/api/apps?include_hidden=false');
+      // Timeout handle karne ke liye fetch par race condition lagayein
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+
+      const apiRes = await fetch('https://uonogamesapk.com-iou6.onrender.com/api/apps?include_hidden=false', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       
       let apps = [];
       if (apiRes.ok) {
@@ -21,7 +26,7 @@ export async function onRequest(context) {
       // Main website URL
       xml += `  <url><loc>https://newyono.games/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>\n`;
 
-      // Games URLs
+      // Agar apps fetch ho gaye hain, toh unhe add karein
       for (const app of apps) {
         const slug = app.slug || app.id;
         if (!slug || app.noindex || app.hidden) continue;
@@ -43,11 +48,24 @@ export async function onRequest(context) {
       return new Response(xml, {
         headers: {
           'Content-Type': 'application/xml; charset=UTF-8',
-          'Cache-Control': 'public, max-age=86400'
+          'Cache-Control': 'public, max-age=3600'
         }
       });
     } catch (err) {
-      return new Response('Error generating sitemap', { status: 500 });
+      // Fallback agar Render backend sone ki wajah se timeout de de
+      const today = new Date().toISOString().split('T')[0];
+      const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://newyono.games/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`;
+      return new Response(fallbackXml, {
+        headers: { 'Content-Type': 'application/xml; charset=UTF-8' }
+      });
     }
   }
 
