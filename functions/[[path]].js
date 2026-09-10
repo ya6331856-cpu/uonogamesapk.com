@@ -6,15 +6,9 @@ export async function onRequest(context) {
     const today = new Date().toISOString().split('T')[0];
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      // Render backend se HTTP ke through real apps fetch honge (No SSL error)
-      const apiRes = await fetch('http://uonogamesapk.com-iou6.onrender.com/api/apps?include_hidden=false', {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
+      // Backend se automatic saare games fetch honge (Future-proof: no manual updates needed)
+      const apiRes = await fetch('https://uonogamesapk.com-iou6.onrender.com/api/apps?include_hidden=false');
+      
       if (apiRes.ok) {
         const data = await apiRes.json();
         const apps = data.apps || [];
@@ -25,7 +19,7 @@ export async function onRequest(context) {
         // Main website URL
         xml += `  <url><loc>https://newyono.games/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>\n`;
 
-        // Database ke real games ke slugs
+        // Database ke saare current aur future games automatic sitemap mein aa jayenge
         for (const app of apps) {
           const slug = app.slug || app.id;
           if (!slug || app.noindex || app.hidden) continue;
@@ -47,13 +41,13 @@ export async function onRequest(context) {
         return new Response(xml, {
           headers: {
             'Content-Type': 'application/xml; charset=UTF-8',
-            'Cache-Control': 'public, max-age=3600'
+            'Cache-Control': 'public, max-age=1800'
           }
         });
       }
     } catch (err) {}
 
-    // Fallback agar kabhi network issue ho
+    // Fallback emergency XML
     const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://newyono.games/</loc><lastmod>${today}</lastmod></url>
@@ -72,13 +66,6 @@ export async function onRequest(context) {
   if (!slug || slug === 'apps') return response;
 
   let title = slug.replace(/-/g, ' ').toUpperCase() + ' - YONO GAMES';
-  try {
-    const apiRes = await fetch(`https://uonogamesapk.com-iou6.onrender.com/api/seo/${slug}`);
-    if (apiRes.ok) {
-      const seoData = await apiRes.json();
-      if (seoData.title) title = seoData.title;
-    }
-  } catch (err) {}
 
   return new HTMLRewriter()
     .on('title', {
