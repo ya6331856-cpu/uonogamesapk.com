@@ -9,8 +9,8 @@ export async function onRequest(context) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      // Seedha aapke MongoDB/Backend se real games fetch honge
-      const apiRes = await fetch('https://uonogamesapk.com-iou6.onrender.com/api/apps?include_hidden=false', {
+      // Render backend se HTTP ke through real apps fetch honge (No SSL error)
+      const apiRes = await fetch('http://uonogamesapk.com-iou6.onrender.com/api/apps?include_hidden=false', {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
