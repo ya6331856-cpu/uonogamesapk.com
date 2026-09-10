@@ -98,7 +98,7 @@ async def run_indexer():
         else:
             success += 1
     return {"message": "Bulk indexing completed", "success": success, "failed": failed}
-
+    
 # ---------------------------------------------------------------------------
 # Model helpers
 # ---------------------------------------------------------------------------
