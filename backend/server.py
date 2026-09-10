@@ -515,7 +515,24 @@ def _guess_content_type(filename: str) -> str:
         "apk": "application/vnd.android.package-archive",
         "pdf": "application/pdf",
     }.get(ext, "application/octet-stream")
-
+# ---------------------------------------------------------------------------
+# Admin app routes & Google Indexing Endpoint
+# ---------------------------------------------------------------------------
+@api_router.get("/admin/bulk-index-all")
+async def bulk_index_all_apps():
+    apps = await fbs.list_apps()
+    success, failed = 0, 0
+    for a in apps:
+        slug = a.get("slug") or str(a.get("id"))
+        if not slug:
+            continue
+        res = _notify_single_url(slug)
+        if isinstance(res, dict) and "error" in res:
+            failed += 1
+        else:
+            success += 1
+    return {"message": "Bulk indexing completed", "success": success, "failed": failed}
+    
 # ---------------------------------------------------------------------------
 # Admin app routes
 # ---------------------------------------------------------------------------
