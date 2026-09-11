@@ -9,7 +9,7 @@ import AppDetail from "./pages/AppDetail";
 import AdminLogin from "./pages/AdminLogin";
 import PwaInstallBanner from "./components/PwaInstallBanner";
 import Analytics from "./components/Analytics";
-import AdminLayout from "./components/admin/AdminLayout";
+import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ApksPage from "./pages/admin/ApksPage";
 import FeaturedAppsPage from "./pages/admin/FeaturedAppsPage";
