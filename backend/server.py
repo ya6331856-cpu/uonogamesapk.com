@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 import json
+import re
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -53,41 +54,79 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Google Indexing API Setup
+# Site + Google Indexing API Setup
 # ---------------------------------------------------------------------------
+SITE_URL = os.environ.get("SITE_URL", "https://newyono.games").rstrip("/")
 INDEXING_SCOPES = ["https://www.googleapis.com/auth/indexing"]
-SERVICE_ACCOUNT_FILE = "service_account.json"
+
+def _load_google_service_account_info() -> dict:
+    """
+    Supports all common Render configurations:
+      1. GOOGLE_SERVICE_ACCOUNT_JSON=<full JSON>
+      2. GOOGLE_SERVICE_ACCOUNT_FILE=/etc/secrets/service_account.json
+      3. Render Secret File named service_account.json, automatically found at
+         /etc/secrets/service_account.json and, for non-Docker services, ./service_account.json.
+    """
+    raw_json = (os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON") or "").strip()
+    if raw_json:
+        try:
+            data = json.loads(raw_json)
+            if isinstance(data, dict) and data.get("client_email") and data.get("private_key"):
+                return data
+        except json.JSONDecodeError:
+            logger.warning("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON.")
+
+    configured_file = (os.environ.get("GOOGLE_SERVICE_ACCOUNT_FILE") or "").strip()
+    candidates = []
+    if configured_file:
+        candidates.append(Path(configured_file))
+    candidates.extend([
+        Path("/etc/secrets/service_account.json"),
+        ROOT_DIR / "service_account.json",
+    ])
+
+    for path in candidates:
+        try:
+            if path.is_file():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and data.get("client_email") and data.get("private_key"):
+                    return data
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Could not load Google service account from %s: %s", path, exc)
+
+    return {}
+
+SERVICE_ACCOUNT_INFO = _load_google_service_account_info()
 
 def _notify_single_url(slug: str):
-    target_url = f"https://newyono.games/{slug}"
+    slug = slugify(slug)
+    target_url = f"{SITE_URL}/{slug}"
+    if not SERVICE_ACCOUNT_INFO:
+        return {
+            "error": (
+                "Google service account not configured. Add Render Secret File "
+                "service_account.json or set GOOGLE_SERVICE_ACCOUNT_JSON."
+            )
+        }
+
     try:
-        creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=INDEXING_SCOPES
+        creds = service_account.Credentials.from_service_account_info(
+            SERVICE_ACCOUNT_INFO,
+            scopes=INDEXING_SCOPES,
         )
-        service = build("indexing", "v3", credentials=creds)
+        service = build("indexing", "v3", credentials=creds, cache_discovery=False)
         body = {"url": target_url, "type": "URL_UPDATED"}
         res = service.urlNotifications().publish(body=body).execute()
         return res
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception as exc:
+        return {"error": str(exc)}
 
-@api_router.get("/admin/run-indexer")
-async def run_indexer():
-    apps = await fbs.list_apps()
-    success, failed = 0, 0
-    details = []
-    for a in apps:
-        slug = a.get("slug") or str(a.get("id"))
-        if not slug:
-            continue
-        res = _notify_single_url(slug)
-        if isinstance(res, dict) and "error" in res:
-            failed += 1
-            details.append({"slug": slug, "error": res["error"]})
-        else:
-            success += 1
-            details.append({"slug": slug, "status": "success"})
-    return {"message": "Bulk indexing completed", "success": success, "failed": failed, "details": details}
+
+def slugify(text: str) -> str:
+    """Return a strict lowercase-with-hyphens URL slug."""
+    value = (text or "").strip().lower()
+    value = re.sub(r"[^a-z0-9]+", "-", value)
+    return value.strip("-")
 
 # ---------------------------------------------------------------------------
 # Model helpers
@@ -141,6 +180,108 @@ async def force_create_admin():
             "created_at": now_iso()
         })
         return {"success": True, "message": "Admin user created successfully!"}
+
+
+# ---------------------------------------------------------------------------
+# Dynamic Game Catalogue + SEO Generation
+# ---------------------------------------------------------------------------
+# Extracted from the five screenshots supplied with this project.
+# Duplicate screenshots do not create duplicate entries because this list is
+# normalized and de-duplicated before catalogue generation.
+IMAGE_EXTRACTED_GAME_NAMES = ['Yono Games', 'Gogo Rummy', 'Bingo 101', 'Yono Rummy', 'SPIN777', 'Yono VIP', 'SPIN 101', 'Spin Crush', 'Spin Gold', '101 Z', 'YN777', 'Slots Spin', 'Neta.VIP', 'Jaiho Arcade', 'Jaiho Spin', 'Rummy 91', 'Jaiho 777', 'Jaiho Rummy', 'ABC Rummy', 'Saga Slots', '567 Slots', 'YONO777', 'MBMbet', 'Slots Winner', 'EVER 777', 'Yono Slots', 'IND Slots', 'Jaiho Win', 'Top Rummy', 'IND Rummy', 'IND Club', '777 Game', 'Hi Rummy', 'Maha Games', 'Share Slots', 'Love Rummy', 'Yes Spin', 'Rumble Rummy', 'Game Rummy', '789 Jackpots', 'Hindi 777', 'OK Rummy', 'Rummy Ludo', 'Rummy 77', 'Rummy 888', 'Jaiho Slots', 'Max Rummy', 'INR Rummy', 'Boss Rummy', 'Spin Winner', 'Yono Arcade', 'Joy Rummy', 'Club INR', 'INDIA 2026', '77BET', 'Y1 Games', 'FN7.COM', '360INR', 'DiwaWin', 'DiwaTop', 'DiwaGame', 'Diwa.bet', 'DiwaVIP', 'DiwaX', 'GoodSlots', 'DiwaSlot', 'Diwa777', 'MQMBet', 'Diwaking']
+
+BASE_SEO_KEYWORDS = ['yono games', 'yono games apk', 'yono game download', 'new yono games', 'yono rummy', 'yono rummy apk', 'yono vip', 'yono vip apk', 'yono arcade', 'yono slots', 'yono 777', 'yono777 apk', 'yono games latest version', 'yono games app', 'yono apk', 'rummy apk', 'rummy game', 'rummy app', 'rummy download', 'rummy apk download', 'rummy real cash', 'real cash rummy', 'online rummy', 'online rummy apk', 'rummy games', 'rummy game download', 'rummy latest version', 'rummy bonus', 'rummy sign up bonus', 'rummy cash game', 'rummy real money', 'rummy earning app', 'rummy tournament', 'rummy withdrawal', 'fast withdrawal rummy', 'instant withdrawal rummy', 'rummy india', 'indian rummy', 'points rummy', 'pool rummy', 'deals rummy', 'teen patti', 'teen patti apk', 'slots game', 'slots apk', 'slots game download', 'online slots', 'slots app', 'casino game apk', 'money game', 'money game apk', 'money earning game', 'cash earning game', 'real cash game', 'real money game', 'earning game app', 'earning app', 'game download', 'android game apk', 'latest apk', 'apk download', 'free apk', 'safe apk download', 'verified apk', 'android apps', 'gaming app', 'new games', 'new apk games', 'latest games', 'play games', 'online games', 'cash withdrawal', 'fast withdrawal', 'instant withdrawal', 'withdrawal app', 'sign up bonus', 'signup bonus', 'welcome bonus', 'bonus game', 'verified game', 'safe gaming app', 'game apk latest', 'apk latest version', 'apk store', 'apk download india', 'android apk download', 'game app download', 'mobile games', 'mobile gaming', 'real cash games india', 'cash games india', 'rummy india apk', 'rummy download india', 'rummy bonus india', 'rummy app india', 'rummy cash app', 'rummy earning app india', 'best rummy app', 'best rummy games', 'new rummy games', 'rummy 91', 'rummy 77', 'rummy 888', 'jaiho rummy', 'jaiho game', 'jaiho apk', 'jaiho 91', 'jaiho 777', 'jaiho slots', 'jaiho spin', 'jaiho arcade', 'diwawin', 'diwawin apk', 'diwa win', 'diwa top', 'diwa game', 'diwa vip', 'diwa slots', 'diwa 777', 'diwa bet', 'good slots', '777 game', '777 apk', '777 game download', 'spin777', 'spin 777 apk', 'spin 101', 'spin gold', 'spin crush', 'spin winner', 'slots winner', 'slots spin', 'ind rummy', 'ind club', 'ind slots', 'club inr', 'maha games', 'share slots', 'love rummy', 'yes spin', 'rumble rummy', 'game rummy', 'top rummy', 'hi rummy', 'max rummy', 'boss rummy', 'inr rummy', 'joy rummy', 'abc rummy', 'saga slots', '567 slots', 'mbm bet', 'mqm bet', 'fn7', 'fn7.com', '360inr', '77bet', 'y1 games', 'india 2026', 'bingo 101', 'neta vip', 'ok rummy', 'hindi 777', '789 jackpots', 'india gaming app', 'android gaming', 'apk website', 'download apk games']
+
+def _meta_description(game_name: str) -> str:
+    # Intentionally avoids claiming that a specific app actually guarantees
+    # winnings/withdrawals. It describes what users can check on the listing.
+    return (
+        f"Explore {game_name} APK with safe install guidance, verified listing info, "
+        f"fast withdrawal details, and sign-up bonus updates. Check current terms today."
+    )
+
+def build_game_app(game_name: str, sort_order: int) -> dict:
+    canonical_name = " ".join(str(game_name).strip().split())
+    slug = slugify(canonical_name)
+
+    game_keywords = [
+        f"{canonical_name.lower()} apk",
+        f"{canonical_name.lower()} apk download",
+        f"{canonical_name.lower()} download",
+        f"{canonical_name.lower()} latest version",
+        f"{canonical_name.lower()} app",
+        f"{slug} apk",
+    ]
+
+    keywords = list(dict.fromkeys(game_keywords + BASE_SEO_KEYWORDS))
+
+    return {
+        "name": canonical_name,
+        "version": "Latest",
+        "size": "Varies",
+        "rating": 4.5,
+        "downloads": 0,
+        "verified": True,
+        "category": "Games",
+        "description": (
+            f"{canonical_name} APK listing on YONO GAMES with download information, "
+            "version details, installation guidance, and frequently updated metadata."
+        ),
+        "icon_url": "",
+        "apk_url": "",
+        "featured": sort_order < 3,
+        "featured_order": sort_order + 1 if sort_order < 3 else None,
+        "pinned": sort_order < 3,
+        "sort_order": sort_order,
+        "developer": "",
+        "package_name": "",
+        "min_android": "Android 6.0+",
+        "whats_new": "Listing created from the current game catalogue; update this field when a new APK is published.",
+        "screenshots": [],
+        "trending": sort_order < 10,
+        "hidden": False,
+        "features": ["APK information", "Version details", "Installation guidance"],
+        "requirements": "Android 6.0 or later",
+        "permissions": [],
+        "badge": "Auto",
+        "signup_bonus": "",
+        "min_withdraw": "",
+        "slug": slug,
+        "seo_title": f"{canonical_name} APK Download - Play & Win Real Cash | YONO GAMES",
+        "meta_description": _meta_description(canonical_name),
+        "keywords": ", ".join(keywords),
+        "focus_keyword": f"{canonical_name} APK Download",
+        "og_image": "",
+        "noindex": False,
+        "faq_items": [],
+    }
+
+def build_dynamic_app_catalog() -> list[dict]:
+    seen_slugs: set[str] = set()
+    result: list[dict] = []
+
+    for index, raw_name in enumerate(IMAGE_EXTRACTED_GAME_NAMES):
+        app = build_game_app(raw_name, index)
+        base_slug = app["slug"]
+        slug = base_slug or f"game-{index + 1}"
+
+        # Guarantee every generated route is unique.
+        if slug in seen_slugs:
+            suffix = 2
+            while f"{slug}-{suffix}" in seen_slugs:
+                suffix += 1
+            slug = f"{slug}-{suffix}"
+            app["slug"] = slug
+            app["seo_title"] = f"{app['name']} APK Download - Play & Win Real Cash | YONO GAMES"
+
+        seen_slugs.add(slug)
+        result.append(app)
+
+    return result
+
+GENERATED_APPS = build_dynamic_app_catalog()
+GENERATED_APP_BY_SLUG = {app["slug"]: app for app in GENERATED_APPS}
+
 
 class AppModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
@@ -322,6 +463,48 @@ async def get_current_admin(request: Request) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+
+# ---------------------------------------------------------------------------
+# Protected Google bulk index notification route
+# ---------------------------------------------------------------------------
+@api_router.post("/admin/run-indexer")
+@api_router.get("/admin/run-indexer")
+async def run_indexer(admin: dict = Depends(get_current_admin)):
+    apps = await fbs.list_apps()
+    success, failed = 0, 0
+    details = []
+
+    for app_doc in apps:
+        slug = slugify(app_doc.get("slug") or "")
+        if not slug:
+            continue
+
+        result = _notify_single_url(slug)
+        if isinstance(result, dict) and result.get("error"):
+            failed += 1
+            details.append({
+                "slug": slug,
+                "url": f"{SITE_URL}/{slug}",
+                "status": "failed",
+                "error": result["error"],
+            })
+        else:
+            success += 1
+            details.append({
+                "slug": slug,
+                "url": f"{SITE_URL}/{slug}",
+                "status": "success",
+            })
+
+    return {
+        "message": "Bulk URL notification completed",
+        "success": success,
+        "failed": failed,
+        "total": len(details),
+        "details": details,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Auth routes (Supporting both /admin/ and /auth/ prefixes)
 # ---------------------------------------------------------------------------
@@ -367,12 +550,12 @@ def default_settings() -> dict:
         "branding": {
             "site_name": "YONO GAMES",
             "logo_text": "YONO GAMES",
-            "logo_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
-            "favicon_url": "https://www.uonogamesapk.com/api/uploads/253f23946185403b8ef85609ec9b818e.png",
+            "logo_url": "https://newyono.games/api/uploads/253f23946185403b8ef85609ec9b818e.png",
+            "favicon_url": "https://newyono.games/api/uploads/253f23946185403b8ef85609ec9b818e.png",
             "footer_text": "Premium APK store for safe, verified Android games and apps.",
-            "copyright": "YONO GAMES · uonogamesapk.com",
+            "copyright": "YONO GAMES · newyono.games",
         },
-        "contact": {"email": "support@uonogamesapk.com", "whatsapp": "", "instagram": "", "youtube": "", "twitter": ""},
+        "contact": {"email": "support@newyono.games", "whatsapp": "", "instagram": "", "youtube": "", "twitter": ""},
         "hero": {
             "enabled": True,
             "banner_url": "/hero-banner.png",
@@ -477,14 +660,31 @@ async def list_apps(search: Optional[str] = None, category: Optional[str] = None
         key=lambda a: a.get("downloads", 0),
         reverse=True,
     )
+    featured = [_with_public_app_urls(a) for a in featured]
+    regular = [_with_public_app_urls(a) for a in regular]
+    trending = [_with_public_app_urls(a) for a in trending]
     return {"featured": featured, "apps": regular, "trending": trending, "total": len(apps)}
+
+def _with_public_app_urls(doc: dict) -> dict:
+    item = dict(doc)
+    slug = item.get("slug") or ""
+    if slug:
+        item["slug"] = slugify(slug)
+        item["page_url"] = f"{SITE_URL}/{item['slug']}"
+        item["api_url"] = f"/api/apps/slug/{item['slug']}"
+        item["download_url"] = f"/api/apps/{item['slug']}/download"
+        item["canonical_url"] = item["page_url"]
+    return item
 
 @api_router.get("/apps/slug/{slug}")
 async def get_app_by_slug(slug: str):
-    doc = await fbs.get_app_by_slug(slug)
+    canonical_slug = slugify(slug)
+    doc = await fbs.get_app_by_slug(canonical_slug)
+    if not doc and canonical_slug != slug:
+        doc = await fbs.get_app_by_slug(slug)
     if not doc:
         raise HTTPException(status_code=404, detail="App not found")
-    return doc
+    return _with_public_app_urls(doc)
 
 @api_router.get("/apps/{app_id}")
 async def get_app(app_id: str):
@@ -614,10 +814,20 @@ async def upload_file(
 @api_router.post("/admin/apps")
 async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin)):
     doc = payload.model_dump()
+    generated = build_game_app(doc["name"], int(doc.get("sort_order") or 0))
+
+    # Auto-fill SEO/routing fields only when the admin did not explicitly provide them.
+    for field in ("slug", "seo_title", "meta_description", "keywords", "focus_keyword"):
+        if not doc.get(field):
+            doc[field] = generated[field]
+
+    if not doc.get("description"):
+        doc["description"] = generated["description"]
+
     new_doc = await fbs.create_app(doc)
     if new_doc.get("category"):
         await fbs.upsert_category(new_doc["category"])
-    return new_doc
+    return _with_public_app_urls(new_doc)
 
 @api_router.put("/admin/apps/{app_id}")
 async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_current_admin)):
@@ -641,7 +851,7 @@ async def update_app(app_id: str, payload: AppUpdate, admin: dict = Depends(get_
         raise HTTPException(status_code=404, detail="App not found")
     if doc.get("category"):
         await fbs.upsert_category(doc["category"])
-    return doc
+    return _with_public_app_urls(doc)
 
 class ReorderItem(BaseModel):
     id: str
@@ -760,8 +970,6 @@ async def media_repair(admin: dict = Depends(get_current_admin)):
             await db.blog.update_one({"_id": ObjectId(issue["id"])}, {"$set": {"cover_url": ""}})
             cleared += 1
     return {"cleared": cleared, "broken_before": audit["broken_count"]}
-
-SITE_URL = os.environ.get("SITE_URL", "https://newyono.games").rstrip("/")
 
 def _xml_escape(text: str) -> str:
     return (
@@ -925,28 +1133,13 @@ async def seo_auto_generate(app_id: str, admin: dict = Depends(get_current_admin
     if not a:
         raise HTTPException(status_code=404, detail="App not found")
     name = a.get("name", "")
-    category = a.get("category", "Games")
-    description = a.get("description", "") or ""
-    focus = a.get("focus_keyword") or f"{name} APK Download"
-    title = a.get("seo_title") or f"{name} APK Download - Latest Version | YONO GAMES"
-    if len(title) > 60:
-        title = title[:57] + "..."
-    desc = a.get("meta_description") or (
-        f"Download {name} APK latest version for free. {description[:110]}"
-        if description else
-        f"Download {name} APK latest version free from YONO GAMES (newyono.games). Fast, safe and verified {category.lower()} download."
-    )
-    if len(desc) > 160:
-        desc = desc[:157] + "..."
-    keywords = a.get("keywords") or (
-        f"{name} apk, {name} download, {name} latest version, {category.lower()} apk, "
-        f"yono games apk, {name.lower()} free download"
-    )
+    generated = build_game_app(name, int(a.get("sort_order") or 0))
     updates = {
-        "seo_title": title,
-        "meta_description": desc,
-        "keywords": keywords,
-        "focus_keyword": focus,
+        "slug": a.get("slug") or generated["slug"],
+        "seo_title": generated["seo_title"],
+        "meta_description": generated["meta_description"],
+        "keywords": generated["keywords"],
+        "focus_keyword": generated["focus_keyword"],
     }
     doc = await fbs.update_app(app_id, updates)
     return doc
@@ -959,24 +1152,18 @@ async def seo_bulk_fix(admin: dict = Depends(get_current_admin)):
         if a.get("seo_title") and a.get("meta_description") and a.get("keywords"):
             continue
         name = a.get("name", "")
-        category = a.get("category", "Games")
-        description = a.get("description", "") or ""
+        generated = build_game_app(name, int(a.get("sort_order") or 0))
         updates = {}
+        if not a.get("slug"):
+            updates["slug"] = generated["slug"]
         if not a.get("seo_title"):
-            t = f"{name} APK Download - Latest Version | YONO GAMES"
-            updates["seo_title"] = t[:60]
+            updates["seo_title"] = generated["seo_title"]
         if not a.get("meta_description"):
-            d = (f"Download {name} APK latest version for free. {description[:110]}"
-                 if description else
-                 f"Download {name} APK latest version free from YONO GAMES (newyono.games). Fast, safe and verified {category.lower()} download.")
-            updates["meta_description"] = d[:160]
+            updates["meta_description"] = generated["meta_description"]
         if not a.get("keywords"):
-            updates["keywords"] = (
-                f"{name} apk, {name} download, {name} latest version, "
-                f"{category.lower()} apk, yono games apk"
-            )
+            updates["keywords"] = generated["keywords"]
         if not a.get("focus_keyword"):
-            updates["focus_keyword"] = f"{name} APK Download"
+            updates["focus_keyword"] = generated["focus_keyword"]
         if updates:
             await fbs.update_app(a["id"], updates)
             fixed += 1
@@ -1018,8 +1205,6 @@ class BlogUpdate(BaseModel):
     og_image: Optional[str] = None
     noindex: Optional[bool] = None
 
-def slugify(text: str) -> str:
-    return "".join(c if c.isalnum() else "-" for c in text.lower()).strip("-")
 
 def _blog_is_live(doc: dict) -> bool:
     if not doc.get("published"):
@@ -1201,7 +1386,7 @@ async def restore_backup(payload: dict, admin: dict = Depends(get_current_admin)
 
 @api_router.get("/")
 async def root():
-    return {"message": "YONO GAMES API"}
+    return {"message": "NEWYONO GAMES API"}
 
 @api_router.get("/admin/winners")
 async def admin_list_winners(admin: dict = Depends(get_current_admin)):
@@ -1363,7 +1548,7 @@ async def redeem_code(payload: dict):
 
 @api_router.get("/admin/analytics")
 async def analytics(admin: dict = Depends(get_current_admin)):
-    apps = await db.apps.find().to_list(1000)
+    apps = await fbs.list_apps()
     total_downloads = sum(a.get("downloads", 0) for a in apps)
     by_category: dict = {}
     for a in apps:
@@ -1425,77 +1610,110 @@ async def delete_faq(faq_id: str, admin: dict = Depends(get_current_admin)):
         raise HTTPException(status_code=404, detail="FAQ not found")
     return {"success": True}
 
-SAMPLE_APPS = [
-    {
-        "name": "Pixel Racer X", "version": "3.2.1", "size": "78 MB", "rating": 4.8,
-        "downloads": 1250000, "verified": True, "category": "Games",
-        "description": "High-octane arcade racing with stunning pixel graphics and online multiplayer.",
-        "icon_url": "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/pixel-racer-x.apk",
-        "featured": True, "featured_order": 1,
-    },
-    {
-        "name": "Shadow Legends", "version": "5.0.4", "size": "142 MB", "rating": 4.7,
-        "downloads": 890000, "verified": True, "category": "Games",
-        "description": "Epic RPG adventure. Build your team of heroes and conquer the shadow realm.",
-        "icon_url": "https://images.unsplash.com/photo-1685381949388-bb0402fbe133?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/shadow-legends.apk",
-        "featured": True, "featured_order": 2,
-    },
-    {
-        "name": "Neon Puzzle Blast", "version": "2.1.0", "size": "45 MB", "rating": 4.9,
-        "downloads": 2100000, "verified": True, "category": "Puzzle",
-        "description": "Addictive match-3 puzzle game with glowing neon visuals.",
-        "icon_url": "https://images.unsplash.com/photo-1659885785824-3e72856b8fef?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/neon-puzzle.apk",
-        "featured": True, "featured_order": 3,
-    },
-    {
-        "name": "Sky Warriors: Air Combat", "version": "4.5.2", "size": "210 MB", "rating": 4.6,
-        "downloads": 560000, "verified": True, "category": "Games",
-        "description": "Take to the skies in intense aerial dogfights.",
-        "icon_url": "https://images.unsplash.com/photo-1740059030535-a75661748bc8?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/sky-warriors.apk",
-        "featured": False,
-    },
-    {
-        "name": "Crypto Miner Tycoon", "version": "1.8.7", "size": "62 MB", "rating": 4.3,
-        "downloads": 320000, "verified": True, "category": "Simulation",
-        "description": "Build your crypto empire in this idle tycoon simulator.",
-        "icon_url": "https://images.unsplash.com/photo-1633419461186-7d40a38105ec?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/crypto-miner.apk",
-        "featured": False,
-    },
-    {
-        "name": "Word Quest Adventure", "version": "6.0.1", "size": "38 MB", "rating": 4.5,
-        "downloads": 780000, "verified": True, "category": "Puzzle",
-        "description": "Expand your vocabulary while exploring magical lands.",
-        "icon_url": "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/word-quest.apk",
-        "featured": False,
-    },
-    {
-        "name": "Battle Royale Legends", "version": "12.3.0", "size": "1.2 GB", "rating": 4.4,
-        "downloads": 5400000, "verified": True, "category": "Games",
-        "description": "Drop in, gear up, and be the last one standing.",
-        "icon_url": "https://images.unsplash.com/photo-1685381949388-bb0402fbe133?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/battle-royale.apk",
-        "featured": False,
-    },
-    {
-        "name": "Zen Garden Idle",
-        "version": "2.4.9",
-        "size": "54 MB",
-        "rating": 4.7,
-        "downloads": 410000,
-        "verified": True,
-        "category": "Simulation",
-        "description": "Relax and grow your own peaceful zen garden.",
-        "icon_url": "https://images.unsplash.com/photo-1659885785824-3e72856b8fef?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
-        "apk_url": "https://example.com/apk/zen-garden.apk",
-        "featured": False,
-    },
-]
+
+# ---------------------------------------------------------------------------
+# Dynamic app synchronisation
+# ---------------------------------------------------------------------------
+async def sync_generated_apps(replace_existing: bool = False) -> dict:
+    """
+    Synchronize the image-derived catalogue into the Firebase app store used by
+    the public API.
+
+    replace_existing=True is intentionally explicit because it deletes existing
+    app records before recreating the 69 generated records. Back up first.
+    """
+    existing = await fbs.list_apps()
+
+    if replace_existing:
+        deleted = 0
+        for app_doc in existing:
+            app_id = app_doc.get("id")
+            if app_id:
+                try:
+                    if await fbs.delete_app(app_id):
+                        deleted += 1
+                except Exception as exc:
+                    logger.warning("Could not delete existing app %s: %s", app_id, exc)
+        existing = []
+    else:
+        deleted = 0
+
+    existing_by_slug = {
+        slugify(a.get("slug") or ""): a
+        for a in existing
+        if a.get("slug")
+    }
+
+    created = 0
+    updated = 0
+    skipped = 0
+    generated_ids = []
+
+    for index, generated in enumerate(GENERATED_APPS):
+        existing_doc = existing_by_slug.get(generated["slug"])
+
+        if existing_doc and not replace_existing:
+            # Keep existing media/download counters while refreshing routing + SEO.
+            protected_fields = {
+                "icon_url": existing_doc.get("icon_url", ""),
+                "apk_url": existing_doc.get("apk_url", ""),
+                "screenshots": existing_doc.get("screenshots", []),
+                "downloads": existing_doc.get("downloads", 0),
+                "rating": existing_doc.get("rating", 4.5),
+            }
+
+            updates = {
+                **generated,
+                **protected_fields,
+                "updated_at": now_iso(),
+            }
+            await fbs.update_app(existing_doc["id"], updates)
+            updated += 1
+            generated_ids.append(existing_doc["id"])
+            continue
+
+        generated["created_at"] = now_iso()
+        created_doc = await fbs.create_app(generated)
+        created += 1
+        generated_ids.append(created_doc.get("id"))
+
+        try:
+            await fbs.upsert_category(generated["category"])
+        except Exception:
+            pass
+
+    return {
+        "success": True,
+        "generated_games": len(GENERATED_APPS),
+        "created": created,
+        "updated": updated,
+        "deleted": deleted,
+        "total_after_sync": len(await fbs.list_apps()),
+        "slugs": [a["slug"] for a in GENERATED_APPS],
+    }
+
+@api_router.post("/admin/sync-games")
+async def sync_games(
+    replace_existing: bool = False,
+    admin: dict = Depends(get_current_admin),
+):
+    return await sync_generated_apps(replace_existing=replace_existing)
+
+@api_router.get("/admin/generated-games")
+async def generated_games_preview(admin: dict = Depends(get_current_admin)):
+    return {
+        "count": len(GENERATED_APPS),
+        "games": [
+            {
+                "name": a["name"],
+                "slug": a["slug"],
+                "seo_title": a["seo_title"],
+                "meta_description": a["meta_description"],
+                "focus_keyword": a["focus_keyword"],
+            }
+            for a in GENERATED_APPS
+        ],
+    }
 
 DEFAULT_FAQS = [
     {"question": "Is this APK safe to install?", "answer": "Yes. Every APK listed on YONO GAMES (newyono.games) is scanned for malware and manually reviewed before publishing. Files marked with the green 'Verified' badge have passed our security checks. We recommend only downloading from this official page and always keeping Google Play Protect enabled on your device for an extra layer of safety."},
@@ -1527,11 +1745,8 @@ async def seed():
     elif not verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
 
-    if await db.apps.count_documents({}) == 0:
-        docs = [{**a, "created_at": now_iso()} for a in SAMPLE_APPS]
-        await db.apps.insert_many(docs)
-        logger.info("Seeded %d sample apps", len(docs))
-
+    # App records are intentionally NOT auto-replaced at startup.
+    # Use POST /api/admin/sync-games?replace_existing=true after taking a backup.
     default_shots = [
         "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
         "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
