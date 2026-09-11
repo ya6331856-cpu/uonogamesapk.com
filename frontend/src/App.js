@@ -21,7 +21,7 @@ import UsersSecurityPage from "./pages/admin/UsersSecurityPage";
 import AdminReviews from "./components/admin/AdminReviews";
 
 // SettingsPages.jsx se saare sub-pages aur main settings import ki gayi hai
-import SettingsPage, { HomepagePage, CategoriesPage, AdsPage, NotificationsPage, HeroPage } from "./pages/admin/SettingsPage";
+import SettingsPage, { HomepagePage, CategoriesPage, AdsPage, NotificationsPage, HeroPage } from "./pages/admin/SettingsPages";
 
 function LegacyAppRedirect() {
   const { id } = useParams();
