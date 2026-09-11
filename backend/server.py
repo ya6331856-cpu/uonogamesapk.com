@@ -55,13 +55,14 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Google Indexing API Setup
 # ---------------------------------------------------------------------------
-SERVICE_ACCOUNT_INFO = json.loads(os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "{}"))
+INDEXING_SCOPES = ["https://www.googleapis.com/auth/indexing"]
+SERVICE_ACCOUNT_FILE = "service_account.json"
 
 def _notify_single_url(slug: str):
     target_url = f"https://newyono.games/{slug}"
     try:
-        creds = service_account.Credentials.from_service_account_info(
-            SERVICE_ACCOUNT_INFO, scopes=INDEXING_SCOPES
+        creds = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=INDEXING_SCOPES
         )
         service = build("indexing", "v3", credentials=creds)
         body = {"url": target_url, "type": "URL_UPDATED"}
