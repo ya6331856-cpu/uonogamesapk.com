@@ -185,16 +185,11 @@ async def force_create_admin():
 # ---------------------------------------------------------------------------
 # Dynamic Game Catalogue + SEO Generation
 # ---------------------------------------------------------------------------
-# Extracted from the five screenshots supplied with this project.
-# Duplicate screenshots do not create duplicate entries because this list is
-# normalized and de-duplicated before catalogue generation.
 IMAGE_EXTRACTED_GAME_NAMES = ['Yono Games', 'Gogo Rummy', 'Bingo 101', 'Yono Rummy', 'SPIN777', 'Yono VIP', 'SPIN 101', 'Spin Crush', 'Spin Gold', '101 Z', 'YN777', 'Slots Spin', 'Neta.VIP', 'Jaiho Arcade', 'Jaiho Spin', 'Rummy 91', 'Jaiho 777', 'Jaiho Rummy', 'ABC Rummy', 'Saga Slots', '567 Slots', 'YONO777', 'MBMbet', 'Slots Winner', 'EVER 777', 'Yono Slots', 'IND Slots', 'Jaiho Win', 'Top Rummy', 'IND Rummy', 'IND Club', '777 Game', 'Hi Rummy', 'Maha Games', 'Share Slots', 'Love Rummy', 'Yes Spin', 'Rumble Rummy', 'Game Rummy', '789 Jackpots', 'Hindi 777', 'OK Rummy', 'Rummy Ludo', 'Rummy 77', 'Rummy 888', 'Jaiho Slots', 'Max Rummy', 'INR Rummy', 'Boss Rummy', 'Spin Winner', 'Yono Arcade', 'Joy Rummy', 'Club INR', 'INDIA 2026', '77BET', 'Y1 Games', 'FN7.COM', '360INR', 'DiwaWin', 'DiwaTop', 'DiwaGame', 'Diwa.bet', 'DiwaVIP', 'DiwaX', 'GoodSlots', 'DiwaSlot', 'Diwa777', 'MQMBet', 'Diwaking']
 
 BASE_SEO_KEYWORDS = ['yono games', 'yono games apk', 'yono game download', 'new yono games', 'yono rummy', 'yono rummy apk', 'yono vip', 'yono vip apk', 'yono arcade', 'yono slots', 'yono 777', 'yono777 apk', 'yono games latest version', 'yono games app', 'yono apk', 'rummy apk', 'rummy game', 'rummy app', 'rummy download', 'rummy apk download', 'rummy real cash', 'real cash rummy', 'online rummy', 'online rummy apk', 'rummy games', 'rummy game download', 'rummy latest version', 'rummy bonus', 'rummy sign up bonus', 'rummy cash game', 'rummy real money', 'rummy earning app', 'rummy tournament', 'rummy withdrawal', 'fast withdrawal rummy', 'instant withdrawal rummy', 'rummy india', 'indian rummy', 'points rummy', 'pool rummy', 'deals rummy', 'teen patti', 'teen patti apk', 'slots game', 'slots apk', 'slots game download', 'online slots', 'slots app', 'casino game apk', 'money game', 'money game apk', 'money earning game', 'cash earning game', 'real cash game', 'real money game', 'earning game app', 'earning app', 'game download', 'android game apk', 'latest apk', 'apk download', 'free apk', 'safe apk download', 'verified apk', 'android apps', 'gaming app', 'new games', 'new apk games', 'latest games', 'play games', 'online games', 'cash withdrawal', 'fast withdrawal', 'instant withdrawal', 'withdrawal app', 'sign up bonus', 'signup bonus', 'welcome bonus', 'bonus game', 'verified game', 'safe gaming app', 'game apk latest', 'apk latest version', 'apk store', 'apk download india', 'android apk download', 'game app download', 'mobile games', 'mobile gaming', 'real cash games india', 'cash games india', 'rummy india apk', 'rummy download india', 'rummy bonus india', 'rummy app india', 'rummy cash app', 'rummy earning app india', 'best rummy app', 'best rummy games', 'new rummy games', 'rummy 91', 'rummy 77', 'rummy 888', 'jaiho rummy', 'jaiho game', 'jaiho apk', 'jaiho 91', 'jaiho 777', 'jaiho slots', 'jaiho spin', 'jaiho arcade', 'diwawin', 'diwawin apk', 'diwa win', 'diwa top', 'diwa game', 'diwa vip', 'diwa slots', 'diwa 777', 'diwa bet', 'good slots', '777 game', '777 apk', '777 game download', 'spin777', 'spin 777 apk', 'spin 101', 'spin gold', 'spin crush', 'spin winner', 'slots winner', 'slots spin', 'ind rummy', 'ind club', 'ind slots', 'club inr', 'maha games', 'share slots', 'love rummy', 'yes spin', 'rumble rummy', 'game rummy', 'top rummy', 'hi rummy', 'max rummy', 'boss rummy', 'inr rummy', 'joy rummy', 'abc rummy', 'saga slots', '567 slots', 'mbm bet', 'mqm bet', 'fn7', 'fn7.com', '360inr', '77bet', 'y1 games', 'india 2026', 'bingo 101', 'neta vip', 'ok rummy', 'hindi 777', '789 jackpots', 'india gaming app', 'android gaming', 'apk website', 'download apk games']
 
 def _meta_description(game_name: str) -> str:
-    # Intentionally avoids claiming that a specific app actually guarantees
-    # winnings/withdrawals. It describes what users can check on the listing.
     return (
         f"Explore {game_name} APK with safe install guidance, verified listing info, "
         f"fast withdrawal details, and sign-up bonus updates. Check current terms today."
@@ -265,7 +260,6 @@ def build_dynamic_app_catalog() -> list[dict]:
         base_slug = app["slug"]
         slug = base_slug or f"game-{index + 1}"
 
-        # Guarantee every generated route is unique.
         if slug in seen_slugs:
             suffix = 2
             while f"{slug}-{suffix}" in seen_slugs:
@@ -1693,6 +1687,7 @@ async def sync_generated_apps(replace_existing: bool = False) -> dict:
     }
 
 @api_router.post("/admin/sync-games")
+@api_router.get("/admin/sync-games")
 async def sync_games(
     replace_existing: bool = False,
     admin: dict = Depends(get_current_admin),
