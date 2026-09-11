@@ -22,6 +22,7 @@ import LiveWinners from "@/components/LiveWinners";
 import ReviewsSection from "@/components/ReviewsSection";
 import RedeemBox from "@/components/RedeemBox";
 import AdSlot from "@/components/AdSlot";
+import OptimizedImage from "@/components/OptimizedImage";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -43,7 +44,6 @@ const SORTS = [
 export default function Store() {
   const { settings } = useSettings();
   
-  // Instant load from localStorage cache (persists across visits & tabs)
   const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
   const [data, setData] = useState(() => cachedData ? JSON.parse(cachedData) : null);
   const [loading, setLoading] = useState(!cachedData);
@@ -72,10 +72,9 @@ export default function Store() {
   const handleDownload = (app) => {
     toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
     
-    // DIRECT LINK BYPASS - Render ka wait nahi karna
     if (app.apk_url && app.apk_url.startsWith("http")) {
       window.open(app.apk_url, "_blank"); 
-      api.get(`/apps/${app.id}/download`).catch(() => {}); // Silent Tracking
+      api.get(`/apps/${app.id}/download`).catch(() => {});
     } else {
       window.open(`${API}/apps/${app.id}/download`, "_blank");
     }
@@ -254,7 +253,11 @@ export default function Store() {
             className="overflow-hidden rounded-[20px] border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.1)]"
             data-testid="hero-banner"
           >
-            <img src={resolveUrl(hero.banner_url || "/hero-banner.png")} alt={hero.headline || "Uonogamesapk.com"} className="block w-full" loading="eager" decoding="async" />
+            <OptimizedImage 
+              src={resolveUrl(hero.banner_url || "/hero-banner.png")} 
+              alt={hero.headline || "Uonogamesapk.com"} 
+              className="block w-full" 
+            />
           </motion.div>
           {(hero.headline || hero.subtitle) && (
             <div className="mt-3 text-center">
@@ -337,7 +340,6 @@ export default function Store() {
           </>
         )}
 
-        {/* SEO Text Block - Homepage ke ekdum niche */}
         {isDefaultView && (
           <section className="mt-8 mb-4 space-y-4 rounded-[24px] border border-[#E5E7EB] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <h2 className="font-display text-xl font-bold text-[#111111]">
