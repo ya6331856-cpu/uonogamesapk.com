@@ -17,7 +17,7 @@ import BlogPage from "./pages/admin/BlogPage";
 import MediaLibraryPage from "./pages/admin/MediaLibraryPage";
 import SeoDashboardPage from "./pages/admin/SeoDashboardPage";
 import BackupPage from "./pages/admin/BackupPage";
-import UsersSecurityPage from "./pages/admin/UsersSecurityPage";
+import UsersSecurityPage from "./pages/admin/UsersSecurityPages";
 import AdminReviews from "./components/admin/AdminReviews";
 
 // SettingsPages.jsx se saare sub-pages aur main settings import ki gayi hai
