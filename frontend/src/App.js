@@ -9,8 +9,6 @@ import AppDetail from "./pages/AppDetail";
 import AdminLogin from "./pages/AdminLogin";
 import PwaInstallBanner from "./components/PWAInstallBanner";
 import Analytics from "./components/Analytics";
-
-// Correct paths matching exact file locations and casing
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ApksPage from "./pages/admin/ApksPage";
@@ -21,6 +19,8 @@ import SeoDashboardPage from "./pages/admin/SeoDashboardPage";
 import BackupPage from "./pages/admin/BackupPage";
 import UsersSecurityPage from "./pages/admin/UsersSecurityPage";
 import AdminReviews from "./components/admin/AdminReviews";
+
+// SettingsPages.jsx se saare sub-pages aur main settings import ki gayi hai
 import SettingsPage, { HomepagePage, CategoriesPage, AdsPage, NotificationsPage, HeroPage } from "./pages/admin/SettingsPage";
 
 function LegacyAppRedirect() {
@@ -47,10 +47,15 @@ function App() {
                   <Route path="featured-apps" element={<FeaturedAppsPage />} />
                   <Route path="blog" element={<BlogPage />} />
                   <Route path="media-library" element={<MediaLibraryPage />} />
+                  
+                  {/* SEO & Ranking Management Routes */}
                   <Route path="seo" element={<SeoDashboardPage />} />
                   <Route path="seo-dashboard" element={<SeoDashboardPage />} />
+                  
                   <Route path="backup" element={<BackupPage />} />
                   <Route path="users" element={<UsersSecurityPage />} />
+                  
+                  {/* Settings aur baaki sabhi sub-pages */}
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="homepage" element={<HomepagePage />} />
                   <Route path="categories" element={<CategoriesPage />} />
