@@ -1691,7 +1691,12 @@ async def sync_generated_apps(replace_existing: bool = False) -> dict:
 async def sync_games(
     replace_existing: bool = False
 ):
-    return await sync_generated_apps(replace_existing=replace_existing)
+    try:
+        return await sync_generated_apps(replace_existing=replace_existing)
+    except Exception as e:
+        import traceback
+        logger.error("Sync failed: %s", traceback.format_exc())
+        return {"success": False, "error": str(e)}
 
 @api_router.get("/admin/generated-games")
 async def generated_games_preview(admin: dict = Depends(get_current_admin)):
