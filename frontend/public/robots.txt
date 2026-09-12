@@ -1,6 +1,15 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /admin/
+Allow: /api/apps/
+Allow: /api/categories
+Allow: /api/settings
+Allow: /api/blog
+Allow: /api/faqs
+Allow: /api/reviews
+Allow: /api/winners
+Allow: /api/sitemap.xml
+Allow: /api/uploads/
+Disallow: /api/admin/
+Disallow: /api/auth/
 
-Sitemap: https://newyono.games/sitemap.xml
+Sitemap: https://newyono.games/api/sitemap.xml
