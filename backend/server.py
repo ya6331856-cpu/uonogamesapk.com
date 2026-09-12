@@ -45,6 +45,19 @@ JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 
 app = FastAPI()
+
+# CORS Middleware placed correctly at the top to prevent blocking requests and Search Console errors
+origins_env = os.environ.get("CORS_ORIGINS", "https://newyono.games,https://www.newyono.games")
+origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 api_router = APIRouter(prefix="/api")
 
 @app.get("/health")
@@ -61,13 +74,6 @@ SITE_URL = os.environ.get("SITE_URL", "https://newyono.games").rstrip("/")
 INDEXING_SCOPES = ["https://www.googleapis.com/auth/indexing"]
 
 def _load_google_service_account_info() -> dict:
-    """
-    Supports all common Render configurations:
-      1. GOOGLE_SERVICE_ACCOUNT_JSON=<full JSON>
-      2. GOOGLE_SERVICE_ACCOUNT_FILE=/etc/secrets/service_account.json
-      3. Render Secret File named service_account.json, automatically found at
-         /etc/secrets/service_account.json and, for non-Docker services, ./service_account.json.
-    """
     raw_json = (os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON") or "").strip()
     if raw_json:
         try:
@@ -811,7 +817,6 @@ async def create_app(payload: AppCreate, admin: dict = Depends(get_current_admin
     doc = payload.model_dump()
     generated = build_game_app(doc["name"], int(doc.get("sort_order") or 0))
 
-    # Auto-fill SEO/routing fields only when the admin did not explicitly provide them.
     for field in ("slug", "seo_title", "meta_description", "keywords", "focus_keyword"):
         if not doc.get(field):
             doc[field] = generated[field]
@@ -1610,13 +1615,6 @@ async def delete_faq(faq_id: str, admin: dict = Depends(get_current_admin)):
 # Dynamic app synchronisation
 # ---------------------------------------------------------------------------
 async def sync_generated_apps(replace_existing: bool = False) -> dict:
-    """
-    Synchronize the image-derived catalogue into the Firebase app store used by
-    the public API.
-
-    replace_existing=True is intentionally explicit because it deletes existing
-    app records before recreating the 69 generated records. Back up first.
-    """
     existing = await fbs.list_apps()
 
     if replace_existing:
@@ -1641,14 +1639,12 @@ async def sync_generated_apps(replace_existing: bool = False) -> dict:
 
     created = 0
     updated = 0
-    skipped = 0
     generated_ids = []
 
     for index, generated in enumerate(GENERATED_APPS):
         existing_doc = existing_by_slug.get(generated["slug"])
 
         if existing_doc and not replace_existing:
-            # Keep existing media/download counters while refreshing routing + SEO.
             protected_fields = {
                 "icon_url": existing_doc.get("icon_url", ""),
                 "apk_url": existing_doc.get("apk_url", ""),
@@ -1744,8 +1740,6 @@ async def seed():
     elif not verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
 
-    # App records are intentionally NOT auto-replaced at startup.
-    # Use POST /api/admin/sync-games?replace_existing=true after taking a backup.
     default_shots = [
         "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
         "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?crop=entropy&cs=srgb&fm=jpg&w=600&q=80",
@@ -1908,11 +1902,3 @@ async def noindex_private_routes(request: Request, call_next):
     return response
 
 app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
