@@ -1032,10 +1032,18 @@ async def sitemap():
 
 ROBOTS_TXT = (
     "User-agent: *\n"
-    "Allow: /\n\n"
-    "Disallow: /api/\n"
+    "Allow: /\n"
+    "Allow: /api/apps/\n"
+    "Allow: /api/categories\n"
+    "Allow: /api/settings\n"
+    "Allow: /api/blog\n"
+    "Allow: /api/faqs\n"
+    "Allow: /api/reviews\n"
+    "Allow: /api/winners\n"
     "Allow: /api/sitemap.xml\n"
-    "Allow: /api/uploads/\n\n"
+    "Allow: /api/uploads/\n"
+    "Disallow: /api/admin/\n"
+    "Disallow: /api/auth/\n\n"
     f"Sitemap: {SITE_URL}/api/sitemap.xml\n"
 )
 
