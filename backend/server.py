@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import json
 import re
+import traceback
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -1694,7 +1695,6 @@ async def sync_games(
     try:
         return await sync_generated_apps(replace_existing=replace_existing)
     except Exception as e:
-        import traceback
         logger.error("Sync failed: %s", traceback.format_exc())
         return {"success": False, "error": str(e)}
 
