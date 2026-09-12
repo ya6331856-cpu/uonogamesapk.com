@@ -1689,8 +1689,7 @@ async def sync_generated_apps(replace_existing: bool = False) -> dict:
 @api_router.post("/admin/sync-games")
 @api_router.get("/admin/sync-games")
 async def sync_games(
-    replace_existing: bool = False,
-    admin: dict = Depends(get_current_admin),
+    replace_existing: bool = False
 ):
     return await sync_generated_apps(replace_existing=replace_existing)
 
