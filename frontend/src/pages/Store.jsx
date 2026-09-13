@@ -342,9 +342,9 @@ export default function Store() {
 
         {isDefaultView && (
           <section className="mt-8 mb-4 space-y-4 rounded-[24px] border border-[#E5E7EB] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-            <h2 className="font-display text-xl font-bold text-[#111111]">
+            <h1 className="font-display text-xl font-bold text-[#111111]">
               All Yono Games - Discover New Yono Apps & Play Top Gaming Apps
-            </h2>
+            </h1>
             <div className="space-y-4 text-sm leading-relaxed text-[#555555]">
               <p>
                 <strong>Yono New Games</strong> was launched with a simple mission — to give players across India a place where they can easily discover, download, and enjoy exciting mobile games. We noticed that modern players want more than just simple tapping games. Today's gamers enjoy challenges that require strategy, quick thinking, and skill.
@@ -352,9 +352,9 @@ export default function Store() {
               <p>
                 That's exactly what <strong>All New Yono Apps</strong> aims to deliver. Our platform brings together a collection of games that combine classic gameplay with modern mobile experiences. From popular card titles like <strong>Yono Rummy</strong> to the latest slot and arcade apps gaining popularity in India, every game listed here is chosen carefully for its entertainment value.
               </p>
-              <h3 className="font-display text-lg font-bold text-[#111111] pt-2">
+              <h2 className="font-display text-lg font-bold text-[#111111] pt-2">
                 Why Thousands of Players Choose Yono New Games
-              </h3>
+              </h2>
               <p>
                 Finding a reliable place to explore mobile gaming apps can be difficult. New Yono Games focuses on making that process easier for Indian players. We provide detailed information, safe download links, fast updates, and app features right at your fingertips so you can start playing instantly.
               </p>
