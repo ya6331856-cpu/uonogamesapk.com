@@ -44,6 +44,20 @@ function normalize(s) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
+// STRICT FILTER TO REMOVE CURRENT OPENED APP FROM RELATED LIST
+const processRelatedApps = (rawList, currentAppId, currentAppSlug) => {
+  if (!rawList || !Array.isArray(rawList)) return [];
+  const targetId = String(currentAppId);
+  
+  const filtered = rawList.filter(item => {
+    const itemId = String(item.id);
+    return itemId !== targetId && item.slug !== currentAppSlug;
+  });
+
+  const unique = Array.from(new Map(filtered.map(item => [item.id, item])).values());
+  return unique.slice(0, 10);
+};
+
 export default function AppDetail() {
   const { id, slug } = useParams();
   const location = useLocation();
@@ -75,16 +89,7 @@ export default function AppDetail() {
       if (cache) {
         const parsed = JSON.parse(cache);
         const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        const currentId = String(currentApp.id);
-        const currentSlug = currentApp.slug;
-
-        let rel = list.filter(a => String(a.id) !== currentId && a.slug !== currentSlug && a.category === currentApp.category);
-        if (rel.length < 10) {
-          const others = list.filter(a => String(a.id) !== currentId && a.slug !== currentSlug && a.category !== currentApp.category);
-          rel = [...rel, ...others];
-        }
-        const uniqueRel = Array.from(new Map(rel.map(item => [item.id, item])).values());
-        return uniqueRel.filter(a => String(a.id) !== currentId && a.slug !== currentSlug).slice(0, 10);
+        return processRelatedApps(list, currentApp.id, currentApp.slug);
       }
     } catch(e) {}
     return [];
@@ -97,7 +102,7 @@ export default function AppDetail() {
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  // FORCE SCROLL TO TOP INSTANTLY ON KEY CHANGE & FETCH FRESH DATA
+  // FORCE SCROLL TO TOP INSTANTLY ON KEY CHANGE & FETCH FRESH DATA WITH STRICT FILTERING
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") {
@@ -110,17 +115,16 @@ export default function AppDetail() {
     api
       .get(`/apps/${key}`)
       .then((res) => {
-        setApp(res.data);
+        const freshApp = res.data;
+        setApp(freshApp);
         setLoading(false);
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         
-        api.get(`/apps/${key}/related`, { params: { limit: 15 } })
+        api.get(`/apps/${key}/related`, { params: { limit: 20 } })
           .then((r) => {
              if(r.data && r.data.length > 0) {
-               const currentId = String(res.data.id);
-               const currentSlug = res.data.slug;
-               const filteredRel = r.data.filter(item => String(item.id) !== currentId && item.slug !== currentSlug);
-               setRelated(filteredRel.slice(0, 10));
+               const cleanList = processRelatedApps(r.data, freshApp.id, freshApp.slug);
+               setRelated(cleanList);
              }
           })
           .catch(() => {});
