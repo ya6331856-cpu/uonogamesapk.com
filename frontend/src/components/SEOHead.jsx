@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://newyono.games";
-const SITE_NAME = "YOWO GAMES";
+const SITE_NAME = "New Yono";
 const DEFAULT_OG = `${SITE_URL}/logo-v2.png`;
+const FAVICON_URL = "https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png";
 
 function absUrl(u) {
   if (!u) return SITE_URL;
@@ -23,14 +24,14 @@ export function canonicalize(input) {
     }
     url.pathname = p;
     return url.toString();
-  } catch (e) {
+  } catch (_) {
     return input;
   }
 }
 
 export default function SEOHead({ title, description, image, canonical }) {
-  const seoTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME;
-  const seoDescription = description || "Play amazing games on YOWO GAMES.";
+  const seoTitle = title ? `${title} | ${SITE_NAME} Play & Win` : `${SITE_NAME} - Play & Win | Premium APK Store`;
+  const seoDescription = description || "Play and win real cash on New Yono. Fast, safe & verified downloads.";
   const seoImage = image ? absUrl(image) : DEFAULT_OG;
   const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
 
@@ -39,6 +40,12 @@ export default function SEOHead({ title, description, image, canonical }) {
       <title>{seoTitle}</title>
       <meta name="description" content={seoDescription} />
       <link rel="canonical" href={seoCanonical} />
+      
+      {/* Favicon & Touch Icons */}
+      <link rel="icon" type="image/png" href={https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png} />
+      <link rel="shortcut icon" href={https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png} />
+      <link rel="apple-touch-icon" href={https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png} />
+
       <meta property="og:title" content={seoTitle} />
       <meta property="og:description" content={seoDescription} />
       <meta property="og:image" content={seoImage} />
