@@ -67,7 +67,7 @@ export default function AppDetail() {
   const instantApp = getInstantData();
   const [app, setApp] = useState(instantApp);
   
-  // INSTANT LOAD RELATED (Excluding current app instantly)
+  // INSTANT LOAD RELATED (Strictly filtering out current app instantly)
   const getInstantRelated = (currentApp) => {
     if (!currentApp) return [];
     try {
@@ -75,13 +75,16 @@ export default function AppDetail() {
       if (cache) {
         const parsed = JSON.parse(cache);
         const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        let rel = list.filter(a => String(a.id) !== String(currentApp.id) && a.category === currentApp.category);
+        const currentId = String(currentApp.id);
+        const currentSlug = currentApp.slug;
+
+        let rel = list.filter(a => String(a.id) !== currentId && a.slug !== currentSlug && a.category === currentApp.category);
         if (rel.length < 10) {
-          const others = list.filter(a => String(a.id) !== String(currentApp.id) && a.category !== currentApp.category);
+          const others = list.filter(a => String(a.id) !== currentId && a.slug !== currentSlug && a.category !== currentApp.category);
           rel = [...rel, ...others];
         }
         const uniqueRel = Array.from(new Map(rel.map(item => [item.id, item])).values());
-        return uniqueRel.filter(a => String(a.id) !== String(currentApp.id)).slice(0, 10);
+        return uniqueRel.filter(a => String(a.id) !== currentId && a.slug !== currentSlug).slice(0, 10);
       }
     } catch(e) {}
     return [];
@@ -111,11 +114,12 @@ export default function AppDetail() {
         setLoading(false);
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         
-        // Fetch related and strictly filter out the current opened app ID
         api.get(`/apps/${key}/related`, { params: { limit: 15 } })
           .then((r) => {
              if(r.data && r.data.length > 0) {
-               const filteredRel = r.data.filter(item => String(item.id) !== String(res.data.id));
+               const currentId = String(res.data.id);
+               const currentSlug = res.data.slug;
+               const filteredRel = r.data.filter(item => String(item.id) !== currentId && item.slug !== currentSlug);
                setRelated(filteredRel.slice(0, 10));
              }
           })
@@ -371,14 +375,14 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION (STRICTLY FILTERING OUT CURRENT OPENED APP) */}
+        {/* PEOPLE ALSO LIKE SECTION */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
               <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also like
             </h2>
             <div className="flex flex-col gap-3">
-              {/* First 5 items (Standard Card) */}
+              {/* First 5 items */}
               {related.slice(0, 5).map((r, i) => (
                 <AppCard 
                   key={r.id} 
