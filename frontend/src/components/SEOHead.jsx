@@ -30,7 +30,7 @@ export function canonicalize(input) {
 }
 
 export default function SEOHead({ title, description, image, canonical }) {
-  const seoTitle = title ? `${title} | ${SITE_NAME} Play & Win` : `${SITE_NAME} - Play & Win | Premium APK Store`;
+  const seoTitle = title ? `${title} | ${SITE_NAME} Play & Win` : `${SITE_NAME} - Play & Win`;
   const seoDescription = description || "Play and win real cash on New Yono. Fast, safe & verified downloads.";
   const seoImage = image ? absUrl(image) : DEFAULT_OG;
   const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
@@ -42,9 +42,9 @@ export default function SEOHead({ title, description, image, canonical }) {
       <link rel="canonical" href={seoCanonical} />
       
       {/* Favicon & Touch Icons */}
-      <link rel="icon" type="image/png" href={https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png} />
-      <link rel="shortcut icon" href={https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png} />
-      <link rel="apple-touch-icon" href={https://newyono.games/api/uploads/e440134c7eaa48ecaaaf0e6103626dca.png} />
+      <link rel="icon" type="image/png" href={FAVICON_URL} />
+      <link rel="shortcut icon" href={FAVICON_URL} />
+      <link rel="apple-touch-icon" href={FAVICON_URL} />
 
       <meta property="og:title" content={seoTitle} />
       <meta property="og:description" content={seoDescription} />
