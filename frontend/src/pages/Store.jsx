@@ -164,7 +164,7 @@ export default function Store() {
         </span>
         <div className="ml-auto">
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger data-testid="sort-select" className="h-8 w-auto gap-1 rounded-full border-[#E5E7EB] bg-white px-3 text-xs font-medium text-[#555555] focus:ring-[#FFC107]">
+            <SelectTrigger data-testid="sort-select" aria-label="Sort apps and games" className="h-8 w-auto gap-1 rounded-full border-[#E5E7EB] bg-white px-3 text-xs font-medium text-[#555555] focus:ring-[#FFC107]">
               <ArrowDownWideNarrow className="h-3.5 w-3.5 text-[#999999]" />
               <SelectValue />
             </SelectTrigger>
@@ -237,7 +237,7 @@ export default function Store() {
         title={settings?.seo?.homepage_title || "YONO GAMES - Play and Win | Premium Rummy & Games APK Store"}
         description={settings?.seo?.homepage_description || "Download the latest Rummy and gaming APK apps for Android free. Fast, safe & verified downloads with sign-up bonuses at YONO GAMES — uonogamesapk.com"}
         keywords={settings?.seo?.homepage_keywords || "yono games, rummy apk, teen patti apk, real cash rummy, apk download, android games, uono games apk"}
-        canonical="https://uonogamesapk.com/"
+        canonical="https://newyono.games/"
         image="/logo-v2.png"
       />
       <AnnouncementBar config={settings?.announcement} />
