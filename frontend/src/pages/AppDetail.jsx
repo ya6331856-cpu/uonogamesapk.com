@@ -64,7 +64,10 @@ export default function AppDetail() {
     return null;
   };
 
-  // INSTANT LOAD MAGIC (Related Apps - up to 10)
+  const instantApp = getInstantData();
+  const [app, setApp] = useState(instantApp);
+  
+  // INSTANT LOAD RELATED (Excluding current app instantly)
   const getInstantRelated = (currentApp) => {
     if (!currentApp) return [];
     try {
@@ -78,14 +81,12 @@ export default function AppDetail() {
           rel = [...rel, ...others];
         }
         const uniqueRel = Array.from(new Map(rel.map(item => [item.id, item])).values());
-        return uniqueRel.slice(0, 10);
+        return uniqueRel.filter(a => String(a.id) !== String(currentApp.id)).slice(0, 10);
       }
     } catch(e) {}
     return [];
   };
 
-  const instantApp = getInstantData();
-  const [app, setApp] = useState(instantApp);
   const [related, setRelated] = useState(() => getInstantRelated(instantApp));
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -93,12 +94,13 @@ export default function AppDetail() {
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
+  // FORCE SCROLL TO TOP INSTANTLY ON KEY CHANGE & FETCH FRESH DATA
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") {
       navigate("/");
       return;
     }
-    window.scrollTo(0, 0);
     if (!app) setLoading(true);
     setNotFound(false);
 
@@ -107,9 +109,15 @@ export default function AppDetail() {
       .then((res) => {
         setApp(res.data);
         setLoading(false);
-        api.get(`/apps/${key}/related`, { params: { limit: 10 } })
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        
+        // Fetch related and strictly filter out the current opened app ID
+        api.get(`/apps/${key}/related`, { params: { limit: 15 } })
           .then((r) => {
-             if(r.data && r.data.length > 0) setRelated(r.data);
+             if(r.data && r.data.length > 0) {
+               const filteredRel = r.data.filter(item => String(item.id) !== String(res.data.id));
+               setRelated(filteredRel.slice(0, 10));
+             }
           })
           .catch(() => {});
       })
@@ -363,7 +371,7 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION (UP TO 10 GAMES WITH SPLIT DESIGN AFTER 5th ITEM) */}
+        {/* PEOPLE ALSO LIKE SECTION (STRICTLY FILTERING OUT CURRENT OPENED APP) */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
@@ -380,7 +388,7 @@ export default function AppDetail() {
                 />
               ))}
 
-              {/* Design Switch / Divider after 10 games or items past index 4 */}
+              {/* Design Switch / Divider after 5th item */}
               {related.length > 5 && (
                 <div className="my-2 flex items-center gap-3">
                   <div className="h-px flex-1 bg-[#FFE082]" />
@@ -391,7 +399,7 @@ export default function AppDetail() {
                 </div>
               )}
 
-              {/* Items from index 5 to 10 (Slightly alternate distinct card style) */}
+              {/* Items from index 5 to 10 */}
               {related.slice(5, 10).map((r, i) => (
                 <div key={r.id} className="relative overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
                   <div className="flex items-center gap-3">
