@@ -297,11 +297,11 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* NEW PREMIUM "PEOPLE ALSO LIKED" SECTION */}
+        {/* PEOPLE ALSO LIKE SECTION MOVED ABOVE ABOUT THE GAME */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
-              <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also liked
+              <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also like
             </h2>
             <div className="flex flex-col gap-3">
               {related.map((r, i) => (
