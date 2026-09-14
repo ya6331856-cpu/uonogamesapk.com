@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
   ShieldCheck, HardDrive, Tag, Smartphone, Building2, Sparkles,
-  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet,
+  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet, Search, X
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -18,6 +18,7 @@ import LegalSection from "@/components/LegalSection";
 import LegalDialog from "@/components/LegalDialog";
 import SiteFooter from "@/components/SiteFooter";
 import { formatCount, formatFull } from "@/lib/format";
+import { Input } from "@/components/ui/input";
 
 const GAME_HIGHLIGHTS = [
   { icon: Zap, title: "Smooth 60 FPS", desc: "Optimized for buttery-smooth gameplay on all devices." },
@@ -35,6 +36,13 @@ const Stat = ({ icon: Icon, label, value }) => (
     <span className="text-[10px] text-[#999999]">{label}</span>
   </div>
 );
+
+function normalize(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "");
+}
 
 export default function AppDetail() {
   const { id, slug } = useParams();
@@ -56,7 +64,7 @@ export default function AppDetail() {
     return null;
   };
 
-  // INSTANT LOAD MAGIC (Related Apps)
+  // INSTANT LOAD MAGIC (Related Apps - up to 10)
   const getInstantRelated = (currentApp) => {
     if (!currentApp) return [];
     try {
@@ -65,12 +73,12 @@ export default function AppDetail() {
         const parsed = JSON.parse(cache);
         const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
         let rel = list.filter(a => String(a.id) !== String(currentApp.id) && a.category === currentApp.category);
-        if (rel.length < 5) {
+        if (rel.length < 10) {
           const others = list.filter(a => String(a.id) !== String(currentApp.id) && a.category !== currentApp.category);
           rel = [...rel, ...others];
         }
         const uniqueRel = Array.from(new Map(rel.map(item => [item.id, item])).values());
-        return uniqueRel.slice(0, 5);
+        return uniqueRel.slice(0, 10);
       }
     } catch(e) {}
     return [];
@@ -79,6 +87,7 @@ export default function AppDetail() {
   const instantApp = getInstantData();
   const [app, setApp] = useState(instantApp);
   const [related, setRelated] = useState(() => getInstantRelated(instantApp));
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [loading, setLoading] = useState(!instantApp); 
   const [notFound, setNotFound] = useState(false);
@@ -98,7 +107,7 @@ export default function AppDetail() {
       .then((res) => {
         setApp(res.data);
         setLoading(false);
-        api.get(`/apps/${key}/related`, { params: { limit: 5 } })
+        api.get(`/apps/${key}/related`, { params: { limit: 10 } })
           .then((r) => {
              if(r.data && r.data.length > 0) setRelated(r.data);
           })
@@ -110,11 +119,29 @@ export default function AppDetail() {
       });
   }, [key, navigate]);
 
+  // Global cache list for instant search filter
+  const allCachedApps = useMemo(() => {
+    try {
+      const cache = localStorage.getItem("yono_apps_perm_cache");
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
+        return Array.from(new Map(list.map(item => [item.id, item])).values());
+      }
+    } catch(e) {}
+    return [];
+  }, []);
+
+  const filteredSearchApps = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = normalize(searchQuery);
+    return allCachedApps.filter(a => normalize(a.name).includes(q) || normalize(a.category).includes(q)).slice(0, 8);
+  }, [searchQuery, allCachedApps]);
+
   const handleDownload = () => {
     if (!app) return;
     toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
     
-    // DIRECT LINK BYPASS - Main App
     if (app.apk_url && app.apk_url.startsWith("http")) {
       window.open(app.apk_url, "_blank"); 
       api.get(`/apps/${app.id}/download`).catch(() => {});
@@ -126,8 +153,6 @@ export default function AppDetail() {
 
   const handleRelatedDownload = (relApp) => {
     toast.success(`Opening: ${relApp.name}`, { description: `${relApp.size} • v${relApp.version}` });
-    
-    // DIRECT LINK BYPASS - Related Apps
     if (relApp.apk_url && relApp.apk_url.startsWith("http")) {
       window.open(relApp.apk_url, "_blank");
       api.get(`/apps/${relApp.id}/download`).catch(() => {});
@@ -183,10 +208,10 @@ export default function AppDetail() {
     <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
       <SEOHead
         type="app"
-        title={app.seo_title || `${app.name} APK Download - Latest Version | Uonogamesapk.com`}
-        description={app.meta_description || (app.description || "").slice(0, 160) || `Download ${app.name} APK latest version for Android. Fast, safe and verified download at Uonogamesapk.com.`}
+        title={app.seo_title || `${app.name} APK Download - Latest Version | New Yono`}
+        description={app.meta_description || (app.description || "").slice(0, 160) || `Download ${app.name} APK latest version for Android. Fast, safe and verified download.`}
         keywords={app.keywords || `${app.name} apk, ${app.name} download, ${app.category?.toLowerCase()} apk`}
-        canonical={`https://uonogamesapk.com/${app.slug || app.id}`}
+        canonical={`https://newyono.games/${app.slug || app.id}`}
         image={app.og_image || app.icon_url}
         noindex={!!app.noindex || !!app.hidden}
         app={app}
@@ -205,6 +230,47 @@ export default function AppDetail() {
           <Share2 className="h-4 w-4" />
         </button>
       </header>
+
+      {/* TOP LIVE SEARCH BAR FOR QUICK GAME FINDING */}
+      <div className="sticky top-[57px] z-30 bg-white/95 px-4 py-2.5 border-b border-[#E5E7EB] backdrop-blur-md">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777777]" />
+          <Input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search any game to download instantly..."
+            className="h-10 rounded-full border-[#E5E7EB] bg-[#F8F9FA] pl-10 pr-10 text-sm focus-visible:ring-[#FFC107]"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-[#E5E7EB] text-[#555555]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {searchQuery && filteredSearchApps.length > 0 && (
+          <div className="absolute inset-x-4 top-full mt-1 overflow-hidden rounded-[16px] border border-[#E5E7EB] bg-white shadow-xl z-50">
+            {filteredSearchApps.map((item) => (
+              <Link
+                key={item.id}
+                to={`/${item.slug || item.id}`}
+                onClick={() => setSearchQuery("")}
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#FFF8E1] transition-colors border-b border-[#F1F2F4] last:border-none"
+              >
+                <AppIcon src={resolveUrl(item.icon_url)} className="h-8 w-8 rounded-lg shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-[#111111] truncate">{item.name}</p>
+                  <p className="text-[10px] text-[#777777]">{item.category} • ⭐ {item.rating?.toFixed(1)}</p>
+                </div>
+                <span className="text-[11px] font-semibold text-[#B45309] bg-[#FFF8E1] px-2 py-1 rounded-full">View</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       <main className="space-y-6 px-4 pt-4">
         <Breadcrumbs items={[
@@ -297,20 +363,51 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION MOVED ABOVE ABOUT THE GAME */}
+        {/* PEOPLE ALSO LIKE SECTION (UP TO 10 GAMES WITH SPLIT DESIGN AFTER 5th ITEM) */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
               <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also like
             </h2>
             <div className="flex flex-col gap-3">
-              {related.map((r, i) => (
+              {/* First 5 items (Standard Card) */}
+              {related.slice(0, 5).map((r, i) => (
                 <AppCard 
                   key={r.id} 
                   app={r} 
                   index={i} 
                   onDownload={() => handleRelatedDownload(r)} 
                 />
+              ))}
+
+              {/* Design Switch / Divider after 10 games or items past index 4 */}
+              {related.length > 5 && (
+                <div className="my-2 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[#FFE082]" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] px-3 py-1 rounded-full">
+                    Explore More Recommendations
+                  </span>
+                  <div className="h-px flex-1 bg-[#FFE082]" />
+                </div>
+              )}
+
+              {/* Items from index 5 to 10 (Slightly alternate distinct card style) */}
+              {related.slice(5, 10).map((r, i) => (
+                <div key={r.id} className="relative overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center gap-3">
+                    <AppIcon src={resolveUrl(r.icon_url)} className="h-12 w-12 rounded-[14px] shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-bold text-[#111111] truncate">{r.name}</p>
+                      <p className="text-xs text-[#777777] truncate">{r.category} • ⭐ {r.rating?.toFixed(1)}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRelatedDownload(r)}
+                      className="rounded-full bg-[#FFC107] px-4 py-2 text-xs font-bold text-[#111111] shadow-md hover:bg-[#FFB300]"
+                    >
+                      Download
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </section>
