@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame } from "lucide-react";
+import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -23,6 +23,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 import RedeemBox from "@/components/RedeemBox";
 import AdSlot from "@/components/AdSlot";
 import OptimizedImage from "@/components/OptimizedImage";
+import RippleButton from "@/components/RippleButton";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -197,11 +198,10 @@ export default function Store() {
   const trending = useMemo(() => {
     if (!data) return [];
     const t = data.trending && data.trending.length ? data.trending : [...(data.featured || []), ...(data.apps || [])];
-    return t.slice().sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 8);
+    return t.slice().sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 4);
   }, [data]);
 
   const isDefaultView = !search.trim() && category === "All";
-  const showTrendingBreak = isDefaultView && filtered.length > 4;
   const hero = settings?.hero || {};
   const stats = settings?.stats || {};
   const tg = settings?.telegram || {};
@@ -236,20 +236,6 @@ export default function Store() {
       {filtered.length === 0 ? (
         <div data-testid="empty-state" className="rounded-[20px] border border-dashed border-[#E5E7EB] bg-white py-10 text-center">
           <p className="text-sm text-[#777777]">No apps found</p>
-        </div>
-      ) : showTrendingBreak ? (
-        <div className="space-y-5">
-          <div className="space-y-3">
-            {filtered.slice(0, 3).map((app, i) => (
-              <AppCard key={app.id} app={app} index={i} onDownload={handleDownload} />
-            ))}
-          </div>
-          <TrendingRow apps={trending} onDownload={handleDownload} />
-          <div className="space-y-3">
-            {filtered.slice(3).map((app, i) => (
-              <AppCard key={app.id} app={app} index={i + 3} onDownload={handleDownload} />
-            ))}
-          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -415,6 +401,57 @@ export default function Store() {
           <StoreSkeleton />
         ) : (
           <>
+            {/* TRENDING NOW SECTION - MODERN 2-COLUMN GRID (REPLACES THE STRAIGHT LINE ROW) */}
+            {isDefaultView && trending.length > 0 && searchQuery === "" && (
+              <div className="mt-2">
+                <div className="mb-3 flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent px-4 py-2.5 border border-amber-500/20">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">🔥</span>
+                    <h2 className="font-display text-base font-bold text-[#111111]">Trending Now</h2>
+                  </div>
+                  <span className="text-xs font-semibold text-amber-600 bg-amber-100/80 px-2.5 py-1 rounded-full">Live Games</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {trending.map((app, index) => (
+                    <div
+                      key={app.id || index}
+                      onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
+                      className="flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition-all hover:shadow-md cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <OptimizedImage
+                          src={resolveUrl(app.icon_url)}
+                          alt={app.name}
+                          className="h-12 w-12 rounded-xl object-cover ring-1 ring-black/5"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-bold text-gray-900">{app.name}</h3>
+                          <div className="flex items-center gap-1 text-xs text-amber-500">
+                            <Star className="h-3 w-3 fill-[#FFC107] text-[#FFC107]" />
+                            <span className="text-gray-900 font-semibold">{app.rating?.toFixed(1) || "4.8"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {app.signup_bonus && (
+                        <div className="mt-2.5 rounded-lg bg-amber-50 px-2 py-1 text-center text-[10px] font-bold text-amber-700 border border-amber-100">
+                          Bonus ₹{app.signup_bonus}
+                        </div>
+                      )}
+
+                      <RippleButton
+                        onClick={(e) => { e.stopPropagation(); handleDownload(app); }}
+                        className="mt-3 w-full rounded-xl bg-[#FFC107] py-2 text-xs font-bold text-[#111111] shadow-sm hover:bg-[#FFB300] flex items-center justify-center gap-1"
+                      >
+                        <Download className="h-3.5 w-3.5" /> Download
+                      </RippleButton>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {finalOrder.map((id) => renderers[id]).filter(Boolean)}
             {isDefaultView && en("winners") && <RedeemBox />}
             {isDefaultView && <AdSlot ads={settings?.ads} />}
