@@ -444,17 +444,13 @@ export default function AppDetail() {
           </section>
         )}
 
-        {/* Game Highlights (About the Game) */}
+        {/* Game Highlights (About the Game with Dynamic Name Description) */}
         <section className="space-y-2.5 pt-4" data-testid="game-highlights">
           <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
             <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
           </h2>
           <p className="text-sm leading-relaxed text-[#555555]">
-            {app.name} is a premium {app.category?.toLowerCase()} experience built for smooth, lag-free
-            play on Android. Enjoy stunning visuals, responsive controls and hours of engaging gameplay —
-            all in a lightweight {app.size} package that installs in seconds. Whether you are a casual
-            player or a hardcore gamer, {app.name} delivers a polished, addictive experience you will keep
-            coming back to.
+            {app.name} APK Download Latest Version 2026 - Get Rs 501 Bonus. {app.name} is No.1 Real Cash Game with Instant UPI Withdrawal, 80+ Games, Big Win & Jackpot Trick. 100% Safe Official App.
           </p>
           <div className="grid grid-cols-2 gap-2.5">
             {GAME_HIGHLIGHTS.map((h) => (
