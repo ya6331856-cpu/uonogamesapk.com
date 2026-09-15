@@ -8,7 +8,7 @@ import { formatCount } from "@/lib/format";
 import { getBadge } from "@/lib/badge";
 
 /**
- * Compact horizontal APK list card with clean Serial Numbers (No Trophy).
+ * Compact horizontal APK list card with larger app icons and clean Serial Numbers.
  */
 export const AppCard = ({ app, index = 0, onDownload }) => {
   const navigate = useNavigate();
@@ -26,9 +26,9 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       whileHover={{ y: -3 }}
       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
       data-testid={`app-card-${app.id}`}
-      className="group relative flex cursor-pointer items-center gap-3 rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
+      className="group relative flex cursor-pointer items-center gap-3.5 rounded-[20px] border border-[#E5E7EB] bg-white p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
     >
-      {/* CLEAN RANKING BADGE (Serial Number only, Trophy Removed) */}
+      {/* CLEAN RANKING BADGE (Serial Number only) */}
       <div className="absolute -left-2.5 -top-2.5 z-10 flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide text-white shadow-md"
            style={{
              backgroundColor: rankNumber === 1 ? "#FFC107" : rankNumber === 2 ? "#9E9E9E" : rankNumber === 3 ? "#CD7F32" : "#333333"
@@ -38,10 +38,11 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       </div>
 
       <div className="relative shrink-0 pt-1">
+        {/* LARGER ICON SIZE SET TO h-16 w-16 */}
         <AppIcon
           src={resolveUrl(app.icon_url)}
           alt={app.name}
-          className="h-14 w-14 rounded-[14px] ring-1 ring-black/5"
+          className="h-16 w-16 rounded-[16px] ring-1 ring-black/5 object-cover"
         />
         {badge && (
           <span
