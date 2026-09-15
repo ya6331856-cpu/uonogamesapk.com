@@ -81,7 +81,7 @@ export default function AppDetail() {
   const instantApp = getInstantData();
   const [app, setApp] = useState(instantApp);
   
-  // INSTANT LOAD RELATED (Strictly filtering out current app instantly)
+  // INSTANT LOAD RELATED
   const getInstantRelated = (currentApp) => {
     if (!currentApp) return [];
     try {
@@ -102,7 +102,7 @@ export default function AppDetail() {
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  // FORCE SCROLL TO TOP INSTANTLY ON KEY CHANGE & FETCH FRESH DATA WITH STRICT FILTERING
+  // FORCE SCROLL TO TOP INSTANTLY ON KEY CHANGE & FETCH FRESH DATA
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") {
@@ -135,7 +135,6 @@ export default function AppDetail() {
       });
   }, [key, navigate]);
 
-  // Global cache list for instant search filter
   const allCachedApps = useMemo(() => {
     try {
       const cache = localStorage.getItem("yono_apps_perm_cache");
@@ -247,7 +246,7 @@ export default function AppDetail() {
         </button>
       </header>
 
-      {/* TOP LIVE SEARCH BAR FOR QUICK GAME FINDING */}
+      {/* TOP LIVE SEARCH BAR */}
       <div className="sticky top-[57px] z-30 bg-white/95 px-4 py-2.5 border-b border-[#E5E7EB] backdrop-blur-md">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777777]" />
@@ -379,14 +378,13 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION */}
+        {/* PEOPLE ALSO LIKE SECTION PLACED STRICTLY BEFORE ABOUT THE GAME */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
               <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also like
             </h2>
             <div className="flex flex-col gap-3">
-              {/* First 5 items */}
               {related.slice(0, 5).map((r, i) => (
                 <AppCard 
                   key={r.id} 
@@ -396,7 +394,6 @@ export default function AppDetail() {
                 />
               ))}
 
-              {/* Design Switch / Divider after 5th item */}
               {related.length > 5 && (
                 <div className="my-2 flex items-center gap-3">
                   <div className="h-px flex-1 bg-[#FFE082]" />
@@ -407,7 +404,6 @@ export default function AppDetail() {
                 </div>
               )}
 
-              {/* Items from index 5 to 10 */}
               {related.slice(5, 10).map((r, i) => (
                 <div key={r.id} className="relative overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
                   <div className="flex items-center gap-3">
