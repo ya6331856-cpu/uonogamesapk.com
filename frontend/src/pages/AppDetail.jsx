@@ -131,7 +131,6 @@ export default function AppDetail() {
   const [related, setRelated] = useState(() => getInitialRelated(initialApp));
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Smooth Loader for fast switching
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
@@ -213,6 +212,18 @@ export default function AppDetail() {
     }, 200);
   };
 
+  // HANDLE CLICK ON SEO KEYWORD TAG TO NAVIGATE OR SEARCH
+  const handleKeywordClick = (kw) => {
+    const matchedApp = allCachedApps.find(a => normalize(a.name) === normalize(kw.replace(/apk|download|latest version|2026|app/gi, '')));
+    if (matchedApp) {
+      handleRelatedClick(matchedApp);
+    } else {
+      setSearchQuery(kw);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.info(`Searching for: ${kw}`);
+    }
+  };
+
   const handleRelatedDownload = (relApp) => {
     toast.success(`Opening: ${relApp.name}`, { description: `${relApp.size} • v${relApp.version}` });
     if (relApp.apk_url && relApp.apk_url.startsWith("http")) {
@@ -243,7 +254,6 @@ export default function AppDetail() {
     }
   };
 
-  // FULL PAGE STYLISH LOADING SCREEN DURING SWITCHING (< 1 SEC)
   if (loading && !app) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
@@ -503,7 +513,7 @@ export default function AppDetail() {
           </section>
         )}
 
-        {/* GAME-SPECIFIC 50+ SEO KEYWORDS CLOUD (PLACED RIGHT ABOVE ABOUT THE GAME) */}
+        {/* CLICKABLE GAME-SPECIFIC KEYWORDS CLOUD (PLACED RIGHT ABOVE ABOUT THE GAME) */}
         <section className="rounded-[22px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.02)] space-y-3">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
@@ -511,17 +521,18 @@ export default function AppDetail() {
             </span>
             <div>
               <h3 className="font-display text-sm font-bold text-[#111111]">{app.name} Search Tags &amp; Keywords</h3>
-              <p className="text-[10px] text-[#888888]">Official search queries &amp; ranking tags for {app.name}</p>
+              <p className="text-[10px] text-[#888888]">Click any tag to search or navigate instantly</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5 pt-1">
             {dynamicGameKeywords.map((kw, i) => (
-              <span
+              <button
                 key={i}
-                className="rounded-full border border-[#E5E7EB] bg-[#FAFAFA] px-3 py-1 text-[11px] font-medium text-[#555555] hover:bg-[#FFF8E1] hover:border-[#FFE082] hover:text-[#B45309] transition-colors"
+                onClick={() => handleKeywordClick(kw)}
+                className="rounded-full border border-[#E5E7EB] bg-[#FAFAFA] px-3 py-1 text-[11px] font-medium text-[#555555] hover:bg-[#FFF8E1] hover:border-[#FFE082] hover:text-[#B45309] transition-colors text-left cursor-pointer"
               >
                 #{kw}
-              </span>
+              </button>
             ))}
           </div>
         </section>
