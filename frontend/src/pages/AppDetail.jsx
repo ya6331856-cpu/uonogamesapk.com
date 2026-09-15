@@ -38,10 +38,7 @@ const Stat = ({ icon: Icon, label, value }) => (
 );
 
 function normalize(s) {
-  return String(s || "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "");
+  return String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
 }
 
 const getGameSpecificKeywords = (appName) => {
@@ -64,7 +61,6 @@ const getGameSpecificKeywords = (appName) => {
 
 const processRelatedApps = (rawList, currentAppId, currentAppSlug, currentAppName) => {
   if (!rawList || !Array.isArray(rawList)) return [];
-  
   let visitedIds = [];
   try {
     const saved = sessionStorage.getItem("visited_yono_games");
@@ -83,10 +79,8 @@ const processRelatedApps = (rawList, currentAppId, currentAppSlug, currentAppNam
     const itemSlug = String(item.slug || "");
     const itemName = String(item.name || "").trim().toLowerCase();
     const currName = String(currentAppName || "").trim().toLowerCase();
-
     const isCurrent = itemId === String(currentAppId) || itemSlug === String(currentAppSlug) || itemName === currName;
     const isVisited = visitedIds.includes(itemId);
-
     return !isCurrent && !isVisited;
   });
 
@@ -130,11 +124,9 @@ export default function AppDetail() {
 
   const [related, setRelated] = useState(() => getInitialRelated(initialApp));
   const [searchQuery, setSearchQuery] = useState("");
-  
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
-
   const fetchingRef = useRef(false);
 
   useEffect(() => {
@@ -160,7 +152,6 @@ export default function AppDetail() {
         const freshApp = res.data;
         if (freshApp && freshApp.id) {
           setApp(freshApp);
-          
           api.get(`/apps/${key}/related`, { params: { limit: 30 } })
             .then((r) => {
                if (r.data && r.data.length > 0) {
@@ -169,7 +160,6 @@ export default function AppDetail() {
                }
             })
             .catch(() => {});
-
           setLoading(false);
         } else {
           setNotFound(true);
@@ -194,7 +184,6 @@ export default function AppDetail() {
   const handleDownload = () => {
     if (!app) return;
     toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
-    
     if (app.apk_url && app.apk_url.startsWith("http")) {
       window.open(app.apk_url, "_blank"); 
       api.get(`/apps/${app.id}/download`).catch(() => {});
@@ -215,7 +204,6 @@ export default function AppDetail() {
   const handleKeywordClick = (kw) => {
     const cleanKw = kw.replace(/apk|download|latest version|2026|app/gi, '').trim();
     const matchedApp = allCachedApps.find(a => normalize(a.name).includes(normalize(cleanKw)) || normalize(cleanKw).includes(normalize(a.name)));
-    
     if (matchedApp) {
       handleRelatedClick(matchedApp);
     } else {
