@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BadgeCheck, Download, Gift, Trophy } from "lucide-react";
+import { Star, BadgeCheck, Download, Gift } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
@@ -8,7 +8,7 @@ import { formatCount } from "@/lib/format";
 import { getBadge } from "@/lib/badge";
 
 /**
- * Compact horizontal APK list card with Ranking Badges & Active Player Counts.
+ * Compact horizontal APK list card with clean Serial Numbers (No Trophy).
  */
 export const AppCard = ({ app, index = 0, onDownload }) => {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
   
   // Calculate dynamic ranking number based on index (NO. 1, NO. 2, NO. 3, etc.)
   const rankNumber = index + 1;
-  const isTopRank = rankNumber <= 3;
 
   return (
     <motion.div
@@ -29,13 +28,12 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       data-testid={`app-card-${app.id}`}
       className="group relative flex cursor-pointer items-center gap-3 rounded-[20px] border border-[#E5E7EB] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
     >
-      {/* RANKING BADGE (NO. 1, NO. 2, NO. 3 Style) */}
-      <div className="absolute -left-2.5 -top-2.5 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-white shadow-md"
+      {/* CLEAN RANKING BADGE (Serial Number only, Trophy Removed) */}
+      <div className="absolute -left-2.5 -top-2.5 z-10 flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide text-white shadow-md"
            style={{
              backgroundColor: rankNumber === 1 ? "#FFC107" : rankNumber === 2 ? "#9E9E9E" : rankNumber === 3 ? "#CD7F32" : "#333333"
            }}
       >
-        <Trophy className="h-3 w-3" />
         <span>NO. {rankNumber}</span>
       </div>
 
@@ -82,7 +80,7 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
           )}
         </div>
 
-        {/* ACTIVE PLAYERS / DOWNLOAD STATS (Competitor Style) */}
+        {/* ACTIVE PLAYERS / DOWNLOAD STATS */}
         <p className="mt-0.5 text-[11px] font-medium text-[#555555]">
           👥 {(app.downloads ? (app.downloads * 8).toLocaleString() : "350.4K")} active players
         </p>
