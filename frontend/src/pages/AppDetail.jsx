@@ -44,17 +44,35 @@ function normalize(s) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
-// STRICT FILTER TO REMOVE CURRENT OPENED APP FROM RELATED LIST
+// STRICT SESSION HISTORY FILTER TO NEVER REPEAT VISITED GAMES
 const processRelatedApps = (rawList, currentAppId, currentAppSlug) => {
   if (!rawList || !Array.isArray(rawList)) return [];
-  const targetId = String(currentAppId);
   
+  let visitedIds = [];
+  try {
+    const saved = sessionStorage.getItem("visited_yono_games");
+    if (saved) visitedIds = JSON.parse(saved);
+  } catch (e) {}
+
+  if (currentAppId && !visitedIds.includes(String(currentAppId))) {
+    visitedIds.push(String(currentAppId));
+  }
+  try {
+    sessionStorage.setItem("visited_yono_games", JSON.stringify(visitedIds));
+  } catch (e) {}
+
   const filtered = rawList.filter(item => {
     const itemId = String(item.id);
-    return itemId !== targetId && item.slug !== currentAppSlug;
+    return itemId !== String(currentAppId) && item.slug !== currentAppSlug && !visitedIds.includes(itemId);
   });
 
-  const unique = Array.from(new Map(filtered.map(item => [item.id, item])).values());
+  let finalSelection = filtered;
+  if (finalSelection.length < 5) {
+    const fallback = rawList.filter(item => String(item.id) !== String(currentAppId) && item.slug !== currentAppSlug);
+    finalSelection = Array.from(new Map([...filtered, ...fallback].map(item => [item.id, item])).values());
+  }
+
+  const unique = Array.from(new Map(finalSelection.map(item => [item.id, item])).values());
   return unique.slice(0, 10);
 };
 
@@ -102,7 +120,7 @@ export default function AppDetail() {
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  // FORCE SCROLL TO TOP & FETCH FRESH DATA WITH STALE STATE PREVENTION
+  // FORCE SCROLL TO TOP & FETCH FRESH DATA WITH SESSION HISTORY FILTER
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") {
@@ -379,7 +397,7 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION (STRICTLY FIXED ABOVE ABOUT THE GAME) */}
+        {/* PEOPLE ALSO LIKE SECTION PLACED STRICTLY BEFORE ABOUT THE GAME */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
