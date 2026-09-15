@@ -43,6 +43,7 @@ const SORTS = [
 export default function Store() {
   const { settings } = useSettings();
   
+  // INSTANT CACHE PARSING FOR ZERO WAITING TIME
   const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
   const parsedCache = useMemo(() => {
     try {
@@ -52,6 +53,7 @@ export default function Store() {
     }
   }, [cachedData]);
 
+  // NEVER SHOW SKELETON IF CACHE EXISTS - INSTANT LOAD
   const [data, setData] = useState(() => parsedCache);
   const [loading, setLoading] = useState(!parsedCache);
   
@@ -62,8 +64,7 @@ export default function Store() {
 
   const fetchApps = async () => {
     try {
-      // Fast initial fetch with optimized limit, full sync in background
-      const res = await api.get("/apps?limit=50");
+      const res = await api.get("/apps?limit=40");
       if (res.data) {
         setData(res.data);
         localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
@@ -76,12 +77,14 @@ export default function Store() {
   };
 
   useEffect(() => {
-    if (!parsedCache) {
-      fetchApps();
+    // If cache is present, skip loading state completely and fetch silently in background
+    if (parsedCache) {
+      setLoading(false);
+      fetchApps(); // Background sync
     } else {
       fetchApps();
     }
-  }, []);
+  }, [parsedCache]);
 
   const handleDownload = (app) => {
     toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
