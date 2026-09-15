@@ -44,9 +44,18 @@ const SORTS = [
 export default function Store() {
   const { settings } = useSettings();
   
+  // INSTANT CACHE LOAD FOR ZERO DELAY (< 0.3s)
   const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
-  const [data, setData] = useState(() => cachedData ? JSON.parse(cachedData) : null);
-  const [loading, setLoading] = useState(!cachedData);
+  const parsedCache = useMemo(() => {
+    try {
+      return cachedData ? JSON.parse(cachedData) : null;
+    } catch (e) {
+      return null;
+    }
+  }, [cachedData]);
+
+  const [data, setData] = useState(() => parsedCache);
+  const [loading, setLoading] = useState(!parsedCache);
   
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -56,8 +65,10 @@ export default function Store() {
   const fetchApps = async () => {
     try {
       const res = await api.get("/apps?limit=200");
-      setData(res.data);
-      localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
+      if (res.data) {
+        setData(res.data);
+        localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
+      }
     } catch (e) {
       if (!data) toast.error("Failed to load apps");
     } finally {
@@ -66,7 +77,12 @@ export default function Store() {
   };
 
   useEffect(() => {
-    fetchApps();
+    if (!parsedCache) {
+      fetchApps();
+    } else {
+      // Background sync so user never waits
+      fetchApps();
+    }
   }, []);
 
   const handleDownload = (app) => {
@@ -330,7 +346,7 @@ export default function Store() {
       </div>
 
       <main className="space-y-5 px-4 pt-1">
-        {loading ? (
+        {loading && !data ? (
           <StoreSkeleton />
         ) : (
           <>
