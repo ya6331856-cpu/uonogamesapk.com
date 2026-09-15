@@ -212,15 +212,15 @@ export default function AppDetail() {
     }, 200);
   };
 
-  // HANDLE CLICK ON SEO KEYWORD TAG TO NAVIGATE OR SEARCH
+  // CLEAN KEYWORD CLICK HANDLER (NO UNWANTED TEXT IN SEARCH BAR)
   const handleKeywordClick = (kw) => {
-    const matchedApp = allCachedApps.find(a => normalize(a.name) === normalize(kw.replace(/apk|download|latest version|2026|app/gi, '')));
+    const cleanKw = kw.replace(/apk|download|latest version|2026|app/gi, '').trim();
+    const matchedApp = allCachedApps.find(a => normalize(a.name).includes(normalize(cleanKw)) || normalize(cleanKw).includes(normalize(a.name)));
+    
     if (matchedApp) {
       handleRelatedClick(matchedApp);
     } else {
-      setSearchQuery(kw);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      toast.info(`Searching for: ${kw}`);
+      toast.info(`Tag: ${kw}`);
     }
   };
 
@@ -521,7 +521,7 @@ export default function AppDetail() {
             </span>
             <div>
               <h3 className="font-display text-sm font-bold text-[#111111]">{app.name} Search Tags &amp; Keywords</h3>
-              <p className="text-[10px] text-[#888888]">Click any tag to search or navigate instantly</p>
+              <p className="text-[10px] text-[#888888]">Click any tag to navigate instantly</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5 pt-1">
