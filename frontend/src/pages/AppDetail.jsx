@@ -326,7 +326,7 @@ export default function AppDetail() {
           />
           <div className="min-w-0 flex-1">
             <h1 data-testid="detail-name" className="font-display text-xl font-bold leading-tight text-[#111111]">
-              {app.name}
+              {app.name} APK Download - Latest Version 2026
             </h1>
             {app.developer && (
               <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#229ED9]">
@@ -544,6 +544,7 @@ export default function AppDetail() {
           </section>
         )}
 
+        <FaqService />
         <FaqSection />
         <LegalSection onOpen={setLegalId} />
       </main>
