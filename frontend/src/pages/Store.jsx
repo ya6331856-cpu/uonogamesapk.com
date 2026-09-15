@@ -401,8 +401,8 @@ export default function Store() {
           <StoreSkeleton />
         ) : (
           <>
-            {/* TRENDING NOW SECTION - MODERN 2-COLUMN GRID (REPLACES THE STRAIGHT LINE ROW) */}
-            {isDefaultView && trending.length > 0 && searchQuery === "" && (
+            {/* TRENDING NOW SECTION - MODERN 2-COLUMN GRID (FIXED) */}
+            {isDefaultView && trending.length > 0 && search === "" && (
               <div className="mt-2">
                 <div className="mb-3 flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent px-4 py-2.5 border border-amber-500/20">
                   <div className="flex items-center gap-2">
