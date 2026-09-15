@@ -100,51 +100,64 @@ export default function AppDetail() {
   const key = slug || id;
   const navigate = useNavigate();
 
-  // INSTANT CACHE LOOKUP
-  const getInstantData = (lookupKey) => {
-    if (location.state?.app && (String(location.state.app.id) === String(lookupKey) || location.state.app.slug === lookupKey)) {
-      return location.state.app;
-    }
+  const getCachedAppList = () => {
     try {
       const cache = localStorage.getItem("yono_apps_perm_cache");
       if (cache) {
         const parsed = JSON.parse(cache);
-        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        return list.find(a => a.slug === lookupKey || String(a.id) === String(lookupKey)) || null;
+        return parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
       }
     } catch(e) {}
-    return null;
+    return [];
+  };
+
+  const getInstantData = (lookupKey) => {
+    if (location.state?.app && (String(location.state.app.id) === String(lookupKey) || location.state.app.slug === lookupKey)) {
+      return location.state.app;
+    }
+    const list = getCachedAppList();
+    return list.find(a => a.slug === lookupKey || String(a.id) === String(lookupKey)) || null;
   };
 
   const initialApp = getInstantData(key);
   const [app, setApp] = useState(initialApp);
-  const [related, setRelated] = useState(() => initialApp ? processRelatedApps([], initialApp.id, initialApp.slug, initialApp.name) : []);
+  
+  const getInitialRelated = (currApp) => {
+    if (!currApp) return [];
+    const list = getCachedAppList();
+    return processRelatedApps(list, currApp.id, currApp.slug, currApp.name);
+  };
+
+  const [related, setRelated] = useState(() => getInitialRelated(initialApp));
   const [searchQuery, setSearchQuery] = useState("");
   
-  // LOADING STATE FOR INSTANT SWITCHING
-  const [loading, setLoading] = useState(!initialApp);
+  // Smooth Loader for fast switching
+  const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  // FORCE FRESH FETCH & SMOOTH SWITCH ON KEY CHANGE
+  const fetchingRef = useRef(false);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") return;
 
-    // Fast check local cache first for instant render
     const cachedMatch = getInstantData(key);
     if (cachedMatch) {
       setApp(cachedMatch);
-      setRelated(processRelatedApps([], cachedMatch.id, cachedMatch.slug, cachedMatch.name));
+      setRelated(getInitialRelated(cachedMatch));
       setLoading(false);
     } else {
       setLoading(true);
     }
     setNotFound(false);
 
-    // Fetch fresh details & related list
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     api.get(`/apps/${key}`)
       .then((res) => {
+        fetchingRef.current = false;
         const freshApp = res.data;
         if (freshApp && freshApp.id) {
           setApp(freshApp);
@@ -165,22 +178,13 @@ export default function AppDetail() {
         }
       })
       .catch(() => {
+        fetchingRef.current = false;
         if (!cachedMatch) setNotFound(true);
         setLoading(false);
       });
   }, [key]);
 
-  const allCachedApps = useMemo(() => {
-    try {
-      const cache = localStorage.getItem("yono_apps_perm_cache");
-      if (cache) {
-        const parsed = JSON.parse(cache);
-        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        return Array.from(new Map(list.map(item => [item.id, item])).values());
-      }
-    } catch(e) {}
-    return [];
-  }, []);
+  const allCachedApps = useMemo(() => getCachedAppList(), []);
 
   const filteredSearchApps = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -204,7 +208,9 @@ export default function AppDetail() {
   const handleRelatedClick = (relApp) => {
     setLoading(true);
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    navigate(`/${relApp.slug || relApp.id}`, { state: { app: relApp } });
+    setTimeout(() => {
+      navigate(`/${relApp.slug || relApp.id}`, { state: { app: relApp } });
+    }, 200);
   };
 
   const handleRelatedDownload = (relApp) => {
@@ -237,7 +243,7 @@ export default function AppDetail() {
     }
   };
 
-  // SMOOTH SUB-SECOND LOADING SCREEN DURING GAME SWITCHING
+  // FULL PAGE STYLISH LOADING SCREEN DURING SWITCHING (< 1 SEC)
   if (loading && !app) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
@@ -245,7 +251,7 @@ export default function AppDetail() {
           <Loader2 className="h-8 w-8 animate-spin text-[#FFC107]" />
         </div>
         <div>
-          <p className="font-display text-sm font-bold text-[#111111]">Switching Game...</p>
+          <p className="font-display text-sm font-bold text-[#111111]">Loading Game...</p>
           <p className="text-[11px] text-[#777777]">Preparing secure download package</p>
         </div>
       </div>
@@ -445,7 +451,7 @@ export default function AppDetail() {
           </p>
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION WITH CUSTOM CLICK HANDLER FOR INSTANT STABLE SWITCHING */}
+        {/* PEOPLE ALSO LIKE SECTION */}
         {activeRelated.length > 0 && (
           <section className="mt-4 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
@@ -497,7 +503,7 @@ export default function AppDetail() {
           </section>
         )}
 
-        {/* GAME-SPECIFIC 50+ SEO KEYWORDS CLOUD */}
+        {/* GAME-SPECIFIC 50+ SEO KEYWORDS CLOUD (PLACED RIGHT ABOVE ABOUT THE GAME) */}
         <section className="rounded-[22px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.02)] space-y-3">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
