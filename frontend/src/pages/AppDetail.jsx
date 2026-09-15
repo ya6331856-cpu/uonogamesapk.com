@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -44,7 +44,6 @@ function normalize(s) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
-// GENERATE 40-50 DYNAMIC GAME-SPECIFIC SEO KEYWORDS
 const getGameSpecificKeywords = (appName) => {
   const name = appName || "Game";
   return [
@@ -99,6 +98,7 @@ export default function AppDetail() {
   const location = useLocation();
   const key = slug || id;
   const navigate = useNavigate();
+  const [isPending, startTransition] = useTransition();
 
   const getInstantData = () => {
     if (location.state?.app) return location.state.app;
@@ -236,15 +236,15 @@ export default function AppDetail() {
     }
   };
 
-  if (loading && !app) {
+  if ((loading && !app) || isPending) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
         <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-white shadow-[0_8px_30px_rgba(255,193,7,0.25)] border border-[#FFE082]">
           <Loader2 className="h-8 w-8 animate-spin text-[#FFC107]" />
         </div>
         <div>
-          <p className="font-display text-sm font-bold text-[#111111]">Loading Game...</p>
-          <p className="text-[11px] text-[#777777]">Getting secure download ready for you</p>
+          <p className="font-display text-sm font-bold text-[#111111]">Switching Game...</p>
+          <p className="text-[11px] text-[#777777]">Loading fast secure data for you</p>
         </div>
       </div>
     );
@@ -478,7 +478,11 @@ export default function AppDetail() {
                       <p className="text-xs text-[#777777] truncate">{r.category} • ⭐ {r.rating?.toFixed(1)}</p>
                     </div>
                     <button
-                      onClick={() => handleRelatedDownload(r)}
+                      onClick={() => {
+                        startTransition(() => {
+                          navigate(`/${r.slug || r.id}`, { state: { app: r } });
+                        });
+                      }}
                       className="rounded-full bg-[#FFC107] px-4 py-2 text-xs font-bold text-[#111111] shadow-md hover:bg-[#FFB300]"
                     >
                       Download
@@ -490,7 +494,7 @@ export default function AppDetail() {
           </section>
         )}
 
-        {/* GAME-SPECIFIC 50+ SEO KEYWORDS CLOUD (PLACED JUST BELOW PEOPLE ALSO LIKE) */}
+        {/* GAME-SPECIFIC 50+ SEO KEYWORDS CLOUD */}
         <section className="rounded-[22px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.02)] space-y-3">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
