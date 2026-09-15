@@ -439,7 +439,7 @@ export default function AppDetail() {
             {currentApp.name} APK Download - Latest Version 2026
           </h2>
           <p className="mt-1 text-xs font-medium text-[#666666]">
-            Official verified release optimized for Android devices.
+            100% Safe aur Secure APK download karein, instant withdrawal ke sath!
           </p>
         </div>
 
