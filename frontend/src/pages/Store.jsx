@@ -6,7 +6,6 @@ import api, { API, resolveUrl } from "@/lib/api";
 import SEOHead from "@/components/SEOHead";
 import { useSettings, sectionEnabled } from "@/context/SettingsContext";
 import Header from "@/components/Header";
-import WelcomeTypewriter from "@/components/WelcomeTypewriter";
 import FeaturedApps from "@/components/FeaturedApps";
 import AppCard from "@/components/AppCard";
 import TrendingRow from "@/components/TrendingRow";
@@ -44,7 +43,6 @@ const SORTS = [
 export default function Store() {
   const { settings } = useSettings();
   
-  // INSTANT CACHE LOAD FOR ZERO DELAY (< 0.3s)
   const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
   const parsedCache = useMemo(() => {
     try {
@@ -80,7 +78,6 @@ export default function Store() {
     if (!parsedCache) {
       fetchApps();
     } else {
-      // Background sync so user never waits
       fetchApps();
     }
   }, []);
@@ -258,26 +255,25 @@ export default function Store() {
       />
       <AnnouncementBar config={settings?.announcement} />
       <Header />
-      <WelcomeTypewriter />
+
+      {/* STATIC INSTANT HEADER TO PREVENT JUMPING */}
+      <div className="px-4 pt-3 text-center">
+        <h1 className="font-display text-lg font-bold text-[#111111]">Welcome to YONO GAMES</h1>
+        <p className="text-xs text-[#777777]">PLAY &amp; WIN • SINCE 2024</p>
+      </div>
 
       {hero.enabled !== false && (
-        <div className="px-4 pt-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden rounded-[20px] border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.1)]"
-            data-testid="hero-banner"
-          >
+        <div className="px-4 pt-3">
+          <div className="overflow-hidden rounded-[20px] border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.1)]" data-testid="hero-banner">
             <OptimizedImage 
               src={resolveUrl(hero.banner_url || "/hero-banner.png")} 
               alt={hero.headline || "Uonogamesapk.com"} 
               className="block w-full" 
             />
-          </motion.div>
+          </div>
           {(hero.headline || hero.subtitle) && (
             <div className="mt-3 text-center">
-              {hero.headline && <h1 className="font-display text-xl font-bold text-[#111111]">{hero.headline}</h1>}
+              {hero.headline && <h2 className="font-display text-xl font-bold text-[#111111]">{hero.headline}</h2>}
               {hero.subtitle && <p className="mt-0.5 text-sm text-[#777777]">{hero.subtitle}</p>}
             </div>
           )}
@@ -358,9 +354,9 @@ export default function Store() {
 
         {isDefaultView && (
           <section className="mt-8 mb-4 space-y-4 rounded-[24px] border border-[#E5E7EB] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-            <h1 className="font-display text-xl font-bold text-[#111111]">
+            <h2 className="font-display text-xl font-bold text-[#111111]">
               All Yono Games - Discover New Yono Apps & Play Top Gaming Apps
-            </h1>
+            </h2>
             <div className="space-y-4 text-sm leading-relaxed text-[#555555]">
               <p>
                 <strong>Yono New Games</strong> was launched with a simple mission — to give players across India a place where they can easily discover, download, and enjoy exciting mobile games. We noticed that modern players want more than just simple tapping games. Today's gamers enjoy challenges that require strategy, quick thinking, and skill.
@@ -368,9 +364,9 @@ export default function Store() {
               <p>
                 That's exactly what <strong>All New Yono Apps</strong> aims to deliver. Our platform brings together a collection of games that combine classic gameplay with modern mobile experiences. From popular card titles like <strong>Yono Rummy</strong> to the latest slot and arcade apps gaining popularity in India, every game listed here is chosen carefully for its entertainment value.
               </p>
-              <h2 className="font-display text-lg font-bold text-[#111111] pt-2">
+              <h3 className="font-display text-lg font-bold text-[#111111] pt-2">
                 Why Thousands of Players Choose Yono New Games
-              </h2>
+              </h3>
               <p>
                 Finding a reliable place to explore mobile gaming apps can be difficult. New Yono Games focuses on making that process easier for Indian players. We provide detailed information, safe download links, fast updates, and app features right at your fingertips so you can start playing instantly.
               </p>
