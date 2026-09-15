@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useTransition } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -62,7 +62,8 @@ const getGameSpecificKeywords = (appName) => {
   ];
 };
 
-const processRelatedApps = (rawList, currentAppId, currentAppSlug) => {
+// STRICT SESSION & CURRENT APP FILTER (PREVENTS JUMPING & REPETITION)
+const processRelatedApps = (rawList, currentAppId, currentAppSlug, currentAppName) => {
   if (!rawList || !Array.isArray(rawList)) return [];
   
   let visitedIds = [];
@@ -80,16 +81,17 @@ const processRelatedApps = (rawList, currentAppId, currentAppSlug) => {
 
   const filtered = rawList.filter(item => {
     const itemId = String(item.id);
-    return itemId !== String(currentAppId) && item.slug !== currentAppSlug && !visitedIds.includes(itemId);
+    const itemSlug = String(item.slug || "");
+    const itemName = String(item.name || "").trim().toLowerCase();
+    const currName = String(currentAppName || "").trim().toLowerCase();
+
+    const isCurrent = itemId === String(currentAppId) || itemSlug === String(currentAppSlug) || itemName === currName;
+    const isVisited = visitedIds.includes(itemId);
+
+    return !isCurrent && !isVisited;
   });
 
-  let finalSelection = filtered;
-  if (finalSelection.length < 5) {
-    const fallback = rawList.filter(item => String(item.id) !== String(currentAppId) && item.slug !== currentAppSlug);
-    finalSelection = Array.from(new Map([...filtered, ...fallback].map(item => [item.id, item])).values());
-  }
-
-  const unique = Array.from(new Map(finalSelection.map(item => [item.id, item])).values());
+  const unique = Array.from(new Map(filtered.map(item => [item.id, item])).values());
   return unique.slice(0, 10);
 };
 
@@ -98,8 +100,8 @@ export default function AppDetail() {
   const location = useLocation();
   const key = slug || id;
   const navigate = useNavigate();
-  const [isPending, startTransition] = useTransition();
 
+  // 1. INSTANT LOCAL CACHE LOOKUP FOR 0.05S RENDER
   const getInstantData = () => {
     if (location.state?.app) return location.state.app;
     try {
@@ -116,6 +118,7 @@ export default function AppDetail() {
   const instantApp = getInstantData();
   const [app, setApp] = useState(instantApp);
   
+  // 2. LOCK RELATED LIST INSTANTLY TO PREVENT LAYOUT SHIFT (JUMPING)
   const getInstantRelated = (currentApp) => {
     if (!currentApp) return [];
     try {
@@ -123,7 +126,7 @@ export default function AppDetail() {
       if (cache) {
         const parsed = JSON.parse(cache);
         const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        return processRelatedApps(list, currentApp.id, currentApp.slug);
+        return processRelatedApps(list, currentApp.id, currentApp.slug, currentApp.name);
       }
     } catch(e) {}
     return [];
@@ -136,41 +139,37 @@ export default function AppDetail() {
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
+  // REF TO PREVENT RACE CONDITIONS DURING FAST SWITCHING
+  const fetchingRef = useRef(false);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    if (!key || key === "undefined") {
-      return;
+    if (!key || key === "undefined") return;
+
+    if (!instantApp) {
+      setLoading(true);
     }
-    
-    setLoading(true);
     setNotFound(false);
+
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
 
     api
       .get(`/apps/${key}`)
       .then((res) => {
+        fetchingRef.current = false;
         const freshApp = res.data;
         if (freshApp && freshApp.id) {
           setApp(freshApp);
           setLoading(false);
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          
-          api.get(`/apps/${key}/related`, { params: { limit: 20 } })
-            .then((r) => {
-               if(r.data && r.data.length > 0) {
-                 const cleanList = processRelatedApps(r.data, freshApp.id, freshApp.slug);
-                 setRelated(cleanList);
-               }
-            })
-            .catch(() => {});
         } else {
           setNotFound(true);
           setLoading(false);
         }
       })
       .catch(() => {
-        if (!instantApp) {
-          setNotFound(true);
-        }
+        fetchingRef.current = false;
+        if (!instantApp) setNotFound(true);
         setLoading(false);
       });
   }, [key]);
@@ -194,14 +193,14 @@ export default function AppDetail() {
   }, [searchQuery, allCachedApps]);
 
   const handleDownload = () => {
-    if (!app) return;
-    toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
+    if (!currentApp) return;
+    toast.success(`Opening: ${currentApp.name}`, { description: `${currentApp.size} • v${currentApp.version}` });
     
-    if (app.apk_url && app.apk_url.startsWith("http")) {
-      window.open(app.apk_url, "_blank"); 
-      api.get(`/apps/${app.id}/download`).catch(() => {});
+    if (currentApp.apk_url && currentApp.apk_url.startsWith("http")) {
+      window.open(currentApp.apk_url, "_blank"); 
+      api.get(`/apps/${currentApp.id}/download`).catch(() => {});
     } else {
-      window.open(`${API}/apps/${app.id}/download`, "_blank");
+      window.open(`${API}/apps/${currentApp.id}/download`, "_blank");
     }
     setApp((p) => (p ? { ...p, downloads: (p.downloads || 0) + 1 } : p));
   };
@@ -220,7 +219,7 @@ export default function AppDetail() {
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: app?.name, url });
+        await navigator.share({ title: currentApp?.name, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
@@ -236,21 +235,23 @@ export default function AppDetail() {
     }
   };
 
-  if ((loading && !app) || isPending) {
+  const currentApp = app || instantApp;
+
+  if (loading && !currentApp) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
         <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-white shadow-[0_8px_30px_rgba(255,193,7,0.25)] border border-[#FFE082]">
           <Loader2 className="h-8 w-8 animate-spin text-[#FFC107]" />
         </div>
         <div>
-          <p className="font-display text-sm font-bold text-[#111111]">Switching Game...</p>
-          <p className="text-[11px] text-[#777777]">Loading fast secure data for you</p>
+          <p className="font-display text-sm font-bold text-[#111111]">Loading Game...</p>
+          <p className="text-[11px] text-[#777777]">Getting secure download ready for you</p>
         </div>
       </div>
     );
   }
 
-  if (notFound && !app) {
+  if (notFound && !currentApp) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="font-display text-lg font-bold text-[#111111]">App not found</p>
@@ -265,10 +266,10 @@ export default function AppDetail() {
     );
   }
 
-  const currentApp = app || instantApp;
   if (!currentApp) return null;
 
   const dynamicGameKeywords = getGameSpecificKeywords(currentApp.name);
+  const activeRelated = related.length > 0 ? related : getInstantRelated(currentApp);
 
   return (
     <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
@@ -429,7 +430,7 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(currentApp.downloads)} downloads
         </div>
 
-        {/* PROFESSIONAL GAME TITLE CARD (JUST ABOVE PEOPLE ALSO LIKE) */}
+        {/* PROFESSIONAL GAME TITLE CARD */}
         <div className="rounded-[20px] border border-[#E5E7EB] bg-gradient-to-r from-[#FFFBEB] via-[#FFFDF5] to-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
           <div className="flex items-center gap-2 mb-1">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFC107] text-[#111111] text-[10px] font-bold">✓</span>
@@ -443,14 +444,14 @@ export default function AppDetail() {
           </p>
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION */}
-        {related.length > 0 && (
+        {/* PEOPLE ALSO LIKE SECTION (LOCKED & STABLE) */}
+        {activeRelated.length > 0 && (
           <section className="mt-4 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
               <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also like
             </h2>
             <div className="flex flex-col gap-3">
-              {related.slice(0, 5).map((r, i) => (
+              {activeRelated.slice(0, 5).map((r, i) => (
                 <AppCard 
                   key={r.id} 
                   app={r} 
@@ -459,7 +460,7 @@ export default function AppDetail() {
                 />
               ))}
 
-              {related.length > 5 && (
+              {activeRelated.length > 5 && (
                 <div className="my-2 flex items-center gap-3">
                   <div className="h-px flex-1 bg-[#FFE082]" />
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] px-3 py-1 rounded-full">
@@ -469,7 +470,7 @@ export default function AppDetail() {
                 </div>
               )}
 
-              {related.slice(5, 10).map((r, i) => (
+              {activeRelated.slice(5, 10).map((r, i) => (
                 <div key={r.id} className="relative overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
                   <div className="flex items-center gap-3">
                     <AppIcon src={resolveUrl(r.icon_url)} className="h-12 w-12 rounded-[14px] shrink-0" />
@@ -478,11 +479,7 @@ export default function AppDetail() {
                       <p className="text-xs text-[#777777] truncate">{r.category} • ⭐ {r.rating?.toFixed(1)}</p>
                     </div>
                     <button
-                      onClick={() => {
-                        startTransition(() => {
-                          navigate(`/${r.slug || r.id}`, { state: { app: r } });
-                        });
-                      }}
+                      onClick={() => handleRelatedDownload(r)}
                       className="rounded-full bg-[#FFC107] px-4 py-2 text-xs font-bold text-[#111111] shadow-md hover:bg-[#FFB300]"
                     >
                       Download
@@ -517,7 +514,7 @@ export default function AppDetail() {
           </div>
         </section>
 
-        {/* Game Highlights (About the Game with Dynamic Name Description) */}
+        {/* Game Highlights */}
         <section className="space-y-2.5 pt-4" data-testid="game-highlights">
           <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
             <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
