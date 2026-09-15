@@ -239,7 +239,7 @@ export default function AppDetail() {
   }
 
   return (
-    <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
+    <div key={key} className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
       <SEOHead
         type="app"
         title={app.seo_title || `${app.name} APK Download - Latest Version | New Yono`}
