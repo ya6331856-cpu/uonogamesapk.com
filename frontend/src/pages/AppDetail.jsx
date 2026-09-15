@@ -331,7 +331,7 @@ export default function AppDetail() {
           />
           <div className="min-w-0 flex-1">
             <h1 data-testid="detail-name" className="font-display text-xl font-bold leading-tight text-[#111111]">
-              {currentApp.name} APK Download - Latest Version 2026
+              {currentApp.name}
             </h1>
             {currentApp.developer && (
               <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#229ED9]">
@@ -402,9 +402,17 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(currentApp.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION PLACED STRICTLY BEFORE ABOUT THE GAME */}
+        {/* GAME TITLE SECTION (PLACED JUST ABOVE PEOPLE ALSO LIKE) */}
+        <section className="space-y-1 pt-2">
+          <h2 className="font-display text-lg font-bold text-[#111111]">
+            {currentApp.name} APK Download - Latest Version 2026
+          </h2>
+          <p className="text-xs text-[#777777]">Official verified release for Android devices</p>
+        </section>
+
+        {/* PEOPLE ALSO LIKE SECTION */}
         {related.length > 0 && (
-          <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
+          <section className="mt-4 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
               <Sparkles className="h-5 w-5 text-[#FFC107]" /> People also like
             </h2>
