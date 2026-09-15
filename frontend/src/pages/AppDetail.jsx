@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Star, BadgeCheck, Download, Share2, Loader2,
   ShieldCheck, HardDrive, Tag, Smartphone, Building2, Sparkles,
-  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet, Search, X
+  Gamepad2, Zap, Wifi, RefreshCw, Trophy, Lock, Gift, Wallet, Search, X, Flame
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -43,6 +43,25 @@ function normalize(s) {
     .normalize("NFKD")
     .replace(/[^a-z0-9]+/g, "");
 }
+
+// GENERATE 40-50 DYNAMIC GAME-SPECIFIC SEO KEYWORDS
+const getGameSpecificKeywords = (appName) => {
+  const name = appName || "Game";
+  return [
+    `${name} APK`, `${name} Download`, `${name} Latest Version 2026`, `${name} App`,
+    `${name} Real Cash`, `${name} Sign Up Bonus`, `${name} UPI Withdrawal`, `${name} Mod APK`,
+    `${name} Official`, `${name} Login`, `${name} Register`, `${name} Hack Trick`,
+    `${name} Unlimited Money`, `${name} Winning Strategy`, `${name} Online Play`, `${name} Android App`,
+    `${name} Free Bonus`, `${name} Min Withdrawal`, `${name} Customer Care`, `${name} Refer and Earn`,
+    `${name} Gameplay`, `${name} Review`, `${name} Safe to Play`, `${name} Install Guide`,
+    `Yono ${name}`, `New ${name}`, `${name} Download Link`, `${name} Direct APK`,
+    `Best ${name} App`, `Top Rummy ${name}`, `${name} Casino Game`, `${name} Card Game`,
+    `Play ${name} Online`, `${name} Winning Tricks`, `${name} Big Win`, `${name} Jackpot`,
+    `${name} Daily Rewards`, `${name} VIP Program`, `${name} Fast Withdrawal`, `${name} Trusted App`,
+    `${name} Version 1.0`, `${name} Update`, `${name} Old Version`, `${name} System Requirements`,
+    `${name} Support`, `${name} Promo Code`, `${name} Referral Link`, `${name} Game Rules`
+  ];
+};
 
 const processRelatedApps = (rawList, currentAppId, currentAppSlug) => {
   if (!rawList || !Array.isArray(rawList)) return [];
@@ -217,7 +236,6 @@ export default function AppDetail() {
     }
   };
 
-  // PROFESSIONAL BRANDED LOADING SCREEN
   if (loading && !app) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
@@ -249,6 +267,8 @@ export default function AppDetail() {
 
   const currentApp = app || instantApp;
   if (!currentApp) return null;
+
+  const dynamicGameKeywords = getGameSpecificKeywords(currentApp.name);
 
   return (
     <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
@@ -469,6 +489,29 @@ export default function AppDetail() {
             </div>
           </section>
         )}
+
+        {/* GAME-SPECIFIC 50+ SEO KEYWORDS CLOUD (PLACED JUST BELOW PEOPLE ALSO LIKE) */}
+        <section className="rounded-[22px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.02)] space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
+              <Flame className="h-4 w-4 fill-[#FFC107]" />
+            </span>
+            <div>
+              <h3 className="font-display text-sm font-bold text-[#111111]">{currentApp.name} Search Tags &amp; Keywords</h3>
+              <p className="text-[10px] text-[#888888]">Official search queries &amp; ranking tags for {currentApp.name}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {dynamicGameKeywords.map((kw, i) => (
+              <span
+                key={i}
+                className="rounded-full border border-[#E5E7EB] bg-[#FAFAFA] px-3 py-1 text-[11px] font-medium text-[#555555] hover:bg-[#FFF8E1] hover:border-[#FFE082] hover:text-[#B45309] transition-colors"
+              >
+                #{kw}
+              </span>
+            ))}
+          </div>
+        </section>
 
         {/* Game Highlights (About the Game with Dynamic Name Description) */}
         <section className="space-y-2.5 pt-4" data-testid="game-highlights">
