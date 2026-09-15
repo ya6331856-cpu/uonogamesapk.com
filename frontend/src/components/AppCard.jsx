@@ -4,15 +4,14 @@ import { Star, BadgeCheck, Download, Gift } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
+import { formatCount } from "@/lib/format";
 import { getBadge } from "@/lib/badge";
 
 export const AppCard = ({ app, index = 0, onDownload }) => {
   const navigate = useNavigate();
   const badge = getBadge(app);
-  
-  // Exact serial number based on index (1, 2, 3...)
   const rankNumber = index + 1;
-
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -34,7 +33,6 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       </div>
 
       <div className="relative shrink-0 pt-1">
-        {/* LARGE APP ICON */}
         <AppIcon
           src={resolveUrl(app.icon_url)}
           alt={app.name}
@@ -77,7 +75,6 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
           )}
         </div>
 
-        {/* ACTIVE PLAYERS COUNT */}
         <p className="mt-0.5 text-[11px] font-medium text-[#555555]">
           👥 {(app.downloads ? (app.downloads * 8).toLocaleString() : "350.4K")} active players
         </p>
