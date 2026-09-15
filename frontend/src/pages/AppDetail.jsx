@@ -217,10 +217,17 @@ export default function AppDetail() {
     }
   };
 
+  // PROFESSIONAL BRANDED LOADING SCREEN
   if (loading && !app) {
     return (
-      <div className="app-shell flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#FFC107]" />
+      <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-white shadow-[0_8px_30px_rgba(255,193,7,0.25)] border border-[#FFE082]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#FFC107]" />
+        </div>
+        <div>
+          <p className="font-display text-sm font-bold text-[#111111]">Loading Game...</p>
+          <p className="text-[11px] text-[#777777]">Getting secure download ready for you</p>
+        </div>
       </div>
     );
   }
@@ -402,13 +409,19 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(currentApp.downloads)} downloads
         </div>
 
-        {/* GAME TITLE SECTION (PLACED JUST ABOVE PEOPLE ALSO LIKE) */}
-        <section className="space-y-1 pt-2">
-          <h2 className="font-display text-lg font-bold text-[#111111]">
+        {/* PROFESSIONAL GAME TITLE CARD (JUST ABOVE PEOPLE ALSO LIKE) */}
+        <div className="rounded-[20px] border border-[#E5E7EB] bg-gradient-to-r from-[#FFFBEB] via-[#FFFDF5] to-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFC107] text-[#111111] text-[10px] font-bold">✓</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#B45309]">Official Release</span>
+          </div>
+          <h2 className="font-display text-base font-extrabold tracking-tight text-[#111111]">
             {currentApp.name} APK Download - Latest Version 2026
           </h2>
-          <p className="text-xs text-[#777777]">Official verified release for Android devices</p>
-        </section>
+          <p className="mt-1 text-xs font-medium text-[#666666]">
+            Official verified release optimized for Android devices.
+          </p>
+        </div>
 
         {/* PEOPLE ALSO LIKE SECTION */}
         {related.length > 0 && (
