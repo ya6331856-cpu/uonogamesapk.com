@@ -62,7 +62,6 @@ const getGameSpecificKeywords = (appName) => {
   ];
 };
 
-// STRICT SESSION & CURRENT APP FILTER (PREVENTS JUMPING & REPETITION)
 const processRelatedApps = (rawList, currentAppId, currentAppSlug, currentAppName) => {
   if (!rawList || !Array.isArray(rawList)) return [];
   
@@ -101,66 +100,64 @@ export default function AppDetail() {
   const key = slug || id;
   const navigate = useNavigate();
 
-  // 1. INSTANT LOCAL CACHE LOOKUP FOR 0.05S RENDER
-  const getInstantData = () => {
-    if (location.state?.app) return location.state.app;
+  // INSTANT CACHE LOOKUP
+  const getInstantData = (lookupKey) => {
+    if (location.state?.app && (String(location.state.app.id) === String(lookupKey) || location.state.app.slug === lookupKey)) {
+      return location.state.app;
+    }
     try {
       const cache = localStorage.getItem("yono_apps_perm_cache");
       if (cache) {
         const parsed = JSON.parse(cache);
         const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        return list.find(a => a.slug === key || String(a.id) === String(key)) || null;
+        return list.find(a => a.slug === lookupKey || String(a.id) === String(lookupKey)) || null;
       }
     } catch(e) {}
     return null;
   };
 
-  const instantApp = getInstantData();
-  const [app, setApp] = useState(instantApp);
-  
-  // 2. LOCK RELATED LIST INSTANTLY TO PREVENT LAYOUT SHIFT (JUMPING)
-  const getInstantRelated = (currentApp) => {
-    if (!currentApp) return [];
-    try {
-      const cache = localStorage.getItem("yono_apps_perm_cache");
-      if (cache) {
-        const parsed = JSON.parse(cache);
-        const list = parsed.apps ? [...(parsed.featured || []), ...(parsed.apps || []), ...(parsed.trending || [])] : [];
-        return processRelatedApps(list, currentApp.id, currentApp.slug, currentApp.name);
-      }
-    } catch(e) {}
-    return [];
-  };
-
-  const [related, setRelated] = useState(() => getInstantRelated(instantApp));
+  const initialApp = getInstantData(key);
+  const [app, setApp] = useState(initialApp);
+  const [related, setRelated] = useState(() => initialApp ? processRelatedApps([], initialApp.id, initialApp.slug, initialApp.name) : []);
   const [searchQuery, setSearchQuery] = useState("");
   
-  const [loading, setLoading] = useState(!instantApp); 
+  // LOADING STATE FOR INSTANT SWITCHING
+  const [loading, setLoading] = useState(!initialApp);
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  // REF TO PREVENT RACE CONDITIONS DURING FAST SWITCHING
-  const fetchingRef = useRef(false);
-
+  // FORCE FRESH FETCH & SMOOTH SWITCH ON KEY CHANGE
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") return;
 
-    if (!instantApp) {
+    // Fast check local cache first for instant render
+    const cachedMatch = getInstantData(key);
+    if (cachedMatch) {
+      setApp(cachedMatch);
+      setRelated(processRelatedApps([], cachedMatch.id, cachedMatch.slug, cachedMatch.name));
+      setLoading(false);
+    } else {
       setLoading(true);
     }
     setNotFound(false);
 
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-
-    api
-      .get(`/apps/${key}`)
+    // Fetch fresh details & related list
+    api.get(`/apps/${key}`)
       .then((res) => {
-        fetchingRef.current = false;
         const freshApp = res.data;
         if (freshApp && freshApp.id) {
           setApp(freshApp);
+          
+          api.get(`/apps/${key}/related`, { params: { limit: 30 } })
+            .then((r) => {
+               if (r.data && r.data.length > 0) {
+                 const cleanList = processRelatedApps(r.data, freshApp.id, freshApp.slug, freshApp.name);
+                 setRelated(cleanList);
+               }
+            })
+            .catch(() => {});
+
           setLoading(false);
         } else {
           setNotFound(true);
@@ -168,8 +165,7 @@ export default function AppDetail() {
         }
       })
       .catch(() => {
-        fetchingRef.current = false;
-        if (!instantApp) setNotFound(true);
+        if (!cachedMatch) setNotFound(true);
         setLoading(false);
       });
   }, [key]);
@@ -193,16 +189,22 @@ export default function AppDetail() {
   }, [searchQuery, allCachedApps]);
 
   const handleDownload = () => {
-    if (!currentApp) return;
-    toast.success(`Opening: ${currentApp.name}`, { description: `${currentApp.size} • v${currentApp.version}` });
+    if (!app) return;
+    toast.success(`Opening: ${app.name}`, { description: `${app.size} • v${app.version}` });
     
-    if (currentApp.apk_url && currentApp.apk_url.startsWith("http")) {
-      window.open(currentApp.apk_url, "_blank"); 
-      api.get(`/apps/${currentApp.id}/download`).catch(() => {});
+    if (app.apk_url && app.apk_url.startsWith("http")) {
+      window.open(app.apk_url, "_blank"); 
+      api.get(`/apps/${app.id}/download`).catch(() => {});
     } else {
-      window.open(`${API}/apps/${currentApp.id}/download`, "_blank");
+      window.open(`${API}/apps/${app.id}/download`, "_blank");
     }
     setApp((p) => (p ? { ...p, downloads: (p.downloads || 0) + 1 } : p));
+  };
+
+  const handleRelatedClick = (relApp) => {
+    setLoading(true);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    navigate(`/${relApp.slug || relApp.id}`, { state: { app: relApp } });
   };
 
   const handleRelatedDownload = (relApp) => {
@@ -219,7 +221,7 @@ export default function AppDetail() {
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: currentApp?.name, url });
+        await navigator.share({ title: app?.name, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
@@ -235,23 +237,22 @@ export default function AppDetail() {
     }
   };
 
-  const currentApp = app || instantApp;
-
-  if (loading && !currentApp) {
+  // SMOOTH SUB-SECOND LOADING SCREEN DURING GAME SWITCHING
+  if (loading && !app) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FFFBEB] px-6 text-center">
         <div className="relative flex h-16 w-16 items-center justify-center rounded-[22px] bg-white shadow-[0_8px_30px_rgba(255,193,7,0.25)] border border-[#FFE082]">
           <Loader2 className="h-8 w-8 animate-spin text-[#FFC107]" />
         </div>
         <div>
-          <p className="font-display text-sm font-bold text-[#111111]">Loading Game...</p>
-          <p className="text-[11px] text-[#777777]">Getting secure download ready for you</p>
+          <p className="font-display text-sm font-bold text-[#111111]">Switching Game...</p>
+          <p className="text-[11px] text-[#777777]">Preparing secure download package</p>
         </div>
       </div>
     );
   }
 
-  if (notFound && !currentApp) {
+  if (notFound && !app) {
     return (
       <div className="app-shell flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="font-display text-lg font-bold text-[#111111]">App not found</p>
@@ -266,25 +267,25 @@ export default function AppDetail() {
     );
   }
 
-  if (!currentApp) return null;
+  if (!app) return null;
 
-  const dynamicGameKeywords = getGameSpecificKeywords(currentApp.name);
-  const activeRelated = related.length > 0 ? related : getInstantRelated(currentApp);
+  const dynamicGameKeywords = getGameSpecificKeywords(app.name);
+  const activeRelated = processRelatedApps(related.length > 0 ? related : allCachedApps, app.id, app.slug, app.name);
 
   return (
-    <div className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
+    <div key={app.id} className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
       <SEOHead
         type="app"
-        title={currentApp.seo_title || `${currentApp.name} APK Download - Latest Version | YONO GAMES 2026 | YONO GAMES`}
-        description={currentApp.meta_description || `${currentApp.name} APK Download Latest Version 2026 - Get Rs 501 Bonus. ${currentApp.name} is No.1 Real Cash Game with Instant UPI Withdrawal, 80+ Games, Big Win & Jackpot Trick. 100% Safe Official App.`}
-        keywords={currentApp.keywords || `${currentApp.name} apk, ${currentApp.name} download, ${currentApp.category?.toLowerCase()} apk`}
-        canonical={`https://newyono.games/${currentApp.slug || currentApp.id}`}
-        image={currentApp.og_image || currentApp.icon_url}
-        noindex={!!currentApp.noindex || !!currentApp.hidden}
-        app={currentApp}
+        title={app.seo_title || `${app.name} APK Download - Latest Version | YONO GAMES 2026 | YONO GAMES`}
+        description={app.meta_description || `${app.name} APK Download Latest Version 2026 - Get Rs 501 Bonus. ${app.name} is No.1 Real Cash Game with Instant UPI Withdrawal, 80+ Games, Big Win & Jackpot Trick. 100% Safe Official App.`}
+        keywords={app.keywords || `${app.name} apk, ${app.name} download, ${app.category?.toLowerCase()} apk`}
+        canonical={`https://newyono.games/${app.slug || app.id}`}
+        image={app.og_image || app.icon_url}
+        noindex={!!app.noindex || !!app.hidden}
+        app={app}
         breadcrumbs={[
-          { name: currentApp.category || "Apps", url: `/?category=${encodeURIComponent(currentApp.category || "")}` },
-          { name: currentApp.name, url: `/${currentApp.slug || currentApp.id}` },
+          { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
+          { name: app.name, url: `/${app.slug || app.id}` },
         ]}
       />
       
@@ -341,8 +342,8 @@ export default function AppDetail() {
 
       <main className="space-y-6 px-4 pt-4">
         <Breadcrumbs items={[
-          { name: currentApp.category || "Apps", url: `/?category=${encodeURIComponent(currentApp.category || "")}` },
-          { name: currentApp.name, url: `/${currentApp.slug || currentApp.id}` },
+          { name: app.category || "Apps", url: `/?category=${encodeURIComponent(app.category || "")}` },
+          { name: app.name, url: `/${app.slug || app.id}` },
         ]} />
         
         {/* App head */}
@@ -353,63 +354,63 @@ export default function AppDetail() {
           className="flex items-center gap-4"
         >
           <AppIcon
-            src={resolveUrl(currentApp.icon_url)}
-            alt={`${currentApp.name} APK icon`}
+            src={resolveUrl(app.icon_url)}
+            alt={`${app.name} APK icon`}
             className="h-[84px] w-[84px] shrink-0 rounded-[20px] ring-1 ring-black/5"
           />
           <div className="min-w-0 flex-1">
             <h1 data-testid="detail-name" className="font-display text-xl font-bold leading-tight text-[#111111]">
-              {currentApp.name}
+              {app.name}
             </h1>
-            {currentApp.developer && (
+            {app.developer && (
               <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#229ED9]">
-                <Building2 className="h-3.5 w-3.5" /> {currentApp.developer}
+                <Building2 className="h-3.5 w-3.5" /> {app.developer}
               </p>
             )}
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-[#FFF8E1] px-2 py-0.5 text-xs font-semibold text-[#111111]">
-                <Star className="h-3 w-3 fill-[#FFC107] text-[#FFC107]" /> {currentApp.rating?.toFixed(1)}
+                <Star className="h-3 w-3 fill-[#FFC107] text-[#FFC107]" /> {app.rating?.toFixed(1)}
               </span>
-              {currentApp.verified && (
+              {app.verified && (
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-[#F0FDF4] px-2 py-0.5 text-xs font-semibold text-[#22C55E]">
                   <BadgeCheck className="h-3.5 w-3.5" /> Verified
                 </span>
               )}
-              <span className="rounded-full bg-[#F1F2F4] px-2 py-0.5 text-xs font-medium text-[#555555]">{currentApp.category}</span>
+              <span className="rounded-full bg-[#F1F2F4] px-2 py-0.5 text-xs font-medium text-[#555555]">{app.category}</span>
             </div>
           </div>
         </motion.div>
 
         {/* Stats */}
         <div className="flex gap-2">
-          <Stat icon={Download} label="Downloads" value={`${formatCount(currentApp.downloads)}+`} />
-          <Stat icon={HardDrive} label="Size" value={currentApp.size} />
-          <Stat icon={Tag} label="Version" value={currentApp.version} />
-          <Stat icon={Smartphone} label="Requires" value={(currentApp.min_android || "").replace("Android ", "")} />
+          <Stat icon={Download} label="Downloads" value={`${formatCount(app.downloads)}+`} />
+          <Stat icon={HardDrive} label="Size" value={app.size} />
+          <Stat icon={Tag} label="Version" value={app.version} />
+          <Stat icon={Smartphone} label="Requires" value={(app.min_android || "").replace("Android ", "")} />
         </div>
 
         {/* Rummy rewards highlight */}
-        {(currentApp.signup_bonus || currentApp.min_withdraw) && (
+        {(app.signup_bonus || app.min_withdraw) && (
           <div className="flex gap-2" data-testid="detail-rewards">
-            {currentApp.signup_bonus && (
+            {app.signup_bonus && (
               <div className="flex flex-1 items-center gap-2.5 rounded-[16px] border border-[#FFE082] bg-gradient-to-br from-[#FFF8E1] to-[#FFFBEB] px-3 py-3 shadow-[0_6px_20px_rgba(255,193,7,0.12)]">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FFC107] to-[#FF9800] shadow-sm">
                   <Gift className="h-4 w-4 text-white" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-[#B45309]">Sign-up Bonus</p>
-                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{currentApp.signup_bonus}</p>
+                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{app.signup_bonus}</p>
                 </div>
               </div>
             )}
-            {currentApp.min_withdraw && (
+            {app.min_withdraw && (
               <div className="flex flex-1 items-center gap-2.5 rounded-[16px] border border-[#BBF7D0] bg-gradient-to-br from-[#F0FDF4] to-white px-3 py-3 shadow-[0_6px_20px_rgba(34,197,94,0.1)]">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16A34A] shadow-sm">
                   <Wallet className="h-4 w-4 text-white" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-[#15803D]">Min. Withdraw</p>
-                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{currentApp.min_withdraw}</p>
+                  <p className="font-display text-lg font-extrabold leading-none text-[#111111]">{app.min_withdraw}</p>
                 </div>
               </div>
             )}
@@ -422,12 +423,12 @@ export default function AppDetail() {
           data-testid="detail-download-btn"
           className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FFB300] py-4 text-base font-bold text-[#111111] shadow-[0_10px_28px_rgba(255,193,7,0.5)]"
         >
-          <Download className="h-5 w-5" /> Download APK ({currentApp.size})
+          <Download className="h-5 w-5" /> Download APK ({app.size})
         </RippleButton>
 
         <div className="flex items-center justify-center gap-1.5 text-xs text-[#999999]">
           <ShieldCheck className="h-3.5 w-3.5 text-[#22C55E]" />
-          Safe &amp; virus-scanned • {formatFull(currentApp.downloads)} downloads
+          Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
         {/* PROFESSIONAL GAME TITLE CARD */}
@@ -437,14 +438,14 @@ export default function AppDetail() {
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#B45309]">Official Release</span>
           </div>
           <h2 className="font-display text-base font-extrabold tracking-tight text-[#111111]">
-            {currentApp.name} APK Download - Latest Version 2026
+            {app.name} APK Download - Latest Version 2026
           </h2>
           <p className="mt-1 text-xs font-medium text-[#666666]">
             100% Safe aur Secure APK download karein, instant withdrawal ke sath!
           </p>
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION (LOCKED & STABLE) */}
+        {/* PEOPLE ALSO LIKE SECTION WITH CUSTOM CLICK HANDLER FOR INSTANT STABLE SWITCHING */}
         {activeRelated.length > 0 && (
           <section className="mt-4 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
@@ -452,12 +453,13 @@ export default function AppDetail() {
             </h2>
             <div className="flex flex-col gap-3">
               {activeRelated.slice(0, 5).map((r, i) => (
-                <AppCard 
-                  key={r.id} 
-                  app={r} 
-                  index={i} 
-                  onDownload={() => handleRelatedDownload(r)} 
-                />
+                <div key={r.id} onClick={() => handleRelatedClick(r)} className="cursor-pointer">
+                  <AppCard 
+                    app={r} 
+                    index={i} 
+                    onDownload={(e) => { e.stopPropagation(); handleRelatedDownload(r); }} 
+                  />
+                </div>
               ))}
 
               {activeRelated.length > 5 && (
@@ -471,7 +473,11 @@ export default function AppDetail() {
               )}
 
               {activeRelated.slice(5, 10).map((r, i) => (
-                <div key={r.id} className="relative overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
+                <div 
+                  key={r.id} 
+                  onClick={() => handleRelatedClick(r)}
+                  className="relative overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)] cursor-pointer hover:border-[#FFC107] transition-colors"
+                >
                   <div className="flex items-center gap-3">
                     <AppIcon src={resolveUrl(r.icon_url)} className="h-12 w-12 rounded-[14px] shrink-0" />
                     <div className="min-w-0 flex-1">
@@ -479,7 +485,7 @@ export default function AppDetail() {
                       <p className="text-xs text-[#777777] truncate">{r.category} • ⭐ {r.rating?.toFixed(1)}</p>
                     </div>
                     <button
-                      onClick={() => handleRelatedDownload(r)}
+                      onClick={(e) => { e.stopPropagation(); handleRelatedDownload(r); }}
                       className="rounded-full bg-[#FFC107] px-4 py-2 text-xs font-bold text-[#111111] shadow-md hover:bg-[#FFB300]"
                     >
                       Download
@@ -498,8 +504,8 @@ export default function AppDetail() {
               <Flame className="h-4 w-4 fill-[#FFC107]" />
             </span>
             <div>
-              <h3 className="font-display text-sm font-bold text-[#111111]">{currentApp.name} Search Tags &amp; Keywords</h3>
-              <p className="text-[10px] text-[#888888]">Official search queries &amp; ranking tags for {currentApp.name}</p>
+              <h3 className="font-display text-sm font-bold text-[#111111]">{app.name} Search Tags &amp; Keywords</h3>
+              <p className="text-[10px] text-[#888888]">Official search queries &amp; ranking tags for {app.name}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5 pt-1">
@@ -520,7 +526,7 @@ export default function AppDetail() {
             <Gamepad2 className="h-4 w-4 text-[#FFC107]" /> About the Game
           </h2>
           <p className="text-sm leading-relaxed text-[#555555]">
-            {currentApp.name} APK Download Latest Version 2026 - Get Rs 501 Bonus. {currentApp.name} is No.1 Real Cash Game with Instant UPI Withdrawal, 80+ Games, Big Win & Jackpot Trick. 100% Safe Official App.
+            {app.name} APK Download Latest Version 2026 - Get Rs 501 Bonus. {app.name} is No.1 Real Cash Game with Instant UPI Withdrawal, 80+ Games, Big Win & Jackpot Trick. 100% Safe Official App.
           </p>
           <div className="grid grid-cols-2 gap-2.5">
             {GAME_HIGHLIGHTS.map((h) => (
@@ -541,21 +547,21 @@ export default function AppDetail() {
         </section>
 
         {/* Description */}
-        {currentApp.description && (
+        {app.description && (
           <section className="space-y-2">
             <h2 className="font-display text-base font-bold text-[#111111]">About this app</h2>
-            <p data-testid="detail-description" className="text-sm leading-relaxed text-[#555555]">{currentApp.description}</p>
+            <p data-testid="detail-description" className="text-sm leading-relaxed text-[#555555]">{app.description}</p>
           </section>
         )}
 
         {/* What's new */}
-        {currentApp.whats_new && (
+        {app.whats_new && (
           <section className="space-y-2">
             <h2 className="flex items-center gap-1.5 font-display text-base font-bold text-[#111111]">
               <Sparkles className="h-4 w-4 text-[#FFC107]" /> What&apos;s New
             </h2>
             <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 text-sm leading-relaxed text-[#555555] shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
-              {currentApp.whats_new}
+              {app.whats_new}
             </div>
           </section>
         )}
@@ -565,16 +571,16 @@ export default function AppDetail() {
           <h2 className="font-display text-base font-bold text-[#111111]">Additional Information</h2>
           <div className="divide-y divide-[#E5E7EB] rounded-[18px] border border-[#E5E7EB] bg-white px-4 shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
             {[
-              ["Version", currentApp.version],
-              ["Size", currentApp.size],
-              ["Category", currentApp.category],
-              ["Requires", currentApp.min_android],
-              ["Developer", currentApp.developer || "—"],
-              ["Package", currentApp.package_name || "—"],
-              ["Updated", (currentApp.created_at || "").slice(0, 10) || "—"],
-              ["Requirements", currentApp.requirements || "—"],
-              ["Sign-up Bonus", currentApp.signup_bonus || "—"],
-              ["Min. Withdraw", currentApp.min_withdraw || "—"],
+              ["Version", app.version],
+              ["Size", app.size],
+              ["Category", app.category],
+              ["Requires", app.min_android],
+              ["Developer", app.developer || "—"],
+              ["Package", app.package_name || "—"],
+              ["Updated", (app.created_at || "").slice(0, 10) || "—"],
+              ["Requirements", app.requirements || "—"],
+              ["Sign-up Bonus", app.signup_bonus || "—"],
+              ["Min. Withdraw", app.min_withdraw || "—"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between py-2.5 text-sm">
                 <span className="text-[#777777]">{k}</span>
@@ -585,11 +591,11 @@ export default function AppDetail() {
         </section>
 
         {/* Features */}
-        {currentApp.features?.length > 0 && (
+        {app.features?.length > 0 && (
           <section className="space-y-2" data-testid="detail-features">
             <h2 className="font-display text-base font-bold text-[#111111]">Features</h2>
             <div className="flex flex-wrap gap-2">
-              {currentApp.features.map((f, i) => (
+              {app.features.map((f, i) => (
                 <span key={i} className="rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-medium text-[#555555] shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
                   {f}
                 </span>
@@ -599,12 +605,12 @@ export default function AppDetail() {
         )}
 
         {/* Permissions */}
-        {currentApp.permissions?.length > 0 && (
+        {app.permissions?.length > 0 && (
           <section className="space-y-2" data-testid="detail-permissions">
             <h2 className="font-display text-base font-bold text-[#111111]">Permissions</h2>
             <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.03)]">
               <ul className="space-y-1.5">
-                {currentApp.permissions.map((p, i) => (
+                {app.permissions.map((p, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-[#555555]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#FFC107]" /> {p}
                   </li>
