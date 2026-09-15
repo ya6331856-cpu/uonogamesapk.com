@@ -7,14 +7,11 @@ import { resolveUrl } from "@/lib/api";
 import { formatCount } from "@/lib/format";
 import { getBadge } from "@/lib/badge";
 
-/**
- * Compact horizontal APK list card with larger app icons and exact serial numbers (No "NO." text).
- */
 export const AppCard = ({ app, index = 0, onDownload }) => {
   const navigate = useNavigate();
   const badge = getBadge(app);
   
-  // Calculate dynamic ranking number based on index (1, 2, 3, etc.)
+  // Exact serial number based on index (1, 2, 3...)
   const rankNumber = index + 1;
 
   return (
@@ -28,7 +25,7 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       data-testid={`app-card-${app.id}`}
       className="group relative flex cursor-pointer items-center gap-3.5 rounded-[20px] border border-[#E5E7EB] bg-white p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_18px_36px_rgba(0,0,0,0.09)]"
     >
-      {/* EXACT NUMBER BADGE (Shows only numbers: 1, 2, 3...) */}
+      {/* EXACT NUMBER BADGE (1, 2, 3...) */}
       <div className="absolute -left-2.5 -top-2.5 z-10 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold text-white shadow-md"
            style={{
              backgroundColor: rankNumber === 1 ? "#FFC107" : rankNumber === 2 ? "#9E9E9E" : rankNumber === 3 ? "#CD7F32" : "#333333"
@@ -57,7 +54,7 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <h3
-            className="line-clamp-2 font-display text-[15px] font-semibold leading-tight text-[#111111]"
+            className="line-concise line-clamp-2 font-display text-[15px] font-semibold leading-tight text-[#111111]"
             data-testid={`app-name-${app.id}`}
           >
             {app.name}
@@ -80,7 +77,7 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
           )}
         </div>
 
-        {/* ACTIVE PLAYERS / DOWNLOAD STATS */}
+        {/* ACTIVE PLAYERS COUNT RESTORED */}
         <p className="mt-0.5 text-[11px] font-medium text-[#555555]">
           👥 {(app.downloads ? (app.downloads * 8).toLocaleString() : "350.4K")} active players
         </p>
