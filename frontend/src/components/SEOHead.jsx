@@ -29,8 +29,9 @@ export function canonicalize(input) {
 }
 
 export default function SEOHead({ title, description, image, canonical, type = "website", app = null, breadcrumbs = [], noindex = false, keywords = "" }) {
-  const seoTitle = title ? `${title} | ${SITE_NAME} Play & Win` : `${SITE_NAME} - Play & Win`;
-  const seoDescription = description || "Play and win real cash on New Yono. Fast, safe & verified downloads.";
+  // Updated high-converting default title and description
+  const seoTitle = title ? `${title} | ${SITE_NAME}` : `All Yono Games List 2026 – Download Official APK & Get ₹501 Bonus`;
+  const seoDescription = description || "Discover all yono games, Rummy & slots. Download official APK with instant ₹501 bonus, lightning-fast payouts, 100% verified security, and direct UPI withdrawals.";
   const seoImage = image ? absUrl(image) : DEFAULT_OG;
   const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
 
