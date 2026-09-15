@@ -62,7 +62,8 @@ export default function Store() {
 
   const fetchApps = async () => {
     try {
-      const res = await api.get("/apps?limit=200");
+      // Fast initial fetch with optimized limit, full sync in background
+      const res = await api.get("/apps?limit=50");
       if (res.data) {
         setData(res.data);
         localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
@@ -256,7 +257,6 @@ export default function Store() {
       <AnnouncementBar config={settings?.announcement} />
       <Header />
 
-      {/* STATIC INSTANT HEADER TO PREVENT JUMPING */}
       <div className="px-4 pt-3 text-center">
         <h1 className="font-display text-lg font-bold text-[#111111]">Welcome to YONO GAMES</h1>
         <p className="text-xs text-[#777777]">PLAY &amp; WIN • SINCE 2024</p>
