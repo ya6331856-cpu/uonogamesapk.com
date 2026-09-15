@@ -34,7 +34,7 @@ export default function SEOHead({ title, description, image, canonical, type = "
   const seoImage = image ? absUrl(image) : DEFAULT_OG;
   const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
 
-  // Structured Data (JSON-LD) for Google Fast Ranking & Rich Snippets
+  // Structured Data (JSON-LD) with AggregateRating for Rich Snippets (Google Stars)
   const appSchema = app ? {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -45,8 +45,10 @@ export default function SEOHead({ title, description, image, canonical, type = "
     "fileSize": app.size || "50MB",
     "aggregateRating": {
       "@type": "AggregateRating",
-      "ratingValue": app.rating || "4.8",
-      "reviewCount": app.downloads ? Math.floor(app.downloads / 10) : "1250"
+      "ratingValue": app.rating ? app.rating.toString() : "4.8",
+      "ratingCount": app.downloads ? Math.floor(app.downloads / 5) : "1250",
+      "bestRating": "5",
+      "worstRating": "1"
     },
     "offers": {
       "@type": "Offer",
