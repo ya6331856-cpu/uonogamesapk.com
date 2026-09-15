@@ -102,14 +102,15 @@ export default function AppDetail() {
   const [notFound, setNotFound] = useState(false);
   const [legalId, setLegalId] = useState(null);
 
-  // FORCE SCROLL TO TOP INSTANTLY ON KEY CHANGE & FETCH FRESH DATA
+  // FORCE SCROLL TO TOP & FETCH FRESH DATA WITH STALE STATE PREVENTION
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (!key || key === "undefined") {
       navigate("/");
       return;
     }
-    if (!app) setLoading(true);
+    
+    setLoading(true);
     setNotFound(false);
 
     api
@@ -130,7 +131,7 @@ export default function AppDetail() {
           .catch(() => {});
       })
       .catch(() => {
-        if (!app) setNotFound(true);
+        setNotFound(true);
         setLoading(false);
       });
   }, [key, navigate]);
@@ -378,7 +379,7 @@ export default function AppDetail() {
           Safe &amp; virus-scanned • {formatFull(app.downloads)} downloads
         </div>
 
-        {/* PEOPLE ALSO LIKE SECTION PLACED STRICTLY BEFORE ABOUT THE GAME */}
+        {/* PEOPLE ALSO LIKE SECTION (STRICTLY FIXED ABOVE ABOUT THE GAME) */}
         {related.length > 0 && (
           <section className="mt-6 rounded-[24px] border border-[#FFE082] bg-gradient-to-b from-[#FFFBEB] to-white p-4 shadow-[0_8px_30px_rgba(255,193,7,0.12)]" data-testid="detail-related">
             <h2 className="mb-4 flex items-center gap-1.5 font-display text-lg font-bold text-[#111111]">
