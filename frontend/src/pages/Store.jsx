@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X } from "lucide-react";
+import { Search, Send, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
 import SEOHead from "@/components/SEOHead";
@@ -40,10 +41,33 @@ const SORTS = [
   { value: "newest", label: "Newest" },
 ];
 
+const LANDING_100_KEYWORDS = [
+  "Yono Games", "Yono Rummy", "Rummy Games", "Money Games", "Casino Games", "Teen Patti Real Cash",
+  "New Yono Apps 2026", "Best Rummy App India", "Sign Up Bonus 501", "Instant UPI Withdrawal",
+  "Mod APK Download", "Yono VIP Program", "Daily Jackpot Win", "Safe APK Store", "Online Card Games",
+  "Yono All Games List", "Winning Strategies", "Fastest Withdrawal App", "Trusted Rummy Platform",
+  "Android Gaming Hub", "Free Bonus Apps", "Real Money Games", "Latest Version Update", "Ind Rummy APK",
+  "Gold Rummy Download", "Yono Ludo App", "Teen Patti Gold", "Dragon Tiger Game", "Andar Bahar Online",
+  "7 Up 7 Down Game", "Car Roulette APK", "Zoo Roulette", "Crash Aviator Game", "Roulette Casino App",
+  "Poker Real Money", "Blackjack Online India", "Slots Win APK", "Teen Patti Master", "Yono 777 Game",
+  "Yono Slots Spin", "All Yono Rummy List", "New Rummy App 2026", "Bonus Rummy App", "No 1 Rummy Game",
+  "Real Cash Earning Apps", "Paytm Cash Games", "PhonePe Withdrawal Apps", "Google Pay Rummy", "Instant Bank Transfer Games",
+  "Safe Rummy App", "Verified APK Store", "Anti Ban Mod APK", "High Payout Casino", "Big Win Rummy",
+  "Mega Jackpot Apps", "Daily Login Bonus", "Refer and Earn Rummy", "Level Up Rewards", "VIP Club Games",
+  "Customer Care Rummy", "Direct APK Link", "Fastest App Download", "Lightweight Gaming APK", "Smooth 60 FPS Games",
+  "Offline & Online Games", "Regular App Updates", "Secure SSL Download", "Malware Free APK", "Trusted Developer Apps",
+  "Top Rated Card Games", "Most Downloaded Rummy", "Trending Casino APK", "Exclusive Game Codes", "Redeem Code Rummy",
+  "Promo Code Bonus", "Unlimited Chips Hack", "Winning Tricks Rummy", "Pro Player Strategy", "Expert Guide APK",
+  "App Installation Guide", "Root Free APK", "Android 14 Supported", "Low Storage Games", "High Speed APK Server",
+  "Multiplayer Card Games", "Live Dealer Casino", "Real Time Leaderboard", "Tournament Rummy APK", "Weekly Cash Prizes",
+  "Monthly Mega Contests", "Special Festival Bonus", "New Year Rummy Offer", "Diwali Special Bonus", "Welcome Bonus 501",
+  "First Deposit Bonus", "Extra Cashback Offer", "Loss Back Guarantee", "Instant Support 24x7", "Official Yono Games Store"
+];
+
 export default function Store() {
   const { settings } = useSettings();
+  const navigate = useNavigate();
   
-  // INSTANT CACHE PARSING FOR ZERO WAITING TIME
   const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
   const parsedCache = useMemo(() => {
     try {
@@ -53,7 +77,6 @@ export default function Store() {
     }
   }, [cachedData]);
 
-  // NEVER SHOW SKELETON IF CACHE EXISTS - INSTANT LOAD
   const [data, setData] = useState(() => parsedCache);
   const [loading, setLoading] = useState(!parsedCache);
   
@@ -64,7 +87,7 @@ export default function Store() {
 
   const fetchApps = async () => {
     try {
-      const res = await api.get("/apps?limit=40");
+      const res = await api.get("/apps?limit=100");
       if (res.data) {
         setData(res.data);
         localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
@@ -77,10 +100,9 @@ export default function Store() {
   };
 
   useEffect(() => {
-    // If cache is present, skip loading state completely and fetch silently in background
     if (parsedCache) {
       setLoading(false);
-      fetchApps(); // Background sync
+      fetchApps();
     } else {
       fetchApps();
     }
@@ -108,6 +130,23 @@ export default function Store() {
       localStorage.setItem("yono_apps_perm_cache", JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const allAppsList = useMemo(() => {
+    if (!data) return [];
+    return [...(data.featured || []), ...(data.apps || []), ...(data.trending || [])];
+  }, [data]);
+
+  const handleKeywordClick = (kw) => {
+    const cleanKw = kw.replace(/apk|download|2026|app|online|india|game|games/gi, "").trim();
+    const matchedApp = allAppsList.find(a => normalize(a.name).includes(normalize(cleanKw)) || normalize(cleanKw).includes(normalize(a.name)));
+    
+    if (matchedApp) {
+      navigate(`/${matchedApp.slug || matchedApp.id}`, { state: { app: matchedApp } });
+    } else {
+      setSearch(cleanKw || kw);
+      window.scrollTo({ top: 300, behavior: 'smooth' });
+    }
   };
 
   const categories = useMemo(() => {
@@ -240,7 +279,34 @@ export default function Store() {
     ) : null,
     winners: isDefaultView && en("winners") ? <LiveWinners key="winners" config={settings?.winners_config} /> : null,
     apps: appListSection,
-    reviews: isDefaultView && en("reviews") ? <ReviewsSection key="reviews" /> : null,
+    reviews: isDefaultView && en("reviews") ? (
+      <div key="reviews-wrapper" className="space-y-4">
+        <ReviewsSection />
+        {/* 100 SOLID SEO KEYWORDS CLOUD PLACED RIGHT AFTER WHAT USERS SAY */}
+        <section className="rounded-[22px] border border-[#E5E7EB] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.02)] space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
+              <Flame className="h-4 w-4 fill-[#FFC107]" />
+            </span>
+            <div>
+              <h3 className="font-display text-sm font-bold text-[#111111]">Top 100 Yono Games, Rummy &amp; Money Game Keywords</h3>
+              <p className="text-[10px] text-[#888888]">Click any keyword to explore games and instant download links</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {LANDING_100_KEYWORDS.map((kw, i) => (
+              <button
+                key={i}
+                onClick={() => handleKeywordClick(kw)}
+                className="rounded-full border border-[#E5E7EB] bg-[#FAFAFA] px-3 py-1 text-[11px] font-medium text-[#555555] hover:bg-[#FFF8E1] hover:border-[#FFE082] hover:text-[#B45309] transition-colors text-left cursor-pointer"
+              >
+                #{kw}
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    ) : null,
     faq: isDefaultView && en("faq") ? <FaqSection key="faq" /> : null,
     legal: isDefaultView && en("legal") ? <LegalSection key="legal" onOpen={setLegalId} /> : null,
   };
