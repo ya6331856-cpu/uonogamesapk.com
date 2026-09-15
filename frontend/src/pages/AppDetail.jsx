@@ -242,8 +242,8 @@ export default function AppDetail() {
     <div key={key} className="app-shell min-h-screen pb-28" data-testid="app-detail-page">
       <SEOHead
         type="app"
-        title={app.seo_title || `${app.name} APK Download - Latest Version | New Yono`}
-        description={app.meta_description || (app.description || "").slice(0, 160) || `Download ${app.name} APK latest version for Android. Fast, safe and verified download.`}
+        title={app.seo_title || `${app.name} APK Download - Latest Version | YONO GAMES 2026 | YONO GAMES`}
+        description={app.meta_description || `${app.name} APK Download Latest Version 2026 - Get Rs 501 Bonus. ${app.name} is No.1 Real Cash Game with Instant UPI Withdrawal, 80+ Games, Big Win & Jackpot Trick. 100% Safe Official App.`}
         keywords={app.keywords || `${app.name} apk, ${app.name} download, ${app.category?.toLowerCase()} apk`}
         canonical={`https://newyono.games/${app.slug || app.id}`}
         image={app.og_image || app.icon_url}
