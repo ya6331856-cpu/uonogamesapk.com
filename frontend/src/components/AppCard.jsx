@@ -4,7 +4,6 @@ import { Star, BadgeCheck, Download, Gift } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
-import { formatCount } from "@/lib/format";
 import { getBadge } from "@/lib/badge";
 
 export const AppCard = ({ app, index = 0, onDownload }) => {
