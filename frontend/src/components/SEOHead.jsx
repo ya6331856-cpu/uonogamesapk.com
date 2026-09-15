@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://newyono.games";
@@ -29,16 +28,50 @@ export function canonicalize(input) {
   }
 }
 
-export default function SEOHead({ title, description, image, canonical }) {
+export default function SEOHead({ title, description, image, canonical, type = "website", app = null, breadcrumbs = [], noindex = false, keywords = "" }) {
   const seoTitle = title ? `${title} | ${SITE_NAME} Play & Win` : `${SITE_NAME} - Play & Win`;
   const seoDescription = description || "Play and win real cash on New Yono. Fast, safe & verified downloads.";
   const seoImage = image ? absUrl(image) : DEFAULT_OG;
   const seoCanonical = canonical ? canonicalize(canonical) : SITE_URL;
 
+  // Structured Data (JSON-LD) for Google Fast Ranking & Rich Snippets
+  const appSchema = app ? {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": app.name,
+    "operatingSystem": "ANDROID",
+    "applicationCategory": "GameApplication",
+    "softwareVersion": app.version || "1.0",
+    "fileSize": app.size || "50MB",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": app.rating || "4.8",
+      "reviewCount": app.downloads ? Math.floor(app.downloads / 10) : "1250"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "INR"
+    }
+  } : null;
+
+  const breadcrumbSchema = breadcrumbs.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": breadcrumbs.map((b, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": b.name,
+      "item": `${SITE_URL}${b.url}`
+    }))
+  } : null;
+
   return (
     <Helmet>
       <title>{seoTitle}</title>
       <meta name="description" content={seoDescription} />
+      {keywords && <meta name="keywords" content={keywords} />}
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
       <link rel="canonical" href={seoCanonical} />
       
       {/* Favicon & Touch Icons */}
@@ -48,8 +81,28 @@ export default function SEOHead({ title, description, image, canonical }) {
 
       <meta property="og:title" content={seoTitle} />
       <meta property="og:description" content={seoDescription} />
+      <meta property="og:type" content={type} />
       <meta property="og:image" content={seoImage} />
       <meta property="og:url" content={seoCanonical} />
+
+      {/* Twitter Card */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={seoTitle} />
+      <meta name="twitter:description" content={seoDescription} />
+      <meta name="twitter:image" content={seoImage} />
+
+      {/* Structured Data Scripts for Google Crawlers */}
+      {appSchema && (
+        <script type="application/ld+json">
+          {JSON.stringify(appSchema)}
+        </script>
+      )}
+
+      {breadcrumbSchema && (
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+      )}
     </Helmet>
   );
 }
