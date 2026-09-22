@@ -145,7 +145,7 @@ export default function Store() {
             />
           </div>
 
-          {/* TOP 3 APPS TODAY - INCREASED HEIGHT / PADDING */}
+          {/* TOP 3 APPS TODAY - INCREASED HEIGHT WITH CROWN + NUMBERS */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
@@ -162,11 +162,11 @@ export default function Store() {
                     <div 
                       key={app.id || idx} 
                       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
-                      className="relative cursor-pointer rounded-[20px] border border-[#E5E7EB] bg-white p-3.5 flex flex-col items-center text-center justify-between shadow-[0_4px_14px_rgba(0,0,0,0.04)] hover:shadow-md transition-all min-h-[175px]"
+                      className="relative cursor-pointer rounded-[20px] border border-[#E5E7EB] bg-white p-3 flex flex-col items-center text-center justify-between shadow-[0_4px_14px_rgba(0,0,0,0.04)] hover:shadow-md transition-all min-h-[200px]"
                     >
-                      {/* CROWN BADGE */}
+                      {/* CROWN & NUMBER BADGE */}
                       <div 
-                        className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white shadow-sm border-2 border-white"
+                        className="absolute -left-1.5 -top-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black text-white shadow-md border-2 border-white"
                         style={{
                           background: rankNumber === 1 
                             ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
@@ -175,12 +175,13 @@ export default function Store() {
                             : "linear-gradient(135deg, #E65100 0%, #BF360C 100%)"
                         }}
                       >
-                        <Crown className="h-3 w-3 text-white fill-white" />
+                        <Crown className="h-2.5 w-2.5 text-white fill-white" />
+                        <span>#{rankNumber}</span>
                       </div>
 
-                      {/* APP ICON & TOP CONTENT */}
-                      <div className="flex flex-col items-center w-full">
-                        <div className="relative mt-1">
+                      {/* APP ICON & DETAILS */}
+                      <div className="flex flex-col items-center w-full mt-2">
+                        <div className="relative">
                           <AppIcon
                             src={resolveUrl(app.icon_url)}
                             alt={app.name}
@@ -196,6 +197,10 @@ export default function Store() {
                         </h4>
 
                         <div className="mt-1 space-y-0.5 w-full">
+                          <div className="flex items-center justify-center gap-0.5 text-[9px] font-semibold text-[#555555]">
+                            <Star className="h-2.5 w-2.5 fill-[#FFC107] text-[#FFC107]" />
+                            <span>{app.rating?.toFixed(1) || "4.8"}</span>
+                          </div>
                           {app.signup_bonus && (
                             <div className="flex items-center justify-center gap-0.5 text-[9px] font-extrabold text-[#D97706] truncate">
                               <Gift className="h-2.5 w-2.5 shrink-0" /> {app.signup_bonus}
@@ -215,7 +220,7 @@ export default function Store() {
                           e.stopPropagation();
                           handleDownload(app);
                         }}
-                        className="mt-2 w-full flex items-center justify-center gap-1 rounded-full bg-[#FFC107] py-1.5 text-[10px] font-bold text-[#111111] shadow-sm hover:bg-[#FFB300]"
+                        className="mt-2.5 w-full flex items-center justify-center gap-1 rounded-full bg-[#FFC107] py-1.5 text-[10px] font-bold text-[#111111] shadow-sm hover:bg-[#FFB300]"
                       >
                         <Download className="h-3 w-3" /> Get
                       </RippleButton>
