@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BadgeCheck, Download, Gift } from "lucide-react";
+import { Star, BadgeCheck, Download, Gift, Check } from "lucide-react";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
 import { resolveUrl } from "@/lib/api";
@@ -11,6 +12,14 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
   const badge = getBadge(app);
   
   const rankNumber = index + 1;
+  const [isDownloaded, setIsDownloaded] = useState(false);
+
+  useEffect(() => {
+    const downloadedApps = JSON.parse(localStorage.getItem("downloaded_apps") || "{}");
+    if (app && app.name && downloadedApps[app.name]) {
+      setIsDownloaded(true);
+    }
+  }, [app]);
 
   const handleClick = (e) => {
     if (window._adCooldown) return;
@@ -19,6 +28,24 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
     navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } });
+  };
+
+  const handleDownloadClick = (e) => {
+    e.stopPropagation(); 
+    if (window._adCooldown) return;
+    window._adCooldown = true;
+    setTimeout(() => { window._adCooldown = false; }, 2000);
+
+    if (app && app.name) {
+      const downloadedApps = JSON.parse(localStorage.getItem("downloaded_apps") || "{}");
+      downloadedApps[app.name] = true;
+      localStorage.setItem("downloaded_apps", JSON.stringify(downloadedApps));
+      setIsDownloaded(true);
+    }
+
+    if (onDownload) {
+      onDownload(app); 
+    }
   };
 
   return (
@@ -105,19 +132,17 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       </div>
 
       <RippleButton
-        onClick={(e) => { 
-          e.stopPropagation(); 
-          if (window._adCooldown) return;
-          window._adCooldown = true;
-          setTimeout(() => { window._adCooldown = false; }, 2000);
-          onDownload(app); 
-        }}
+        onClick={handleDownloadClick}
         data-testid={`download-btn-${app.id}`}
-        className="flex shrink-0 items-center gap-1 rounded-full bg-[#FFC107] px-3.5 py-2 text-xs font-semibold text-[#111111] shadow-[0_4px_14px_rgba(255,193,7,0.35)] hover:bg-[#FFB300]"
+        className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
+          isDownloaded
+            ? "bg-[#22C55E] text-white shadow-[0_4px_14px_rgba(34,197,94,0.35)] hover:bg-[#16A34A]"
+            : "bg-[#FFC107] text-[#111111] shadow-[0_4px_14px_rgba(255,193,7,0.35)] hover:bg-[#FFB300]"
+        }`}
       >
-        <Download className="h-3.5 w-3.5" />
-        <span className="hidden xs:inline">Download</span>
-        <span className="xs:hidden">Get</span>
+        {isDownloaded ? <Check className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+        <span className="hidden xs:inline">{isDownloaded ? "Downloaded" : "Download"}</span>
+        <span className="xs:hidden">{isDownloaded ? "Done" : "Get"}</span>
       </RippleButton>
     </motion.div>
   );
