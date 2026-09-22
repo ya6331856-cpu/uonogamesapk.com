@@ -145,21 +145,19 @@ export default function Store() {
             />
           </div>
 
-          {/* PROFESSIONAL VERTICAL SWIPEABLE FEATURED TOP 3 SECTION */}
+          {/* FEATURED GAMES SECTION - VERTICAL STACK */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
                   <Flame className="h-4 w-4 text-[#FF9800]" /> Featured Games
                 </h3>
-                <span className="text-xs text-[#777777]">Swipe for more</span>
+                <span className="text-xs text-[#777777]">Top Picks</span>
               </div>
               
-              <div className="flex gap-3 overflow-x-auto pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
+              <div className="space-y-3">
                 {top3.map((app, idx) => (
-                  <div key={app.id || idx} className="w-[85%] shrink-0 snap-center rounded-[22px] border border-[#E5E7EB] bg-white p-1 shadow-sm">
-                    <AppCard app={app} index={idx} onDownload={handleDownload} />
-                  </div>
+                  <AppCard key={app.id || idx} app={app} index={idx} onDownload={handleDownload} />
                 ))}
               </div>
             </div>
