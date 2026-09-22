@@ -85,16 +85,16 @@ export default function Store() {
     }));
   }, [data, parsedCache]);
 
-  const top3 = useMemo(() => {
+  const topApps = useMemo(() => {
     const featuredList = data?.featured || parsedCache?.featured || [];
     if (featuredList.length > 0) {
-      return featuredList.slice(0, 10).map(app => ({
+      return featuredList.slice(0, 15).map(app => ({
         ...app,
         version: "v2026 Latest",
         size: app.size || "45 MB"
       }));
     }
-    return allAppsList.slice(0, 10);
+    return allAppsList.slice(0, 15);
   }, [data, parsedCache, allAppsList]);
 
   const filteredApps = useMemo(() => {
@@ -106,7 +106,7 @@ export default function Store() {
       const q = normalize(search);
       list = list.filter(a => normalize(a.name).includes(q) || normalize(a.description).includes(q) || normalize(a.category).includes(q));
     } else if (category === "All") {
-      const top3Ids = new Set(top3.slice(0, 3).map(t => t.id));
+      const top3Ids = new Set(topApps.slice(0, 3).map(t => t.id));
       list = list.filter(a => !top3Ids.has(a.id));
     }
     
@@ -116,7 +116,7 @@ export default function Store() {
       return (b.downloads || 0) - (a.downloads || 0);
     });
     return list;
-  }, [allAppsList, category, search, top3, sort]);
+  }, [allAppsList, category, search, topApps, sort]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#111111] pb-16">
@@ -145,8 +145,8 @@ export default function Store() {
             />
           </div>
 
-          {/* TOP APPS TODAY - SWIPEABLE CAROUSEL WITH #1 CENTERD & #2, #3 ON SIDES */}
-          {top3.length > 0 && !search && category === "All" && (
+          {/* TOP APPS TODAY - SWIPEABLE HORIZONTAL CAROUSEL WITH ALL GAMES */}
+          {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
@@ -155,18 +155,18 @@ export default function Store() {
                 <span className="text-xs text-[#777777]">Swipe for more</span>
               </div>
               
-              <div className="flex gap-2.5 overflow-x-auto pb-3 pt-2 no-scrollbar snap-x snap-mandatory items-center">
-                {top3.map((app, idx) => {
+              <div className="flex gap-2.5 overflow-x-auto pb-3 pt-2 no-scrollbar scroll-smooth">
+                {topApps.map((app, idx) => {
                   const rankNumber = idx + 1;
                   const isTop1 = rankNumber === 1;
                   return (
                     <div 
                       key={app.id || idx} 
                       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
-                      className={`relative shrink-0 snap-center cursor-pointer rounded-[22px] border p-3.5 flex flex-col items-center text-center justify-between transition-all ${
+                      className={`relative shrink-0 cursor-pointer rounded-[22px] border p-3.5 flex flex-col items-center text-center justify-between transition-all ${
                         isTop1 
-                          ? "w-[138px] min-h-[250px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_8px_24px_rgba(255,193,7,0.25)] z-10 -translate-y-1" 
-                          : "w-[122px] min-h-[230px] border-[#E5E7EB] bg-white shadow-sm opacity-95 scale-[0.97]"
+                          ? "w-[138px] min-h-[250px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_8px_24px_rgba(255,193,7,0.25)] z-10" 
+                          : "w-[122px] min-h-[230px] border-[#E5E7EB] bg-white shadow-sm opacity-95"
                       }`}
                     >
                       {/* CROWN & NUMBER BADGE */}
@@ -177,14 +177,16 @@ export default function Store() {
                             ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
                             : rankNumber === 2 
                             ? "linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)" 
-                            : "linear-gradient(135deg, #E65100 0%, #BF360C 100%)"
+                            : rankNumber === 3 
+                            ? "linear-gradient(135deg, #E65100 0%, #BF360C 100%)" 
+                            : "linear-gradient(135deg, #424242 0%, #212121 100%)"
                         }}
                       >
                         <Crown className="h-2.5 w-2.5 text-white fill-white" />
                         <span>#{rankNumber}</span>
                       </div>
 
-                      {/* APP ICON & DETAILS WITH FIXED ALIGNMENT */}
+                      {/* APP ICON & DETAILS */}
                       <div className="flex flex-col items-center w-full mt-2">
                         <div className="relative">
                           <AppIcon
