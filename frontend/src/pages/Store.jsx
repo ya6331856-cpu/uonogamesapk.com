@@ -145,17 +145,17 @@ export default function Store() {
             />
           </div>
 
-          {/* TOP APPS SWIPEABLE CAROUSEL (LEFT/RIGHT SCROLLABLE) */}
+          {/* TOP APPS TODAY - SWIPEABLE CAROUSEL WITH #1 CENTERD & #2, #3 ON SIDES */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top Apps Today
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 3 Apps Today
                 </h3>
                 <span className="text-xs text-[#777777]">Swipe for more</span>
               </div>
               
-              <div className="flex gap-3 overflow-x-auto pb-3 pt-1 no-scrollbar snap-x snap-mandatory">
+              <div className="flex gap-2.5 overflow-x-auto pb-3 pt-2 no-scrollbar snap-x snap-mandatory items-center">
                 {top3.map((app, idx) => {
                   const rankNumber = idx + 1;
                   const isTop1 = rankNumber === 1;
@@ -163,15 +163,15 @@ export default function Store() {
                     <div 
                       key={app.id || idx} 
                       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
-                      className={`relative shrink-0 snap-center cursor-pointer rounded-[22px] border bg-white p-3.5 flex flex-col items-center text-center justify-between transition-all w-[125px] min-h-[235px] ${
+                      className={`relative shrink-0 snap-center cursor-pointer rounded-[22px] border p-3.5 flex flex-col items-center text-center justify-between transition-all ${
                         isTop1 
-                          ? "border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_6px_20px_rgba(255,193,7,0.2)]" 
-                          : "border-[#E5E7EB] shadow-sm"
+                          ? "w-[138px] min-h-[250px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_8px_24px_rgba(255,193,7,0.25)] z-10 -translate-y-1" 
+                          : "w-[122px] min-h-[230px] border-[#E5E7EB] bg-white shadow-sm opacity-95 scale-[0.97]"
                       }`}
                     >
                       {/* CROWN & NUMBER BADGE */}
                       <div 
-                        className="absolute -left-1.5 -top-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black text-white shadow-md border-2 border-white"
+                        className="absolute -left-1.5 -top-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-md border-2 border-white"
                         style={{
                           background: rankNumber === 1 
                             ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
@@ -190,7 +190,7 @@ export default function Store() {
                           <AppIcon
                             src={resolveUrl(app.icon_url)}
                             alt={app.name}
-                            className="h-14 w-14 rounded-[14px] ring-1 ring-black/5 object-cover shadow-sm"
+                            className={`${isTop1 ? "h-15 w-15" : "h-12 w-12"} rounded-[14px] ring-1 ring-black/5 object-cover shadow-sm`}
                           />
                           <span className="absolute -right-1.5 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[7px] font-extrabold text-white shadow-sm leading-none">
                             NEW
@@ -231,7 +231,7 @@ export default function Store() {
                         }}
                         className={`mt-2.5 w-full flex items-center justify-center gap-1 rounded-full py-1.5 text-[10px] font-bold shadow-sm ${
                           isTop1 
-                            ? "bg-gradient-to-r from-[#FFC107] to-[#FF9800] text-white hover:opacity-95" 
+                            ? "bg-gradient-to-r from-[#FFC107] to-[#FF9800] text-white hover:opacity-95 shadow-md" 
                             : "bg-[#FFC107] text-[#111111] hover:bg-[#FFB300]"
                         }`}
                       >
