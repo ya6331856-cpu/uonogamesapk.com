@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Search, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame, Trophy, Gift, Star, BadgeCheck, Crown } from "lucide-react";
+import { Search, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame, Trophy, Gift, Star, BadgeCheck, Crown, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -135,6 +135,25 @@ export default function Store() {
         </header>
 
         <div className="p-4 space-y-4 flex-1">
+          {/* STATS BAR (Downloads, Verified, Rating) */}
+          <div className="grid grid-cols-3 gap-2 bg-white border border-[#E5E7EB] rounded-2xl p-3 shadow-sm text-center">
+            <div className="flex flex-col items-center">
+              <Download className="h-4 w-4 text-[#D97706] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">10M+</span>
+              <span className="text-[10px] text-[#777777]">Downloads</span>
+            </div>
+            <div className="flex flex-col items-center border-x border-[#E5E7EB]">
+              <ShieldCheck className="h-4 w-4 text-[#16A34A] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">74</span>
+              <span className="text-[10px] text-[#777777]">Verified</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Star className="h-4 w-4 text-[#FFC107] fill-[#FFC107] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">4.8</span>
+              <span className="text-[10px] text-[#777777]">Rating</span>
+            </div>
+          </div>
+
           {/* TOP APPS TODAY - SMOOTH HORIZONTAL SWIPEABLE CAROUSEL */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
@@ -247,9 +266,38 @@ export default function Store() {
             </div>
           )}
 
+          {/* TELEGRAM JOIN BANNER */}
+          <div 
+            onClick={() => window.open("https://t.me/your_telegram_link", "_blank")}
+            className="cursor-pointer bg-gradient-to-r from-[#E0F2FE50] to-[#E0F2FE] border border-[#BAE6FD] rounded-2xl p-3 flex items-center justify-between shadow-sm hover:shadow transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-[#0284C7] flex items-center justify-center text-white shadow-sm shrink-0">
+                <Send className="h-4 w-4" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold text-xs text-[#0369A1]">Join our Telegram</h4>
+                <p className="text-[10px] text-[#0284C7]">Get instant updates & new APK releases</p>
+              </div>
+            </div>
+            <span className="bg-[#0284C7] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
+              Join
+            </span>
+          </div>
+
+          {/* LIVE WINNERS TICKER */}
+          <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl p-2.5 flex items-center gap-2 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-1 bg-[#16A34A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+              <Trophy className="h-3 w-3" /> Live
+            </div>
+            <div className="overflow-x-auto no-scrollbar whitespace-nowrap text-[11px] text-[#166534] font-medium">
+              🔥 <span className="font-bold">Rahul</span> won <span className="font-bold text-[#15803D]">₹25,000</span> in Rummy Ludo &nbsp;&nbsp;•&nbsp;&nbsp; 🚀 <span className="font-bold">Amit</span> won <span className="font-bold text-[#15803D]">₹10,500</span> in Gold Rummy &nbsp;&nbsp;•&nbsp;&nbsp; ⭐ <span className="font-bold">Vikash</span> won <span className="font-bold text-[#15803D]">₹5,000</span> in Teen Patti
+            </div>
+          </div>
+
           {/* SEARCH BAR PLACED JUST ABOVE ALL GAMES */}
-          <div className="relative pt-2">
-            <Search className="absolute left-3.5 top-5 h-4 w-4 text-[#999999]" />
+          <div className="relative pt-1">
+            <Search className="absolute left-3.5 top-4 h-4 w-4 text-[#999999]" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
