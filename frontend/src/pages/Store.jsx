@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Search, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame, Trophy, Gift, Star, BadgeCheck } from "lucide-react";
+import { Search, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame, Trophy, Gift, Star, BadgeCheck, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
@@ -145,32 +145,28 @@ export default function Store() {
             />
           </div>
 
-          {/* REFERENCE IMAGE STYLE: TOP 3 APPS TODAY (VERTICAL CARDS CAROUSEL) */}
+          {/* TOP 3 APPS TODAY - CLEAN 3 COLUMN GRID WITHOUT OUTER CONTAINER & WITH CROWN BADGES */}
           {top3.length > 0 && !search && category === "All" && (
-            <div className="rounded-[24px] bg-[#FFFDF5] border border-[#FFE082] p-4 space-y-3 shadow-sm">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFC107] to-[#FF9800] text-white shadow-md">
-                  <Trophy className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-extrabold text-sm text-[#111111]">Top 3 Apps Today</h3>
-                  <p className="text-[11px] text-[#777777]">Editor's top picks — updated daily</p>
-                </div>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 3 Apps Today
+                </h3>
+                <span className="text-xs text-[#777777]">Editor's Picks</span>
               </div>
               
-              {/* Vertical Khade-Khade Cards in Horizontal Swipe Container */}
-              <div className="flex gap-3 overflow-x-auto pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
+              <div className="grid grid-cols-3 gap-2.5">
                 {top3.map((app, idx) => {
                   const rankNumber = idx + 1;
                   return (
                     <div 
                       key={app.id || idx} 
                       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
-                      className="relative w-[150px] shrink-0 snap-center cursor-pointer rounded-[20px] border border-[#E5E7EB] bg-white p-3 flex flex-col items-center text-center shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-md transition-all"
+                      className="relative cursor-pointer rounded-[18px] border border-[#E5E7EB] bg-white p-2.5 flex flex-col items-center text-center shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all"
                     >
-                      {/* RANK NUMBER BADGE */}
+                      {/* CROWN RANK BADGE */}
                       <div 
-                        className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black text-white shadow-md border-2 border-white"
+                        className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white shadow-md border-2 border-white"
                         style={{
                           background: rankNumber === 1 
                             ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
@@ -179,35 +175,35 @@ export default function Store() {
                             : "linear-gradient(135deg, #E65100 0%, #BF360C 100%)"
                         }}
                       >
-                        {rankNumber}
+                        <Crown className="h-3 w-3 text-white fill-white" />
                       </div>
 
                       {/* APP ICON */}
-                      <div className="relative mt-2">
+                      <div className="relative mt-1">
                         <AppIcon
                           src={resolveUrl(app.icon_url)}
                           alt={app.name}
-                          className="h-16 w-16 rounded-[16px] ring-1 ring-black/5 object-cover shadow-sm"
+                          className="h-14 w-14 rounded-[14px] ring-1 ring-black/5 object-cover shadow-sm"
                         />
-                        <span className="absolute -right-2 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-extrabold text-white shadow-sm">
+                        <span className="absolute -right-2 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[7px] font-extrabold text-white shadow-sm leading-none">
                           NEW
                         </span>
                       </div>
 
                       {/* APP NAME */}
-                      <h4 className="mt-2 line-clamp-1 font-display text-xs font-bold text-[#111111]">
+                      <h4 className="mt-1.5 line-clamp-1 font-display text-[11px] font-bold text-[#111111] w-full">
                         {app.name}
                       </h4>
 
                       {/* REWARDS INFO */}
-                      <div className="mt-1.5 space-y-0.5 w-full">
+                      <div className="mt-1 space-y-0.5 w-full">
                         {app.signup_bonus && (
-                          <div className="flex items-center justify-center gap-1 text-[10px] font-extrabold text-[#D97706]">
-                            <Gift className="h-3 w-3" /> {app.signup_bonus}
+                          <div className="flex items-center justify-center gap-0.5 text-[9px] font-extrabold text-[#D97706] truncate">
+                            <Gift className="h-2.5 w-2.5 shrink-0" /> {app.signup_bonus}
                           </div>
                         )}
                         {app.min_withdraw && (
-                          <div className="text-[10px] font-bold text-[#16A34A]">
+                          <div className="text-[9px] font-bold text-[#16A34A] truncate">
                             Min {app.min_withdraw}
                           </div>
                         )}
@@ -219,9 +215,9 @@ export default function Store() {
                           e.stopPropagation();
                           handleDownload(app);
                         }}
-                        className="mt-3 w-full flex items-center justify-center gap-1 rounded-full bg-[#FFC107] py-1.5 text-[11px] font-bold text-[#111111] shadow-[0_4px_12px_rgba(255,193,7,0.35)] hover:bg-[#FFB300]"
+                        className="mt-2 w-full flex items-center justify-center gap-1 rounded-full bg-[#FFC107] py-1 text-[10px] font-bold text-[#111111] shadow-sm hover:bg-[#FFB300]"
                       >
-                        <Download className="h-3 w-3" /> Download
+                        <Download className="h-2.5 w-2.5" /> Get
                       </RippleButton>
                     </div>
                   );
