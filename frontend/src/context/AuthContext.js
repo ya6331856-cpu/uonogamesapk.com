@@ -33,27 +33,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const en = email.trim().toLowerCase();
     try {
-      const [authMod, fbMod] = await Promise.all([
-        import("@/firebase/auth"),
-        import("@/lib/firebase")
-      ]);
-      const signInWithEmailAndPassword = authMod.signInWithEmailAndPassword;
-      const firebaseAuth = fbMod.firebaseAuth;
-
-      const cred = await signInWithEmailAndPassword(firebaseAuth, en, password);
-      const idToken = await cred.user.getIdToken();
-      localStorage.setItem("uono_token", idToken);
-      localStorage.setItem("token", idToken);
-      const { data } = await api.get("/auth/me");
-      setUser(data);
-      return data;
-    } catch (fbErr) {
       const { data } = await api.post("/auth/login", { email: en, password });
       const token = data.token || data.access_token || data;
       localStorage.setItem("uono_token", token);
       localStorage.setItem("token", token);
       setUser(data.user || data);
       return data.user || data;
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -61,8 +48,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("uono_token");
     localStorage.removeItem("token");
     setUser(false);
-    import("@/lib/firebase").then(({ signOut, firebaseAuth }) => signOut(firebaseAuth))
-      .catch(() => {});
   };
 
   return (
