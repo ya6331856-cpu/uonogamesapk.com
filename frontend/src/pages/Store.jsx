@@ -119,7 +119,7 @@ export default function Store() {
   }, [allAppsList, category, search, topApps, sort]);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#111111] pb-16 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#111111] pb-16">
       <SEOHead title="New Yono Games Official - Download APK & Get ₹501 Bonus" description="Download official Yono Games apps. Enjoy fast UPI withdrawals and secure real-cash gaming." />
       
       <div className="max-w-md mx-auto bg-white min-h-screen shadow-sm flex flex-col">
@@ -145,7 +145,7 @@ export default function Store() {
                 <span className="text-xs text-[#777777]">Swipe for more</span>
               </div>
               
-              <div className="w-full overflow-x-auto pb-3 pt-2 scrollbar-none touch-pan-x">
+              <div className="w-full overflow-x-auto pb-3 pt-2 no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
                 <div className="flex gap-2.5 px-1 min-w-max items-center">
                   {topApps.map((app, idx) => {
                     const rankNumber = idx + 1;
@@ -153,8 +153,14 @@ export default function Store() {
                     return (
                       <div 
                         key={app.id || idx} 
-                        onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
-                        className={`relative shrink-0 cursor-pointer rounded-[22px] border p-3.5 flex flex-col items-center text-center justify-between transition-all ${
+                        onClick={() => {
+                          if (window._adCooldown) return;
+                          window._adCooldown = true;
+                          setTimeout(() => { window._adCooldown = false; }, 2000);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                          navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } });
+                        }}
+                        className={`relative shrink-0 cursor-pointer rounded-[22px] border p-3.5 flex flex-col items-center text-center justify-between transition-all select-none ${
                           isTop1 
                             ? "w-[138px] min-h-[250px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_8px_24px_rgba(255,193,7,0.25)] z-10" 
                             : "w-[122px] min-h-[230px] border-[#E5E7EB] bg-white shadow-sm opacity-95"
@@ -162,7 +168,7 @@ export default function Store() {
                       >
                         {/* CROWN & NUMBER BADGE */}
                         <div 
-                          className="absolute -left-1.5 -top-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-md border-2 border-white"
+                          className="absolute -left-1.5 -top-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-md border-2 border-white pointer-events-none"
                           style={{
                             background: rankNumber === 1 
                               ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
@@ -220,6 +226,9 @@ export default function Store() {
                         <RippleButton
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (window._adCooldown) return;
+                            window._adCooldown = true;
+                            setTimeout(() => { window._adCooldown = false; }, 2000);
                             handleDownload(app);
                           }}
                           className={`mt-2.5 w-full flex items-center justify-center gap-1 rounded-full py-1.5 text-[10px] font-bold shadow-sm ${
