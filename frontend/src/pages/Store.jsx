@@ -145,7 +145,7 @@ export default function Store() {
             />
           </div>
 
-          {/* HORIZONTAL SWIPEABLE FEATURED TOP 3 CAROUSEL */}
+          {/* PROFESSIONAL VERTICAL SWIPEABLE FEATURED TOP 3 SECTION */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -157,7 +157,7 @@ export default function Store() {
               
               <div className="flex gap-3 overflow-x-auto pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
                 {top3.map((app, idx) => (
-                  <div key={app.id || idx} className="w-[88%] shrink-0 snap-center">
+                  <div key={app.id || idx} className="w-[85%] shrink-0 snap-center rounded-[22px] border border-[#E5E7EB] bg-white p-1 shadow-sm">
                     <AppCard app={app} index={idx} onDownload={handleDownload} />
                   </div>
                 ))}
