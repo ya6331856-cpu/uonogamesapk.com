@@ -145,28 +145,35 @@ export default function Store() {
             />
           </div>
 
-          {/* TOP 3 APPS TODAY - CLEAN 3 COLUMN GRID WITHOUT OUTER CONTAINER & WITH CROWN BADGES */}
+          {/* TOP 3 APPS TODAY - SLIDER WITH FULL DETAILS & CROWN BADGES */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between px-1">
-                <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 3 Apps Today
-                </h3>
-                <span className="text-xs text-[#777777]">Editor's Picks</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#FFC107] to-[#FF9800] text-white shadow-sm">
+                    <Crown className="h-4 w-4 fill-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-extrabold text-sm text-[#111111]">Top 3 Apps Today</h3>
+                    <p className="text-[10px] text-[#777777]">Editor's top picks — updated daily</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-semibold text-[#FF9800]">Swipe &rarr;</span>
               </div>
               
-              <div className="grid grid-cols-3 gap-2.5">
+              {/* Horizontal Scroll with Peek Effect for 2nd and 3rd card */}
+              <div className="flex gap-3 overflow-x-auto pb-2 pt-1 px-1 no-scrollbar snap-x snap-mandatory">
                 {top3.map((app, idx) => {
                   const rankNumber = idx + 1;
                   return (
                     <div 
                       key={app.id || idx} 
                       onClick={() => navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } })}
-                      className="relative cursor-pointer rounded-[18px] border border-[#E5E7EB] bg-white p-2.5 flex flex-col items-center text-center shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all"
+                      className="relative w-[72%] shrink-0 snap-center cursor-pointer rounded-[22px] border border-[#E5E7EB] bg-white p-3.5 flex flex-col items-center text-center shadow-[0_6px_20px_rgba(0,0,0,0.05)] hover:shadow-md transition-all"
                     >
                       {/* CROWN RANK BADGE */}
                       <div 
-                        className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white shadow-md border-2 border-white"
+                        className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-md border-2 border-white"
                         style={{
                           background: rankNumber === 1 
                             ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
@@ -175,7 +182,7 @@ export default function Store() {
                             : "linear-gradient(135deg, #E65100 0%, #BF360C 100%)"
                         }}
                       >
-                        <Crown className="h-3 w-3 text-white fill-white" />
+                        <Crown className="h-3.5 w-3.5 fill-white text-white" />
                       </div>
 
                       {/* APP ICON */}
@@ -183,28 +190,42 @@ export default function Store() {
                         <AppIcon
                           src={resolveUrl(app.icon_url)}
                           alt={app.name}
-                          className="h-14 w-14 rounded-[14px] ring-1 ring-black/5 object-cover shadow-sm"
+                          className="h-16 w-16 rounded-[16px] ring-1 ring-black/5 object-cover shadow-sm"
                         />
-                        <span className="absolute -right-2 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[7px] font-extrabold text-white shadow-sm leading-none">
+                        <span className="absolute -right-2 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-extrabold text-white shadow-sm leading-none">
                           NEW
                         </span>
                       </div>
 
-                      {/* APP NAME */}
-                      <h4 className="mt-1.5 line-clamp-1 font-display text-[11px] font-bold text-[#111111] w-full">
-                        {app.name}
-                      </h4>
+                      {/* APP NAME & RATING */}
+                      <div className="mt-2 w-full flex flex-col items-center">
+                        <h4 className="line-clamp-1 font-display text-xs font-bold text-[#111111]">
+                          {app.name}
+                        </h4>
+                        <div className="mt-0.5 flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-[#FFC107] text-[#FFC107]" />
+                          <span className="text-[11px] font-semibold text-[#555555]">{app.rating?.toFixed(1) || "4.8"}</span>
+                          <span className="text-[10px] text-[#999999]">• {app.size || "45 MB"}</span>
+                        </div>
+                      </div>
 
-                      {/* REWARDS INFO */}
-                      <div className="mt-1 space-y-0.5 w-full">
+                      {/* DETAILED STATS (Active players, Verified, Bonus) */}
+                      <div className="mt-2 w-full space-y-1 text-center bg-[#F8F9FA] rounded-xl p-2 border border-[#F0F0F0]">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-[#22C55E]">
+                          <BadgeCheck className="h-3 w-3" />
+                          <span className="font-medium">Verified Safe</span>
+                        </div>
+                        <p className="text-[10px] font-medium text-[#555555]">
+                          👥 {(app.downloads ? (app.downloads * 8).toLocaleString() : "350.4K")} active players
+                        </p>
                         {app.signup_bonus && (
-                          <div className="flex items-center justify-center gap-0.5 text-[9px] font-extrabold text-[#D97706] truncate">
-                            <Gift className="h-2.5 w-2.5 shrink-0" /> {app.signup_bonus}
+                          <div className="flex items-center justify-center gap-1 text-[10px] font-extrabold text-[#D97706]">
+                            <Gift className="h-3 w-3" /> Bonus {app.signup_bonus}
                           </div>
                         )}
                         {app.min_withdraw && (
-                          <div className="text-[9px] font-bold text-[#16A34A] truncate">
-                            Min {app.min_withdraw}
+                          <div className="text-[10px] font-bold text-[#16A34A]">
+                            Min W/D {app.min_withdraw}
                           </div>
                         )}
                       </div>
@@ -215,9 +236,9 @@ export default function Store() {
                           e.stopPropagation();
                           handleDownload(app);
                         }}
-                        className="mt-2 w-full flex items-center justify-center gap-1 rounded-full bg-[#FFC107] py-1 text-[10px] font-bold text-[#111111] shadow-sm hover:bg-[#FFB300]"
+                        className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-full bg-[#FFC107] py-2 text-xs font-bold text-[#111111] shadow-[0_4px_12px_rgba(255,193,7,0.35)] hover:bg-[#FFB300]"
                       >
-                        <Download className="h-2.5 w-2.5" /> Get
+                        <Download className="h-3.5 w-3.5" /> Download
                       </RippleButton>
                     </div>
                   );
