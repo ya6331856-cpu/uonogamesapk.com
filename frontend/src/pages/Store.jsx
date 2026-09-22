@@ -105,14 +105,19 @@ export default function Store() {
     if (search.trim()) {
       const q = normalize(search);
       list = list.filter(a => normalize(a.name).includes(q) || normalize(a.description).includes(q) || normalize(a.category).includes(q));
+    } else if (category === "All") {
+      // Agar koi search nahi hai aur category "All" hai, toh top 3 ko niche list se hata do taaki duplicate na ho
+      const top3Ids = new Set(top3.map(t => t.id));
+      list = list.filter(a => !top3Ids.has(a.id));
     }
+    
     list.sort((a, b) => {
       if (sort === "rating") return (b.rating || 0) - (a.rating || 0);
       if (sort === "newest") return new Date(b.created_at || 0) - new Date(b.created_at || 0);
       return (b.downloads || 0) - (a.downloads || 0);
     });
     return list;
-  }, [allAppsList, category, search, sort]);
+  }, [allAppsList, category, search, top3, sort]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#111111] pb-16">
@@ -141,7 +146,7 @@ export default function Store() {
             />
           </div>
 
-          {/* PROFESSIONAL FEATURED TOP 3 SECTION (Spotlight #1 and side-by-side #2, #3) */}
+          {/* PROFESSIONAL FEATURED TOP 3 SECTION */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
