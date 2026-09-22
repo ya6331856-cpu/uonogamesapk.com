@@ -60,13 +60,20 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
       data-testid={`app-card-${app.id}`}
       className="group relative flex cursor-pointer items-center gap-3.5 rounded-[20px] border border-[#E5E7EB] bg-white p-3.5 shadow-[0_4px_16px_rgba(0,0,0,0.03)] transition-shadow duration-300 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] overflow-visible"
     >
-      {/* RANKING NUMBER BADGE */}
-      <div className="absolute -left-2 -top-2 z-20 flex h-5.5 w-5.5 items-center justify-center rounded-full text-[10px] font-extrabold text-white shadow-md border-2 border-white"
-           style={{
-             backgroundColor: rankNumber === 1 ? "#FFC107" : rankNumber === 2 ? "#9E9E9E" : rankNumber === 3 ? "#CD7F32" : "#333333"
-           }}
+      {/* PREMIUM RANKING NUMBER BADGE */}
+      <div 
+        className="absolute -left-2.5 -top-2.5 z-25 flex h-6 w-6 items-center justify-center rounded-xl text-[11px] font-black text-white shadow-[0_4px_10px_rgba(0,0,0,0.15)] border-2 border-white"
+        style={{
+          background: rankNumber === 1 
+            ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
+            : rankNumber === 2 
+            ? "linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)" 
+            : rankNumber === 3 
+            ? "linear-gradient(135deg, #E65100 0%, #BF360C 100%)" 
+            : "linear-gradient(135deg, #424242 0%, #212121 100%)"
+        }}
       >
-        <span>{rankNumber}</span>
+        <span>#{rankNumber}</span>
       </div>
 
       {/* BALANCED APP ICON (h-16 w-16) */}
