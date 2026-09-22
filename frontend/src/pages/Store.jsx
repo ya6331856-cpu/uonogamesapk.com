@@ -145,40 +145,22 @@ export default function Store() {
             />
           </div>
 
-          {/* PROFESSIONAL VIP SPOTLIGHT FEATURED SECTION */}
+          {/* HORIZONTAL SWIPEABLE FEATURED TOP 3 CAROUSEL */}
           {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
                   <Flame className="h-4 w-4 text-[#FF9800]" /> Featured Games
                 </h3>
-                <span className="text-xs text-[#777777]">Top Picks</span>
+                <span className="text-xs text-[#777777]">Swipe for more</span>
               </div>
               
-              <div className="space-y-3">
-                {/* #1 VIP Spotlight Large Card */}
-                {top3[0] && (
-                  <div className="relative rounded-[24px] bg-gradient-to-br from-[#FFF8E1] via-white to-[#FFF3E0] p-1 shadow-[0_10px_30px_rgba(255,193,7,0.2)] border-2 border-[#FFC107]">
-                    <div className="absolute -top-3 right-4 z-20 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FF9800] px-3 py-0.5 text-[10px] font-extrabold text-white shadow-md">
-                      👑 #1 Trending Game
-                    </div>
-                    <AppCard app={top3[0]} index={0} onDownload={handleDownload} />
+              <div className="flex gap-3 overflow-x-auto pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
+                {top3.map((app, idx) => (
+                  <div key={app.id || idx} className="w-[88%] shrink-0 snap-center">
+                    <AppCard app={app} index={idx} onDownload={handleDownload} />
                   </div>
-                )}
-
-                {/* #2 and #3 Side-by-Side Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {top3[1] && (
-                    <div className="rounded-[20px] bg-white p-1 border border-[#E5E7EB] shadow-sm">
-                      <AppCard app={top3[1]} index={1} onDownload={handleDownload} />
-                    </div>
-                  )}
-                  {top3[2] && (
-                    <div className="rounded-[20px] bg-white p-1 border border-[#E5E7EB] shadow-sm">
-                      <AppCard app={top3[2]} index={2} onDownload={handleDownload} />
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
             </div>
           )}
