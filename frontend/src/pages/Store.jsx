@@ -268,7 +268,7 @@ export default function Store() {
 
           {/* TELEGRAM JOIN BANNER */}
           <div 
-            onClick={() => window.open("https://t.me/your_telegram_link", "_blank")}
+            onClick={() => window.open("https://t.me/yonoagencynetworkofficial", "_blank")}
             className="cursor-pointer bg-gradient-to-r from-[#E0F2FE50] to-[#E0F2FE] border border-[#BAE6FD] rounded-2xl p-3 flex items-center justify-between shadow-sm hover:shadow transition-all"
           >
             <div className="flex items-center gap-3">
@@ -285,13 +285,16 @@ export default function Store() {
             </span>
           </div>
 
-          {/* LIVE WINNERS TICKER */}
+          {/* LIVE WINNERS AUTO-SCROLLING TICKER */}
           <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl p-2.5 flex items-center gap-2 overflow-hidden shadow-sm">
-            <div className="flex items-center gap-1 bg-[#16A34A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+            <div className="flex items-center gap-1 bg-[#16A34A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 z-10">
               <Trophy className="h-3 w-3" /> Live
             </div>
-            <div className="overflow-x-auto no-scrollbar whitespace-nowrap text-[11px] text-[#166534] font-medium">
-              🔥 <span className="font-bold">Rahul</span> won <span className="font-bold text-[#15803D]">₹25,000</span> in Rummy Ludo &nbsp;&nbsp;•&nbsp;&nbsp; 🚀 <span className="font-bold">Amit</span> won <span className="font-bold text-[#15803D]">₹10,500</span> in Gold Rummy &nbsp;&nbsp;•&nbsp;&nbsp; ⭐ <span className="font-bold">Vikash</span> won <span className="font-bold text-[#15803D]">₹5,000</span> in Teen Patti
+            <div className="overflow-hidden w-full relative">
+              <div className="flex whitespace-nowrap animate-marquee text-[11px] text-[#166534] font-medium items-center">
+                <span>🔥 <strong className="text-[#111]">Rahul</strong> won <strong className="text-[#15803D]">₹25,000</strong> in Rummy Ludo &nbsp;&nbsp;•&nbsp;&nbsp; 🚀 <strong className="text-[#111]">Amit</strong> won <strong className="text-[#15803D]">₹10,500</strong> in Gold Rummy &nbsp;&nbsp;•&nbsp;&nbsp; ⭐ <strong className="text-[#111]">Vikash</strong> won <strong className="text-[#15803D]">₹5,000</strong> in Teen Patti &nbsp;&nbsp;•&nbsp;&nbsp; 💰 <strong className="text-[#111]">Deepak</strong> won <strong className="text-[#15803D]">₹15,200</strong> in Dragon Tiger &nbsp;&nbsp;•&nbsp;&nbsp;</span>
+                <span className="ml-8">🔥 <strong className="text-[#111]">Rahul</strong> won <strong className="text-[#15803D]">₹25,000</strong> in Rummy Ludo &nbsp;&nbsp;•&nbsp;&nbsp; 🚀 <strong className="text-[#111]">Amit</strong> won <strong className="text-[#15803D]">₹10,500</strong> in Gold Rummy &nbsp;&nbsp;•&nbsp;&nbsp; ⭐ <strong className="text-[#111]">Vikash</strong> won <strong className="text-[#15803D]">₹5,000</strong> in Teen Patti &nbsp;&nbsp;•&nbsp;&nbsp; 💰 <strong className="text-[#111]">Deepak</strong> won <strong className="text-[#15803D]">₹15,200</strong> in Dragon Tiger &nbsp;&nbsp;•&nbsp;&nbsp;</span>
+              </div>
             </div>
           </div>
 
