@@ -32,10 +32,6 @@ const SORTS = [
   { value: "newest", label: "Newest" },
 ];
 
-const LANDING_100_KEYWORDS = [
-  "yono games all app", "yono games app", "yono app", "you games online", "all your game store", "you know games", "yono app link", "all yono game new", "rummy game app store", "new yono games", "yono games com apk", "yono game apk download for android latest version", "yono games apk lsgd", "yono games 2", "you know game", "yono game google", "yono genes", "all your game app download", "all you game", "all your app", "all many games", "all your game apk latest version", "you game game", "all your games download free", "all your gamespin crush", "yono games apk", "yono all games", "all your game apk", "all yono games list apk", "yono game home", "yono india", "all you know game", "all new game", "yono arcade all apk", "yono rummy games for android", "yono games all new apk", "yono games all new 2026 apk"
-];
-
 export default function Store() {
   const { settings } = useSettings();
   const navigate = useNavigate();
@@ -54,7 +50,6 @@ export default function Store() {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("downloads");
   const [legalId, setLegalId] = useState(null);
-  const [activeTab, setActiveTab] = useState("description");
 
   const fetchApps = async () => {
     try {
@@ -102,10 +97,6 @@ export default function Store() {
     return allAppsList.slice(0, 3);
   }, [data, parsedCache, allAppsList]);
 
-  const handleKeywordClick = (kw) => {
-    setSearch(kw);
-  };
-
   const filteredApps = useMemo(() => {
     let list = [...allAppsList];
     if (category !== "All") {
@@ -117,7 +108,7 @@ export default function Store() {
     }
     list.sort((a, b) => {
       if (sort === "rating") return (b.rating || 0) - (a.rating || 0);
-      if (sort === "newest") return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      if (sort === "newest") return new Date(b.created_at || 0) - new Date(b.created_at || 0);
       return (b.downloads || 0) - (a.downloads || 0);
     });
     return list;
@@ -150,17 +141,30 @@ export default function Store() {
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display font-bold text-sm text-[#111111]">Featured Games</h3>
-              <span className="text-xs text-[#777777]">Top Picks</span>
-            </div>
+          {/* PROFESSIONAL FEATURED TOP 3 SECTION (Spotlight #1 and side-by-side #2, #3) */}
+          {top3.length > 0 && !search && category === "All" && (
             <div className="space-y-3">
-              {top3.map((app, idx) => (
-                <AppCard key={app.id || idx} app={app} index={idx} onDownload={handleDownload} />
-              ))}
+              <div className="flex items-center justify-between">
+                <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
+                  <Flame className="h-4 w-4 text-[#FF9800]" /> Featured Games
+                </h3>
+                <span className="text-xs text-[#777777]">Top Picks</span>
+              </div>
+              
+              <div className="space-y-3">
+                {/* #1 Spotlight Large Card */}
+                {top3[0] && (
+                  <AppCard app={top3[0]} index={0} onDownload={handleDownload} />
+                )}
+
+                {/* #2 and #3 Side-by-Side Grid */}
+                <div className="grid grid-cols-1 gap-3">
+                  {top3[1] && <AppCard app={top3[1]} index={1} onDownload={handleDownload} />}
+                  {top3[2] && <AppCard app={top3[2]} index={2} onDownload={handleDownload} />}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
