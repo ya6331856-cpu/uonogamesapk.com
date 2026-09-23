@@ -1,14 +1,58 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShieldCheck, Crown, Sparkles, FileText, Lock, AlertTriangle, Send, ExternalLink, Zap } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Crown, Sparkles, FileText, Lock, AlertTriangle, Send } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import SiteFooter from "@/components/SiteFooter";
+
+// Adsterra Script Injector Component for Banners & Native Ads
+function AdUnit({ scriptUrl, atOptionsConfig }) {
+  const adRef = useRef(null);
+
+  useEffect(() => {
+    if (!adRef.current) return;
+    adRef.current.innerHTML = "";
+
+    if (atOptionsConfig) {
+      const scriptOption = document.createElement("script");
+      scriptOption.type = "text/javascript";
+      scriptOption.text = `atOptions = ${JSON.stringify(atOptionsConfig)};`;
+      adRef.current.appendChild(scriptOption);
+    }
+
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = scriptUrl;
+    adRef.current.appendChild(script);
+
+    return () => {
+      if (adRef.current) adRef.current.innerHTML = "";
+    };
+  }, [scriptUrl, atOptionsConfig]);
+
+  return <div ref={adRef} className="flex justify-center my-4 overflow-hidden min-h-[250px]" />;
+}
 
 export default function AboutPage() {
   const navigate = useNavigate();
 
-  const handleBannerAdClick = () => {
-    window.open("https://www.highratecpm.com/2/8825838", "_blank");
-  };
+  // Popunder and Social Bar global scripts injection via useEffect
+  useEffect(() => {
+    const popunderScript = document.createElement("script");
+    popunderScript.src = "https://preliminarycultural.com/48/6b/89/486b89ad71c5119a51aff11c2aeaaea7.js";
+    popunderScript.async = true;
+    document.body.appendChild(popunderScript);
+
+    const socialBarScript = document.createElement("script");
+    socialBarScript.src = "https://preliminarycultural.com/cc/28/1a/cc281a7128907feeef362f6ee4df63fc.js";
+    socialBarScript.async = true;
+    document.body.appendChild(socialBarScript);
+
+    return () => {
+      if (popunderScript.parentNode) popunderScript.parentNode.removeChild(popunderScript);
+      if (socialBarScript.parentNode) socialBarScript.parentNode.removeChild(socialBarScript);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#111111]">
@@ -32,7 +76,7 @@ export default function AboutPage() {
           </span>
         </div>
 
-        {/* MAIN CONTENT CONTAINER WITH 20 HEADLINES AND INTERLEAVED BANNER ADS */}
+        {/* MAIN CONTENT CONTAINER WITH 20 HEADLINES AND ADSTERRA ADS */}
         <div className="p-5 space-y-6 flex-1 text-xs text-[#555555] leading-relaxed">
           
           {/* Headline 1 */}
@@ -43,9 +87,7 @@ export default function AboutPage() {
             </div>
             <p>NewYono.Games represents the absolute pinnacle and technological zenith in the evolution of digital content curation, professional application reviews, and secure mobile software distribution across international entertainment landscapes. Our platform connects everyday mobile gaming enthusiasts with official operator networks.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-amber-500 to-yellow-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2 animate-pulse">
-            <Zap className="h-4 w-4 fill-white" /> <span>Sponsored: Claim ₹501 Instant Bonus & Play Now!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 2 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -55,9 +97,7 @@ export default function AboutPage() {
             </div>
             <p>The profound transition of traditional card games and table wagering into sophisticated digital applications has completely transformed modern entertainment. Indian Rummy requires strategic arrangement of cards into valid sequences.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Special Offer: Fast UPI Payout Apps - Download Today!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 3 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -65,11 +105,9 @@ export default function AboutPage() {
               <ShieldCheck className="h-4 w-4 text-[#16A34A]" />
               <h2>3. Frictionless Financial Infrastructure: UPI Payout Integration and Security Protocols</h2>
             </div>
-            <p>NewYono.Games exclusively highlights applications that have established robust financial infrastructures integrated seamlessly with India&apos;s UPI and automated banking channels. Withdrawals start from ₹100 securely.</p>
+            <p>NewYono.Games exclusively highlights applications that have established robust financial infrastructures integrated seamlessly with India's UPI and automated banking channels. Withdrawals start from ₹100 securely.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-emerald-600 to-green-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Top Rated: Trusted 10M+ Downloads Gaming Store</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 4 */}
           <div className="space-y-2 bg-[#F9FAFB] border border-gray-200 p-4 rounded-2xl">
@@ -79,9 +117,7 @@ export default function AboutPage() {
             </div>
             <p className="text-[10px] text-[#666] leading-relaxed">Yono Games download, New Yono Rummy APK, Teen Patti real cash app, Slots spin bonus apps, Yono agency program, online rummy referral commission, instant UPI cash withdrawal games.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Click Here for Daily Jackpot & Cash Rewards!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 5 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -91,9 +127,7 @@ export default function AboutPage() {
             </div>
             <p>We deploy enterprise tracking suites including Google Analytics, Search Console, and Microsoft Clarity to monitor performance and optimize user navigation safely.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Exclusive Deal: Unlock 300% Bonus on Deposit!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 6 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -103,9 +137,7 @@ export default function AboutPage() {
             </div>
             <p>Real-cash gaming involves financial risk; participants must be 18+ and verify local state regulations before engaging in skill-based applications.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-teal-600 to-cyan-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Play Safe & Win Big: Join Official Agency Network</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 7 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -115,9 +147,7 @@ export default function AboutPage() {
             </div>
             <p>We operate as an informational directory and do not host pirated files or malicious software on our private servers.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-yellow-600 to-amber-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Instant Download Available: Click For Details</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 8 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -127,9 +157,7 @@ export default function AboutPage() {
             </div>
             <p>Our deployment infrastructure uses edge-compute capabilities and Cloudflare DNS to ensure server response times remain under 200 milliseconds.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-rose-600 to-red-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Trending Now: Best Real Cash Earning App 2026</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 9 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -139,9 +167,7 @@ export default function AboutPage() {
             </div>
             <p>We maintain active support channels through our official Telegram network, providing direct updates regarding app releases and bonus drops.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Join 10M+ Players: Click To Claim Bonus Now!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 10 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -151,9 +177,7 @@ export default function AboutPage() {
             </div>
             <p>Our roadmap includes automated APK health monitors, artificial intelligence recommendation engines, and expanded multi-language support.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Final Call: Download Official Apps With Secure UPI Payout!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 11 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -163,9 +187,7 @@ export default function AboutPage() {
             </div>
             <p>All sign-up bonuses and promotional cash rewards are governed by specific operator wagering criteria to ensure fair promotional play.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-amber-600 to-yellow-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Unlock Free Chips: Click to Claim Reward!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 12 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -175,9 +197,7 @@ export default function AboutPage() {
             </div>
             <p>Crash games like Aviator and 777 slot simulators have captured massive popularity due to dynamic multiplier mechanics and interactive gameplay.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Play Aviator & Slots: Fast UPI Deposit!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 13 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -187,9 +207,7 @@ export default function AboutPage() {
             </div>
             <p>Every APK file linked on our platform undergoes stringent virus scanning protocols to protect users from malicious executables.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>100% Virus Free Downloads: Click Here!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 14 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -199,9 +217,7 @@ export default function AboutPage() {
             </div>
             <p>Our affiliate agency network provides structured commission tiers and marketing assets for digital partners looking to grow.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Become an Official Partner: Join Today!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 15 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -211,9 +227,7 @@ export default function AboutPage() {
             </div>
             <p>We strongly advocate for responsible gaming habits, encouraging users to set strict budgetary limits and play strictly for entertainment.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-red-500 to-orange-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Play Responsibly: Get Gaming Tips Here!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 16 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -223,9 +237,7 @@ export default function AboutPage() {
             </div>
             <p>Operators featured on NewYono.Games undergo independent auditing to verify fair random number generation and financial stability.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-cyan-600 to-blue-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Verified Fair Play: Explore Top Games!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 17 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -235,9 +247,7 @@ export default function AboutPage() {
             </div>
             <p>We use local storage caching and progressive web app technologies to ensure instant app retrieval and seamless performance.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-yellow-500 to-lime-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Fast Loading Store: Click to Test Speed!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 18 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -247,9 +257,7 @@ export default function AboutPage() {
             </div>
             <p>Our redirection mechanisms ensure secure handoffs from our directory to official operator servers without data leakage.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Secure Redirection: Click For Safe APKs!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Headline 19 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -259,9 +267,7 @@ export default function AboutPage() {
             </div>
             <p>We incorporate active user ratings and feedback metrics to dynamically rank applications based on real-world player satisfaction.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-sky-500 to-indigo-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Top Rated Apps: Click to View Rankings!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/d31a3f5fa7f858e8634836f93febd15e/invoke.js" />
 
           {/* Headline 20 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
@@ -271,9 +277,7 @@ export default function AboutPage() {
             </div>
             <p>Through unwavering dedication to security, speed, and transparency, NewYono.Games solidifies its position as the ultimate mobile gaming destination.</p>
           </div>
-          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-green-600 to-emerald-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
-            <Zap className="h-4 w-4 fill-white" /> <span>Final Step: Click to Download Official App Now!</span> <ExternalLink className="h-3.5 w-3.5" />
-          </div>
+          <AdUnit scriptUrl="https://preliminarycultural.com/f017d2f3e907257c8f3369bd4037b28f/invoke.js" atOptionsConfig={{ key: 'f017d2f3e907257c8f3369bd4037b28f', format: 'iframe', height: 250, width: 300, params: {} }} />
 
           {/* Telegram Banner */}
           <div 
