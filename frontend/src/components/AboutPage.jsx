@@ -38,7 +38,7 @@ export default function AboutPage() {
               <h2>Welcome to NewYono.Games Official Portal</h2>
             </div>
             <p>
-              NewYono.Games is India&apos;s leading independent directory, review platform, and official download hub for top-tier Android gaming applications. Specializing in high-performance real-cash rummy APKs, Teen Patti master editions, slot machine simulators, and multiplayer arcade tournaments, our website connects millions of gaming enthusiasts with verified operators. We focus on absolute security, fast UPI payouts, and guaranteed sign-up bonuses ranging from ₹501 to ₹2501.
+              NewYono.Games is India's leading independent directory, review platform, and official download hub for top-tier Android gaming applications. Specializing in high-performance real-cash rummy APKs, Teen Patti master editions, slot machine simulators, and multiplayer arcade tournaments, our website connects millions of gaming enthusiasts with verified operators. We focus on absolute security, fast UPI payouts, and guaranteed sign-up bonuses ranging from ₹501 to ₹2501.
             </p>
           </div>
 
@@ -50,9 +50,9 @@ export default function AboutPage() {
             </div>
             <ul className="list-disc pl-4 space-y-1 text-[#666]">
               <li><strong>Verified APKs:</strong> Every game hosted or linked undergoes rigorous malware and security screening.</li>
-              <div><strong>Instant UPI Withdrawals:</strong> Seamless integration with fast payout banking systems.</div>
-              <div><strong>Lucrative Bonuses:</strong> Enjoy exclusive sign-up rewards and daily referral commissions.</div>
-              <div><strong>Official Agency Program:</strong> Connect with our network for official partnership opportunities.</div>
+              <li><strong>Instant UPI Withdrawals:</strong> Seamless integration with fast payout banking systems.</li>
+              <li><strong>Lucrative Bonuses:</strong> Enjoy exclusive sign-up rewards and daily referral commissions.</li>
+              <li><strong>Official Agency Program:</strong> Connect with our network for official partnership opportunities.</li>
             </ul>
           </div>
 
@@ -108,3 +108,10 @@ export default function AboutPage() {
             </span>
           </div>
 
+        </div>
+
+        <SiteFooter />
+      </div>
+    </div>
+  );
+}
