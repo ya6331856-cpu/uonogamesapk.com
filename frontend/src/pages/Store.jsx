@@ -88,7 +88,7 @@ export default function Store() {
   const topApps = useMemo(() => {
     const featuredList = data?.featured || parsedCache?.featured || [];
     const baseList = featuredList.length > 0 ? featuredList : allAppsList;
-    return baseList.map(app => ({
+    return baseList.slice(0, 100).map(app => ({
       ...app,
       version: "v2026 Latest",
       size: app.size || "45 MB"
@@ -149,12 +149,12 @@ export default function Store() {
             </div>
           </div>
 
-          {/* SMOOTH HORIZONTAL SCROLLABLE SLIDER */}
+          {/* TOP 100 FEATURED GAMES SLIDER */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 100 Featured Games
                 </h3>
                 <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
