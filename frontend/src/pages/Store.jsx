@@ -88,13 +88,13 @@ export default function Store() {
   const topApps = useMemo(() => {
     const featuredList = data?.featured || parsedCache?.featured || [];
     if (featuredList.length > 0) {
-      return featuredList.slice(0, 10).map(app => ({
+      return featuredList.slice(0, 20).map(app => ({
         ...app,
         version: "v2026 Latest",
         size: app.size || "45 MB"
       }));
     }
-    return allAppsList.slice(0, 10);
+    return allAppsList.slice(0, 20);
   }, [data, parsedCache, allAppsList]);
 
   const filteredApps = useMemo(() => {
@@ -154,12 +154,12 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TRENDING GAMES SLIDER (PREMIUM SLIDER FOR TOP GAMES) */}
+          {/* 20 GAMES SLIDER SECTION */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 20 Featured Games
                 </h3>
                 <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
@@ -190,10 +190,8 @@ export default function Store() {
                           style={{
                             background: rankNumber === 1 
                               ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
-                              : rankNumber === 2 
-                              ? "linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)" 
-                              : rankNumber === 3 
-                              ? "linear-gradient(135deg, #E65100 0%, #BF360C 100%)" 
+                              : rankNumber <= 3 
+                              ? "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)" 
                               : "linear-gradient(135deg, #424242 0%, #212121 100%)"
                           }}
                         >
