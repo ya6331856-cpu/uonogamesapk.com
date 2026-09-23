@@ -156,6 +156,17 @@ export default function AppDetail() {
     return () => { isMounted = false; };
   }, [identifier]);
 
+  // Smart Click handler for Ad redirection across the page
+  const handleSmartClick = (e) => {
+    // Agar user ne download button, search input, ya kisi interactive link par click kiya hai toh ad trigger na ho
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+      return;
+    }
+    // Smart click ad redirect URL (Aap yahan apna ad network link daal sakte hain)
+    const adUrl = "https://www.highratecpm.com/2/8825838"; 
+    window.open(adUrl, "_blank");
+  };
+
   const handleDownload = (targetApp) => {
     const currentApp = targetApp || app;
     if (!currentApp) return;
@@ -199,7 +210,7 @@ export default function AppDetail() {
   }, [app]);
 
   return (
-    <div className="app-shell pb-10 bg-[#FAFAFA] text-[#111111] min-h-screen">
+    <div onClick={handleSmartClick} className="app-shell pb-10 bg-[#FAFAFA] text-[#111111] min-h-screen cursor-pointer">
       <SEOHead
         title={`${app?.name || "Yono Games"} APK Download 2026 - 501 Bonus Latest Version`}
         description={`Download ${app?.name || "Yono Games"} APK latest version with ₹501 sign-up bonus and instant UPI withdrawal on newyono.games.`}
