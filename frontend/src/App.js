@@ -7,6 +7,7 @@ import { SettingsProvider } from "./context/SettingsContext";
 import Store from "./pages/Store";
 import AppDetail from "./pages/AppDetail";
 import AdminLogin from "./pages/AdminLogin";
+import AboutPage from "./components/AboutPage"; // Naya About & SEO Hub page import kiya gaya hai
 import PwaInstallBanner from "./components/PwaInstallBanner";
 import Analytics from "./components/Analytics";
 
@@ -37,6 +38,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Store />} />
+                <Route path="/about" element={<AboutPage />} /> {/* Naya SEO & About page route */}
                 <Route path="/app/:id" element={<LegacyAppRedirect />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 
@@ -51,7 +53,6 @@ function App() {
                   <Route path="seo-dashboard" element={<SeoDashboardPage />} />
                   <Route path="backup" element={<BackupPage />} />
                   
-                  {/* Yeh rahi wo line jahan typo theek kiya gaya hai */}
                   <Route path="users" element={<UsersSecurityPages />} /> 
                   
                   <Route path="settings" element={<SettingsPages />} />
