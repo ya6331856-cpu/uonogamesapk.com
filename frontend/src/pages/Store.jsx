@@ -86,16 +86,8 @@ export default function Store() {
   }, [data, parsedCache]);
 
   const topApps = useMemo(() => {
-    const featuredList = data?.featured || parsedCache?.featured || [];
-    if (featuredList.length > 0) {
-      return featuredList.slice(0, 20).map(app => ({
-        ...app,
-        version: "v2026 Latest",
-        size: app.size || "45 MB"
-      }));
-    }
     return allAppsList.slice(0, 20);
-  }, [data, parsedCache, allAppsList]);
+  }, [allAppsList]);
 
   const filteredApps = useMemo(() => {
     let list = [...allAppsList];
@@ -105,9 +97,6 @@ export default function Store() {
     if (search.trim()) {
       const q = normalize(search);
       list = list.filter(a => normalize(a.name).includes(q) || normalize(a.description).includes(q) || normalize(a.category).includes(q));
-    } else if (category === "All") {
-      const top3Ids = new Set(topApps.slice(0, 3).map(t => t.id));
-      list = list.filter(a => !top3Ids.has(a.id));
     }
     
     list.sort((a, b) => {
@@ -116,7 +105,7 @@ export default function Store() {
       return (b.downloads || 0) - (a.downloads || 0);
     });
     return list;
-  }, [allAppsList, category, search, topApps, sort]);
+  }, [allAppsList, category, search, sort]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#111111] pb-16">
@@ -154,7 +143,7 @@ export default function Store() {
             </div>
           </div>
 
-          {/* 20 GAMES SLIDER SECTION */}
+          {/* TOP 20 FEATURED GAMES SLIDER */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
