@@ -154,7 +154,7 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TOP APPS CAROUSEL */}
+          {/* TOP APPS CAROUSEL (MADE COMPACT) */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
@@ -164,8 +164,8 @@ export default function Store() {
                 <span className="text-xs text-[#777777]">Swipe for more</span>
               </div>
               
-              <div className="w-full overflow-x-auto pb-3 pt-2 no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
-                <div className="flex gap-2.5 px-1 min-w-max items-center">
+              <div className="w-full overflow-x-auto pb-2 pt-1 no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+                <div className="flex gap-2 px-1 min-w-max items-center">
                   {topApps.map((app, idx) => {
                     const rankNumber = idx + 1;
                     const isTop1 = rankNumber === 1;
@@ -179,14 +179,14 @@ export default function Store() {
                           window.scrollTo({ top: 0, behavior: "smooth" });
                           navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } });
                         }}
-                        className={`relative shrink-0 cursor-pointer rounded-[22px] border p-3.5 flex flex-col items-center text-center justify-between transition-all select-none ${
+                        className={`relative shrink-0 cursor-pointer rounded-2xl border p-2.5 flex flex-col items-center text-center justify-between transition-all select-none ${
                           isTop1 
-                            ? "w-[138px] min-h-[250px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_8px_24px_rgba(255,193,7,0.25)] z-10" 
-                            : "w-[122px] min-h-[230px] border-[#E5E7EB] bg-white shadow-sm opacity-95"
+                            ? "w-[126px] min-h-[205px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_4px_16px_rgba(255,193,7,0.2)] z-10" 
+                            : "w-[114px] min-h-[190px] border-[#E5E7EB] bg-white shadow-sm opacity-95"
                         }`}
                       >
                         <div 
-                          className="absolute -left-1.5 -top-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-md border-2 border-white pointer-events-none"
+                          className="absolute -left-1 -top-1.5 flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black text-white shadow-sm border border-white pointer-events-none"
                           style={{
                             background: rankNumber === 1 
                               ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
@@ -197,44 +197,44 @@ export default function Store() {
                               : "linear-gradient(135deg, #424242 0%, #212121 100%)"
                           }}
                         >
-                          <Crown className="h-2.5 w-2.5 text-white fill-white" />
+                          <Crown className="h-2 w-2 text-white fill-white" />
                           <span>#{rankNumber}</span>
                         </div>
 
-                        <div className="flex flex-col items-center w-full mt-2">
+                        <div className="flex flex-col items-center w-full mt-1">
                           <div className="relative">
                             <AppIcon
                               src={resolveUrl(app.icon_url)}
                               alt={app.name}
-                              className={`${isTop1 ? "h-15 w-15" : "h-12 w-12"} rounded-[14px] ring-1 ring-black/5 object-cover shadow-sm`}
+                              className={`${isTop1 ? "h-12 w-12" : "h-10 w-10"} rounded-[12px] ring-1 ring-black/5 object-cover shadow-sm`}
                             />
-                            <span className="absolute -right-1.5 -top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[7px] font-extrabold text-white shadow-sm leading-none">
+                            <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 py-0.2 text-[6px] font-extrabold text-white shadow-sm leading-none">
                               NEW
                             </span>
                           </div>
 
-                          <h4 className="mt-2 line-clamp-1 font-display text-xs font-bold text-[#111111] w-full">
+                          <h4 className="mt-1.5 line-clamp-1 font-display text-[11px] font-bold text-[#111111] w-full">
                             {app.name}
                           </h4>
 
-                          <div className="mt-1.5 space-y-1 w-full">
+                          <div className="mt-1 space-y-0.5 w-full">
                             <div className="flex items-center justify-center gap-0.5 text-[9px] font-semibold text-[#555555]">
                               <Star className="h-2.5 w-2.5 fill-[#FFC107] text-[#FFC107]" />
                               <span>{app.rating?.toFixed(1) || "4.8"}</span>
                             </div>
                             {app.signup_bonus ? (
-                              <div className="flex items-center justify-center gap-0.5 text-[9px] font-extrabold text-[#D97706] truncate">
-                                <Gift className="h-2.5 w-2.5 shrink-0" /> {app.signup_bonus}
+                              <div className="flex items-center justify-center gap-0.5 text-[8.5px] font-extrabold text-[#D97706] truncate">
+                                <Gift className="h-2 w-2 shrink-0" /> {app.signup_bonus}
                               </div>
                             ) : (
-                              <div className="text-[9px] text-transparent">Bonus</div>
+                              <div className="text-[8.5px] text-transparent">Bonus</div>
                             )}
                             {app.min_withdraw ? (
-                              <div className="text-[9px] font-bold text-[#16A34A] truncate">
+                              <div className="text-[8.5px] font-bold text-[#16A34A] truncate">
                                 Min {app.min_withdraw}
                               </div>
                             ) : (
-                              <div className="text-[9px] text-transparent">Min W/D</div>
+                              <div className="text-[8.5px] text-transparent">Min W/D</div>
                             )}
                           </div>
                         </div>
@@ -247,13 +247,13 @@ export default function Store() {
                             setTimeout(() => { window._adCooldown = false; }, 2000);
                             handleDownload(app);
                           }}
-                          className={`mt-2.5 w-full flex items-center justify-center gap-1 rounded-full py-1.5 text-[10px] font-bold shadow-sm ${
+                          className={`mt-2 w-full flex items-center justify-center gap-1 rounded-full py-1 text-[9.5px] font-bold shadow-sm ${
                             isTop1 
-                              ? "bg-gradient-to-r from-[#FFC107] to-[#FF9800] text-white hover:opacity-95 shadow-md" 
+                              ? "bg-gradient-to-r from-[#FFC107] to-[#FF9800] text-white hover:opacity-95 shadow-sm" 
                               : "bg-[#FFC107] text-[#111111] hover:bg-[#FFB300]"
                           }`}
                         >
-                          <Download className="h-3 w-3" /> Get
+                          <Download className="h-2.5 w-2.5" /> Get
                         </RippleButton>
                       </div>
                     );
