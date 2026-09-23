@@ -88,13 +88,13 @@ export default function Store() {
   const topApps = useMemo(() => {
     const featuredList = data?.featured || parsedCache?.featured || [];
     if (featuredList.length > 0) {
-      return featuredList.slice(0, 15).map(app => ({
+      return featuredList.slice(0, 10).map(app => ({
         ...app,
         version: "v2026 Latest",
         size: app.size || "45 MB"
       }));
     }
-    return allAppsList.slice(0, 15);
+    return allAppsList.slice(0, 10);
   }, [data, parsedCache, allAppsList]);
 
   const filteredApps = useMemo(() => {
@@ -154,18 +154,18 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TOP APPS CAROUSEL (MADE COMPACT) */}
+          {/* TRENDING GAMES SLIDER (PREMIUM SLIDER FOR TOP GAMES) */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 3 Apps Today
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
                 </h3>
-                <span className="text-xs text-[#777777]">Swipe for more</span>
+                <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
               
               <div className="w-full overflow-x-auto pb-2 pt-1 no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
-                <div className="flex gap-2 px-1 min-w-max items-center">
+                <div className="flex gap-2.5 px-1 min-w-max items-center">
                   {topApps.map((app, idx) => {
                     const rankNumber = idx + 1;
                     const isTop1 = rankNumber === 1;
@@ -209,7 +209,7 @@ export default function Store() {
                               className={`${isTop1 ? "h-12 w-12" : "h-10 w-10"} rounded-[12px] ring-1 ring-black/5 object-cover shadow-sm`}
                             />
                             <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 py-0.2 text-[6px] font-extrabold text-white shadow-sm leading-none">
-                              NEW
+                              HOT
                             </span>
                           </div>
 
