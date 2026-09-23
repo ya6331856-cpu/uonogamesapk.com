@@ -86,8 +86,14 @@ export default function Store() {
   }, [data, parsedCache]);
 
   const topApps = useMemo(() => {
-    return allAppsList.slice(0, 20);
-  }, [allAppsList]);
+    const featuredList = data?.featured || parsedCache?.featured || [];
+    const baseList = featuredList.length > 0 ? featuredList : allAppsList;
+    return baseList.map(app => ({
+      ...app,
+      version: "v2026 Latest",
+      size: app.size || "45 MB"
+    }));
+  }, [data, parsedCache, allAppsList]);
 
   const filteredApps = useMemo(() => {
     let list = [...allAppsList];
@@ -143,12 +149,12 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TOP 20 FEATURED GAMES SLIDER */}
+          {/* ALL GAMES SLIDER SECTION */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 20 Featured Games
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
                 </h3>
                 <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
