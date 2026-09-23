@@ -135,7 +135,7 @@ export default function Store() {
         </header>
 
         <div className="p-4 space-y-4 flex-1">
-          {/* STATS BAR (Downloads, Verified, Rating) */}
+          {/* STATS BAR */}
           <div className="grid grid-cols-3 gap-2 bg-white border border-[#E5E7EB] rounded-2xl p-3 shadow-sm text-center">
             <div className="flex flex-col items-center">
               <Download className="h-4 w-4 text-[#D97706] mb-0.5" />
@@ -154,7 +154,7 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TOP APPS TODAY - SMOOTH HORIZONTAL SWIPEABLE CAROUSEL */}
+          {/* TOP APPS CAROUSEL */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
@@ -185,7 +185,6 @@ export default function Store() {
                             : "w-[122px] min-h-[230px] border-[#E5E7EB] bg-white shadow-sm opacity-95"
                         }`}
                       >
-                        {/* CROWN & NUMBER BADGE */}
                         <div 
                           className="absolute -left-1.5 -top-2 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-md border-2 border-white pointer-events-none"
                           style={{
@@ -202,7 +201,6 @@ export default function Store() {
                           <span>#{rankNumber}</span>
                         </div>
 
-                        {/* APP ICON & DETAILS */}
                         <div className="flex flex-col items-center w-full mt-2">
                           <div className="relative">
                             <AppIcon
@@ -241,7 +239,6 @@ export default function Store() {
                           </div>
                         </div>
 
-                        {/* DOWNLOAD BUTTON */}
                         <RippleButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -285,7 +282,7 @@ export default function Store() {
             </span>
           </div>
 
-          {/* LIVE WINNERS AUTO-SCROLLING TICKER */}
+          {/* LIVE WINNERS TICKER */}
           <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl p-2.5 flex items-center gap-2 overflow-hidden shadow-sm">
             <div className="flex items-center gap-1 bg-[#16A34A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 z-10">
               <Trophy className="h-3 w-3" /> Live
@@ -298,7 +295,7 @@ export default function Store() {
             </div>
           </div>
 
-          {/* SEARCH BAR PLACED JUST ABOVE ALL GAMES */}
+          {/* SEARCH BAR */}
           <div className="relative pt-1">
             <Search className="absolute left-3.5 top-4 h-4 w-4 text-[#999999]" />
             <Input
@@ -309,6 +306,7 @@ export default function Store() {
             />
           </div>
 
+          {/* ALL GAMES LIST */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold text-sm text-[#111111]">All Games</h3>
@@ -322,6 +320,7 @@ export default function Store() {
           </div>
         </div>
 
+        {/* SITE FOOTER WITH LEGAL LINKS */}
         <SiteFooter onOpenLegal={(id) => setLegalId(id)} />
       </div>
 
