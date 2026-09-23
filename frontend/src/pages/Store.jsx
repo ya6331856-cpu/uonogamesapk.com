@@ -86,7 +86,22 @@ export default function Store() {
   }, [data, parsedCache]);
 
   const topApps = useMemo(() => {
-    return allAppsList.slice(0, 20);
+    const list = [...allAppsList];
+    if (list.length === 0) return [];
+
+    // Find the specific top 3 games based on user request
+    const rummyLudo = list.find(a => normalize(a.name).includes("rummyludo")) || list[0];
+    const indRummy = list.find(a => normalize(a.name).includes("indrummy")) || list[1] || list[0];
+    const goldRummy = list.find(a => normalize(a.name).includes("goldrummy")) || list[2] || list[0];
+
+    // Filter out these top 3 from the rest of the apps to avoid duplication in slider if desired, or keep them
+    const remaining = list.filter(a => a.id !== rummyLudo?.id && a.id !== indRummy?.id && a.id !== goldRummy?.id);
+
+    return [rummyLudo, indRummy, goldRummy, ...remaining].map(app => ({
+      ...app,
+      version: "v2026 Latest",
+      size: app.size || "45 MB"
+    }));
   }, [allAppsList]);
 
   const filteredApps = useMemo(() => {
@@ -143,18 +158,18 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TOP 20 FEATURED GAMES SLIDER */}
+          {/* FEATURED GAMES SLIDER */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 20 Featured Games
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
                 </h3>
                 <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
               
-              <div className="w-full overflow-x-auto pb-2 pt-1 no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
-                <div className="flex gap-2.5 px-1 min-w-max items-center">
+              <div className="w-full overflow-x-auto pb-3 pt-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+                <div className="flex gap-2.5 px-1 w-max items-center">
                   {topApps.map((app, idx) => {
                     const rankNumber = idx + 1;
                     const isTop1 = rankNumber === 1;
