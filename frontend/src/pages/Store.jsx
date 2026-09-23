@@ -320,7 +320,38 @@ export default function Store() {
           </div>
         </div>
 
-        {/* SITE FOOTER WITH LEGAL LINKS */}
+        {/* HEAVY SEO LEGAL & ABOUT SECTION FOR GOOGLE */}
+        <div className="bg-white border-t border-[#E5E7EB] px-4 py-6 space-y-4 text-[11px] text-[#555555] leading-relaxed">
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">About NewYono.Games - Official Gaming & Rummy APK Portal</h4>
+            <p>
+              Welcome to NewYono.Games, India&apos;s ultimate and most trusted destination for online gaming APK downloads, real-cash rummy, teen patti, slots, and multiplayer arcade apps. Our platform provides secure, verified, and high-performance gaming applications featuring instant UPI withdrawals, exciting sign-up bonuses ranging from ₹500 to ₹2501, and 24/7 customer support. Whether you are looking for Yono Rummy, Jaiho Slots, Diwa Games, or 1Win integrations, we ensure a safe and transparent environment for all gaming enthusiasts.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">Privacy Policy & Data Security</h4>
+            <p>
+              At NewYono.Games, protecting user privacy is our top priority. We collect minimal analytics data via Google Analytics, Search Console, and Microsoft Clarity solely to enhance user experience, optimize site performance, and monitor download trends. Your personal and financial details shared within connected gaming apps are strictly regulated under advanced encryption protocols. We do not sell or share user data with unauthorized third parties.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">Terms, Conditions & Responsible Gaming</h4>
+            <p>
+              By accessing or downloading apps from NewYono.Games, users agree to abide by our terms and conditions. All real-cash games, referral commission programs, and agency partnerships involve financial risk. Users are advised to play responsibly and check their local jurisdiction laws regarding online skill games and cash apps before participating. Bonuses and promotional offers are subject to specific operator wagering criteria.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">Disclaimer & DMCA Compliance</h4>
+            <p>
+              NewYono.Games acts purely as an informational review and APK download aggregator platform. We do not host malicious files; all apps are linked from official verified sources. We respect intellectual property rights and comply with Digital Millennium Copyright Act (DMCA) guidelines. If you notice any copyright discrepancy or require content removal, please reach out via our official Telegram network for immediate assistance.
+            </p>
+          </div>
+        </div>
+
+        {/* SITE FOOTER */}
         <SiteFooter onOpenLegal={(id) => setLegalId(id)} />
       </div>
 
