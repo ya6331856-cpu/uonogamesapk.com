@@ -86,14 +86,8 @@ export default function Store() {
   }, [data, parsedCache]);
 
   const topApps = useMemo(() => {
-    const featuredList = data?.featured || parsedCache?.featured || [];
-    const baseList = featuredList.length > 0 ? featuredList : allAppsList;
-    return baseList.slice(0, 100).map(app => ({
-      ...app,
-      version: "v2026 Latest",
-      size: app.size || "45 MB"
-    }));
-  }, [data, parsedCache, allAppsList]);
+    return allAppsList.slice(0, 20);
+  }, [allAppsList]);
 
   const filteredApps = useMemo(() => {
     let list = [...allAppsList];
@@ -149,18 +143,18 @@ export default function Store() {
             </div>
           </div>
 
-          {/* TOP 100 FEATURED GAMES SLIDER */}
+          {/* TOP 20 FEATURED GAMES SLIDER */}
           {topApps.length > 0 && !search && category === "All" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
-                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 100 Featured Games
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Top 20 Featured Games
                 </h3>
                 <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
               
-              <div className="w-full overflow-x-auto pb-3 pt-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
-                <div className="flex gap-2.5 px-1 w-max items-center">
+              <div className="w-full overflow-x-auto pb-2 pt-1 no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+                <div className="flex gap-2.5 px-1 min-w-max items-center">
                   {topApps.map((app, idx) => {
                     const rankNumber = idx + 1;
                     const isTop1 = rankNumber === 1;
