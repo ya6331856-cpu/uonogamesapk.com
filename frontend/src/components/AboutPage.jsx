@@ -1,16 +1,20 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShieldCheck, Crown, Sparkles, FileText, Lock, AlertTriangle, Send } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Crown, Sparkles, FileText, Lock, AlertTriangle, Send, ExternalLink, Zap } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import SiteFooter from "@/components/SiteFooter";
 
 export default function AboutPage() {
   const navigate = useNavigate();
 
+  const handleBannerAdClick = () => {
+    window.open("https://www.highratecpm.com/2/8825838", "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#111111]">
       <SEOHead 
-        title="About NewYono.Games - Massive Ultimate Mega-Word Gaming Directory & SEO Engine" 
-        description="Explore our exhaustive, multi-thousand word master encyclopedia covering NewYono.Games, real-cash rummy architectures, Teen Patti mastery, slot mechanics, UPI security, and global agency networks." 
+        title="About NewYono.Games - Massive Ultimate 20-Headline Mega Gaming Directory & SEO Engine" 
+        description="Read our exhaustive, multi-thousand word master encyclopedia covering NewYono.Games, real-cash rummy architectures, Teen Patti mastery, slot mechanics, UPI security, and global agency networks." 
         canonical="https://newyono.games/about"
       />
 
@@ -21,91 +25,254 @@ export default function AboutPage() {
             <button onClick={() => navigate(-1)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white border border-[#E5E7EB] text-[#111111] shadow-sm hover:bg-[#F1F1F1]">
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <span className="font-display text-sm font-bold text-[#111111]">Mega SEO Encyclopedia Hub</span>
+            <span className="font-display text-sm font-bold text-[#111111]">20-Headline Mega SEO Hub</span>
           </div>
           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#22C55E] bg-[#F0FDF4] px-2 py-1 rounded-full">
             <ShieldCheck className="h-3.5 w-3.5" /> Verified Elite
           </span>
         </div>
 
-        {/* MAIN CONTENT CONTAINER WITH MASSIVE EXTENDED ENCYCLOPEDIA TEXT */}
+        {/* MAIN CONTENT CONTAINER WITH 20 HEADLINES AND INTERLEAVED BANNER ADS */}
         <div className="p-5 space-y-6 flex-1 text-xs text-[#555555] leading-relaxed">
           
           {/* Headline 1 */}
           <div className="space-y-2 bg-[#FFFDF5] border border-[#FFE082] p-4 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 text-[#B45309] font-bold text-sm">
               <Crown className="h-4 w-4 fill-[#FFC107] text-[#FFC107]" />
-              <h2>1. The Definitive Encyclopedia of NewYono.Games: The Apex Standard in Android Gaming Aggregation, Digital Curation, and Secure APK Distribution Networks</h2>
+              <h2>1. The Definitive Encyclopedia of NewYono.Games: The Apex Standard in Android Gaming Aggregation</h2>
             </div>
-            <p>
-              NewYono.Games represents the absolute pinnacle and technological zenith in the evolution of digital content curation, professional application reviews, and secure mobile software distribution across both the Indian subcontinent and international mobile entertainment landscapes. In an era where the digital economy and mobile gaming sectors have expanded into multi-billion-dollar industries characterized by millions of active daily participants, locating safe, verified, thoroughly vetted, and high-performance Android applications has become an increasingly complex undertaking. Our platform was architected, designed, and deployed from the ground up to resolve this critical market friction, operating as an elite, independent informational directory that seamlessly bridges the gap between everyday mobile gaming enthusiasts and official, enterprise-grade software operators. We do not merely act as an indiscriminate directory listing; rather, we execute comprehensive, multi-layered security profiling, source code verification, compatibility testing, and performance benchmarking for every single APK file hosted or referenced across our network infrastructure. Whether you are searching for high-performance real-cash Indian Rummy variants, tactical Teen Patti master editions, immersive 777 slot machine simulators, dynamic crash multiplier games like Aviator, or casual multiplayer arcade Ludo tournaments, NewYono.Games functions as your definitive, centralized repository for secure digital leisure. Our operational philosophy is anchored entirely in user empowerment through radical transparency, offering precise, real-time telemetry regarding file sizes, version histories (such as our standardized v2026 builds), active concurrent player counts, verified average user ratings, and exclusive sign-up bonus allocations ranging dynamically from ₹501 to ₹2501. By leveraging cutting-edge web development frameworks, responsive user interfaces, high-speed local storage caching, and robust distributed Content Delivery Networks, we guarantee that every single visitor enjoys a frictionless, lightning-fast browsing and downloading experience, cemented by our unwavering institutional dedication to absolute trust, rigorous accountability, and uncompromising digital excellence throughout 2026 and beyond.
-            </p>
+            <p>NewYono.Games represents the absolute pinnacle and technological zenith in the evolution of digital content curation, professional application reviews, and secure mobile software distribution across international entertainment landscapes. Our platform connects everyday mobile gaming enthusiasts with official operator networks.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-amber-500 to-yellow-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2 animate-pulse">
+            <Zap className="h-4 w-4 fill-white" /> <span>Sponsored: Claim ₹501 Instant Bonus & Play Now!</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Headline 2 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
               <Sparkles className="h-4 w-4 text-[#FFC107]" />
-              <h2>2. Exhaustive Architectural Breakdown, Gameplay Mechanics, and Strategic Frameworks of Real-Cash Rummy, Teen Patti, and Slot Ecosystems</h2>
+              <h2>2. Exhaustive Architectural Breakdown of Real-Cash Rummy, Teen Patti, and Slot Ecosystems</h2>
             </div>
-            <p>
-              The profound transition of traditional card games, table wagering, and arcade pastimes into sophisticated, high-performance digital mobile applications has completely transformed the modern entertainment paradigm. At NewYono.Games, we conduct exhaustive analytical deep-dives into the mechanical, mathematical, psychological, and strategic intricacies that govern contemporary real-cash gaming ecosystems. Indian Rummy, a strategic card game deeply embedded in cultural leisure and cognitive training, demands acute intellectual processing, advanced probability calculation, psychological resilience, and agile memory retention as participants arrange a complex hand of thirteen cards into valid sequences and sets. Our featured variants—including flagship titles like New Yono Rummy, Gold Rummy, and Ind Rummy—integrate sophisticated anti-collusion algorithms, cryptographically certified Random Number Generators (RNG), and seamless multi-threaded matchmaking architectures designed to guarantee absolute fairness, integrity, and uncompromised competitive balance. Similarly, Teen Patti master editions deliver accelerated wagering thrills, dynamic blind-and-seen psychological maneuvers, and massive daily tournament structures engineered specifically for high-stakes card enthusiasts seeking competitive glory. Beyond traditional card genres, our platform provides comprehensive technical coverage of 777 slot machine games, color prediction matrices, Dragon Tiger prediction engines, and Plinko-style arcade simulations. These applications utilize advanced vector graphics pipelines, hardware-accelerated shaders, and optimized rendering frameworks to ensure consistently responsive 60 Frames Per Second (FPS) performance across a diverse spectrum of mobile hardware configurations, ranging from high-end flagship smartphones to economical budget devices. We complement our comprehensive application directory with expert-authored strategy guides, methodical bankroll management frameworks, detailed bonus wagering requirement breakdowns, and tactical decision matrices, ensuring that our active community members are fully equipped to maximize both their strategic proficiency and their overall return on entertainment investment.
-            </p>
+            <p>The profound transition of traditional card games and table wagering into sophisticated digital applications has completely transformed modern entertainment. Indian Rummy requires strategic arrangement of cards into valid sequences.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Special Offer: Fast UPI Payout Apps - Download Today!</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Headline 3 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
               <ShieldCheck className="h-4 w-4 text-[#16A34A]" />
-              <h2>3. Frictionless Financial Infrastructure: Comprehensive UPI Payout Integration, Multi-Layered Security Protocols, and Fast Withdrawal Guides</h2>
+              <h2>3. Frictionless Financial Infrastructure: UPI Payout Integration and Security Protocols</h2>
             </div>
-            <p>
-              Historically, one of the most prominent friction points and user pain points within the mobile real-cash gaming sector has been the technical complexity, processing latency, and security vulnerability associated with monetary deposits and payout withdrawal gateways. NewYono.Games exclusively highlights, reviews, and aggregates applications that have established robust, enterprise-grade financial infrastructures integrated seamlessly with India&apos;s revolutionary Unified Payments Interface (UPI), automated interbank transfer channels, and verified digital wallets including Paytm, PhonePe, Google Pay, and standard Net Banking portals. The software applications featured prominently on our platform are subjected to rigorous financial auditing to ensure they deploy lightning-fast automated payout mechanisms, enabling victorious players to initiate and complete UPI withdrawals starting at minimum thresholds as low as ₹100, with capital frequently credited to personal bank accounts within minutes of request submission. Furthermore, transactional security is reinforced through the uncompromising deployment of advanced 256-bit Secure Sockets Layer (SSL) encryption protocols, multi-factor authentication (MFA) verification checkpoints, and automated Know Your Customer (KYC) onboarding pipelines that actively protect users against unauthorized account access, identity theft, and fraudulent financial interception. We publish comprehensive, step-by-step instructional guides detailing how users can link their UPI virtual payment addresses (VPAs) securely, execute frictionless cash deposits to claim lucrative sign-up bonuses, and navigate withdrawal verification protocols without encountering unnecessary administrative bottlenecks. This absolute institutional focus on transactional transparency, banking reliability, and financial safety ensures that players can engage in competitive online gaming with total psychological peace of mind, knowing their capital and earnings are protected by state-of-the-art cybersecurity defenses.
-            </p>
+            <p>NewYono.Games exclusively highlights applications that have established robust financial infrastructures integrated seamlessly with India&apos;s UPI and automated banking channels. Withdrawals start from ₹100 securely.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-emerald-600 to-green-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Top Rated: Trusted 10M+ Downloads Gaming Store</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Headline 4 */}
           <div className="space-y-2 bg-[#F9FAFB] border border-gray-200 p-4 rounded-2xl">
             <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
               <FileText className="h-4 w-4 text-[#0284C7]" />
-              <h2>4. Exhaustive Keyword Directory, Advanced Search Engine Optimization (SEO) Architecture, Metadata Indexing, and Technical Deployment Parameters</h2>
+              <h2>4. Exhaustive Keyword Directory, SEO Architecture, and Metadata Indexing</h2>
             </div>
-            <p className="text-[10px] text-[#666] leading-relaxed">
-              Yono Games download, New Yono Rummy APK, Teen Patti real cash app, Slots spin bonus apps, Yono agency program, online rummy referral commission, instant UPI cash withdrawal games, Android gaming store India, 777 slots apk download, Best rummy app with bonus, Yono partner network official, trusted gaming platform 2026, Teen Patti Gold, Ludo cash winning apps, Dragon Tiger tricks, fast withdrawal rummy apps, NewYono.Games official link, multiplayer card game portals, safe APK file repository, daily sign-up bonus apps, Jaiho slots download, Diwa games portal, 1Win slot integration, secure UPI payout gateways, Android gaming optimization, high performance mobile arcade, verified APK review directory, executive gaming community network, Telegram reward channel links, official agency partnership portal, professional web application deployment, search engine optimization analytics, Google Search Console tracking, Microsoft Clarity user behavior metrics, secure 256-bit SSL encryption standards, digital entertainment market analysis, mobile application distribution networks, real-time winning tickers, live player payout notifications, responsible gaming compliance guidelines, high-speed React web hosting, Cloudflare DNS management, Vercel edge deployment architectures, Supabase PostgreSQL backend integration, Adsterra monetization frameworks, Semrush site audit compliance, Bing Webmaster tools indexing, automated GitHub Actions workflows, professional software repository management, mobile APK version v2026 tracking, custom apparel and consumer equipment sourcing, B2B product procurement inquiries, Upstox and Groww securities monitoring, Paytm Money demat account KYC verification, Telegram Premium subscription management, Bank of Baroda commercial current account applications, high-volume digital traffic scaling strategies, cross-platform mobile responsive layouts, programmatic meta tag generation, XML sitemap indexation, robots.txt optimization protocols, schema markup integration, rich snippet configuration, structured data validation, organic search ranking algorithms, web vitals performance tuning, asynchronous JavaScript loading, CSS minification, and comprehensive enterprise-level web security configurations.
-            </p>
+            <p className="text-[10px] text-[#666] leading-relaxed">Yono Games download, New Yono Rummy APK, Teen Patti real cash app, Slots spin bonus apps, Yono agency program, online rummy referral commission, instant UPI cash withdrawal games.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Click Here for Daily Jackpot & Cash Rewards!</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Headline 5 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
               <Lock className="h-4 w-4 text-[#16A34A]" />
-              <h2>5. Rigorous Privacy Standards, Ethical Data Governance Frameworks, and Behavioral Analytics Transparency Policies</h2>
+              <h2>5. Rigorous Privacy Standards and Ethical Data Governance Frameworks</h2>
             </div>
-            <p>
-              In an interconnected digital age defined by heightened cyber connectivity, data harvesting, and evolving privacy concerns, NewYono.Games maintains an uncompromising, militant stance on user privacy, ethical data governance, and absolute transparency regarding behavioral telemetry tracking. We want our global visitor base to understand precisely, without ambiguity, how information is gathered, processed, secured, and retained when interacting with our digital publishing platform. To continuously optimize web performance, minimize page load latencies, and refine our user interface design architecture, we deploy industry-standard diagnostic tools and enterprise tracking suites—including Google Analytics, Google Search Console, Microsoft Clarity, Bing Webmaster Tools, and Semrush advanced site audit engines. These diagnostic systems collect anonymized telemetry parameters, such as device viewport dimensions, geographic referral traffic streams, active session durations, and aggregate clickstream interaction patterns. We explicitly pledge and guarantee that we never sell, trade, rent, lease, or distribute personally identifiable information (PII) to external marketing brokers, aggressive advertising syndicates, or unauthorized commercial entities. Furthermore, when users click through our outbound links to download third-party gaming applications, those external digital environments operate under their own distinct privacy policies, terms of service, and cryptographic security frameworks. We strongly advise every visitor to thoroughly examine the legal documentation, privacy agreements, and terms of service of any external gaming operator prior to registering player accounts or submitting sensitive financial credentials.
-            </p>
+            <p>We deploy enterprise tracking suites including Google Analytics, Search Console, and Microsoft Clarity to monitor performance and optimize user navigation safely.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Exclusive Deal: Unlock 300% Bonus on Deposit!</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Headline 6 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
               <ShieldCheck className="h-4 w-4 text-[#0284C7]" />
-              <h2>6. Comprehensive Terms of Service, Legal Risk Disclosures, and Official Affiliate Agency Partnership Frameworks</h2>
+              <h2>6. Comprehensive Terms of Service and Risk Disclosures</h2>
             </div>
-            <p>
-              By accessing, browsing, interacting with, or downloading software applications via NewYono.Games, users formally acknowledge, understand, and agree to adhere strictly to our comprehensive Terms of Service and legal disclaimers. It is of absolute paramount importance to recognize that real-cash gaming, online rummy tournaments, competitive card wagering, and referral affiliate agency partnership programs inherently involve substantial financial risk. Participants must be at least 18 years of age (or meet the statutory legal age of majority in their respective state or national jurisdiction) and must independently verify the statutory legality of skill-based cash applications within their specific regional governance boundaries before engaging in financial deposits or competitive gameplay. All promotional incentives, sign-up bonus credits (such as the standard ₹501 promotional allocation), daily rebate multipliers, and referral commissions are strictly subject to individual operator wagering requirements, turnover thresholds, and maximum withdrawal caps. NewYono.Games functions purely as an independent informational review directory and software download aggregator; consequently, we assume zero direct legal liability for external transactional discrepancies, technical server outages, banking gateway disputes, or financial losses incurred on third-party gaming platforms. Additionally, our highly sought-after Official Agency Partnership Program offers dedicated tracking links, professional marketing collateral, and lucrative commission tiers for verified partners seeking to scale their digital enterprise within the booming online gaming sector.
-            </p>
+            <p>Real-cash gaming involves financial risk; participants must be 18+ and verify local state regulations before engaging in skill-based applications.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-teal-600 to-cyan-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Play Safe & Win Big: Join Official Agency Network</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Headline 7 */}
           <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-              <h2>7. Strict DMCA Compliance, Intellectual Property Protection, and Formal Content Removal Protocols</h2>
+            <div className="flex items-center gap-2 text-[#111] font-bold text-red-500">
+              <AlertTriangle className="h-4 w-4" />
+              <h2>7. Strict DMCA Compliance and Intellectual Property Protection</h2>
             </div>
-            <p>
-              NewYono.Games operates strictly and transparently as an independent informational APK review directory and software download aggregator platform. We categorically do not host cracked executables, modified APK binaries, copyrighted source codes, pirated media, or malicious software on our private hosting servers. All outbound download buttons, referral links, and promotional banners redirect web traffic directly to official, verified operator distribution channels and secure servers. We maintain an uncompromising commitment to respecting global intellectual property rights and operate in full, unreserved compliance with the Digital Millennium Copyright Act (DMCA), international copyright conventions, and trademark protection laws. If intellectual property copyright holders, trademark proprietors, or legally authorized corporate representatives identify any accidental text discrepancy, asset conflict, or trademark overlap, we cordially invite and encourage them to submit a formal infringement notification directly through our official Telegram agency network channel. Upon receiving a fully verified, substantiated, and legally compliant claim, our specialized technical compliance team conducts immediate internal investigations and executes prompt content removal, link rectification, or metadata updates to honor intellectual property rights, maintain absolute legal transparency, and preserve our stellar standing as a trusted digital directory.
-            </p>
+            <p>We operate as an informational directory and do not host pirated files or malicious software on our private servers.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-yellow-600 to-amber-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Instant Download Available: Click For Details</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 8 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Sparkles className="h-4 w-4 text-[#FFC107]" />
+              <h2>8. Advanced Mobile App Performance Optimization and Edge Deployment</h2>
+            </div>
+            <p>Our deployment infrastructure uses edge-compute capabilities and Cloudflare DNS to ensure server response times remain under 200 milliseconds.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-rose-600 to-red-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Trending Now: Best Real Cash Earning App 2026</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 9 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <FileText className="h-4 w-4 text-[#0284C7]" />
+              <h2>9. Community Engagement and 24/7 Telegram Support Networks</h2>
+            </div>
+            <p>We maintain active support channels through our official Telegram network, providing direct updates regarding app releases and bonus drops.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Join 10M+ Players: Click To Claim Bonus Now!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 10 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Crown className="h-4 w-4 text-[#FFC107]" />
+              <h2>10. Future Roadmap and Technological Evolution of NewYono.Games</h2>
+            </div>
+            <p>Our roadmap includes automated APK health monitors, artificial intelligence recommendation engines, and expanded multi-language support.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Final Call: Download Official Apps With Secure UPI Payout!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 11 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <ShieldCheck className="h-4 w-4 text-[#16A34A]" />
+              <h2>11. Understanding Wagering Requirements and Bonus Terms</h2>
+            </div>
+            <p>All sign-up bonuses and promotional cash rewards are governed by specific operator wagering criteria to ensure fair promotional play.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-amber-600 to-yellow-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Unlock Free Chips: Click to Claim Reward!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 12 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Sparkles className="h-4 w-4 text-[#FFC107]" />
+              <h2>12. The Rise of Slot Machine Simulators and Crash Games in India</h2>
+            </div>
+            <p>Crash games like Aviator and 777 slot simulators have captured massive popularity due to dynamic multiplier mechanics and interactive gameplay.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Play Aviator & Slots: Fast UPI Deposit!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 13 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Lock className="h-4 w-4 text-[#16A34A]" />
+              <h2>13. Cybersecurity Measures and Malware Protection Standards</h2>
+            </div>
+            <p>Every APK file linked on our platform undergoes stringent virus scanning protocols to protect users from malicious executables.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>100% Virus Free Downloads: Click Here!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 14 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <FileText className="h-4 w-4 text-[#0284C7]" />
+              <h2>14. The Role of Agency Networks in Scaling Mobile Gaming Portals</h2>
+            </div>
+            <p>Our affiliate agency network provides structured commission tiers and marketing assets for digital partners looking to grow.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Become an Official Partner: Join Today!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 15 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Crown className="h-4 w-4 text-[#FFC107]" />
+              <h2>15. Responsible Gaming Practices and Addiction Prevention</h2>
+            </div>
+            <p>We strongly advocate for responsible gaming habits, encouraging users to set strict budgetary limits and play strictly for entertainment.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-red-500 to-orange-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Play Responsibly: Get Gaming Tips Here!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 16 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <ShieldCheck className="h-4 w-4 text-[#0284C7]" />
+              <h2>16. Verification of Operator Credentials and Fair Play Audits</h2>
+            </div>
+            <p>Operators featured on NewYono.Games undergo independent auditing to verify fair random number generation and financial stability.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-cyan-600 to-blue-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Verified Fair Play: Explore Top Games!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 17 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Sparkles className="h-4 w-4 text-[#FFC107]" />
+              <h2>17. Optimizing Mobile Storage and Caching Strategies</h2>
+            </div>
+            <p>We use local storage caching and progressive web app technologies to ensure instant app retrieval and seamless performance.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-yellow-500 to-lime-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Fast Loading Store: Click to Test Speed!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 18 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Lock className="h-4 w-4 text-[#16A34A]" />
+              <h2>18. Transparency in Affiliate Links and Redirection Mechanisms</h2>
+            </div>
+            <p>Our redirection mechanisms ensure secure handoffs from our directory to official operator servers without data leakage.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Secure Redirection: Click For Safe APKs!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 19 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <FileText className="h-4 w-4 text-[#0284C7]" />
+              <h2>19. User Feedback Integration and Rating Systems</h2>
+            </div>
+            <p>We incorporate active user ratings and feedback metrics to dynamically rank applications based on real-world player satisfaction.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-sky-500 to-indigo-500 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Top Rated Apps: Click to View Rankings!</span> <ExternalLink className="h-3.5 w-3.5" />
+          </div>
+
+          {/* Headline 20 */}
+          <div className="space-y-2 bg-white border border-[#E5E7EB] p-4 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 text-[#111] font-bold text-sm">
+              <Crown className="h-4 w-4 text-[#FFC107]" />
+              <h2>20. Conclusion: Why NewYono.Games Remains India&apos;s Trusted Gaming Hub</h2>
+            </div>
+            <p>Through unwavering dedication to security, speed, and transparency, NewYono.Games solidifies its position as the ultimate mobile gaming destination.</p>
+          </div>
+          <div onClick={handleBannerAdClick} className="cursor-pointer bg-gradient-to-r from-green-600 to-emerald-600 text-white p-3 rounded-xl shadow-md text-center font-bold flex items-center justify-center gap-2">
+            <Zap className="h-4 w-4 fill-white" /> <span>Final Step: Click to Download Official App Now!</span> <ExternalLink className="h-3.5 w-3.5" />
           </div>
 
           {/* Telegram Banner */}
