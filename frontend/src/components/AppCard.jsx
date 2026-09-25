@@ -81,6 +81,9 @@ export const AppCard = ({ app, index = 0, onDownload }) => {
         <AppIcon
           src={resolveUrl(app.icon_url)}
           alt={app.name}
+          width={64}
+          height={64}
+          loading="lazy"
           className="h-16 w-16 rounded-[16px] ring-1 ring-black/5 object-cover shadow-sm"
         />
         {badge && (
