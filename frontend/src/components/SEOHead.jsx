@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://newyono.games";
-const SITE_NAME = "YOWO GAMES";
+const SITE_NAME = "YONO GAMES";
 const DEFAULT_OG = `${SITE_URL}/logo-v2.png`;
 
 function absUrl(u) {
