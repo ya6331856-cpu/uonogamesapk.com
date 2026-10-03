@@ -215,7 +215,7 @@ export default function Store() {
                             </span>
                           </div>
 
-                          <h4 className="mt-1.5 line-clamp-1 font-display text-[11px] font-bold text-[#111111] w-full">
+                          <h4 className="mt-1.5 line-clamp-2 leading-tight font-display text-[10px] font-bold text-[#111111] w-full h-7 flex items-center justify-center">
                             {app.name}
                           </h4>
 
