@@ -14,7 +14,6 @@ import LegalDialog from "@/components/LegalDialog";
 import SiteFooter from "@/components/SiteFooter";
 import ReviewsSection from "@/components/ReviewsSection";
 import OptimizedImage from "@/components/OptimizedImage";
-import HowToInstallSection from "@/components/HowToInstallSection";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -265,9 +264,6 @@ export default function Store() {
               </div>
             </div>
           )}
-
-          {/* HOW TO INSTALL SECTION PLACED RIGHT AFTER FEATURED GAMES SLIDER */}
-          <HowToInstallSection />
 
           {/* TELEGRAM JOIN BANNER */}
           <div 
