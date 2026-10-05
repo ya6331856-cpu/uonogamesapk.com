@@ -89,12 +89,10 @@ export default function Store() {
     const list = [...allAppsList];
     if (list.length === 0) return [];
 
-    // Find the specific top 3 games based on user request
     const rummyLudo = list.find(a => normalize(a.name).includes("rummyludo")) || list[0];
     const indRummy = list.find(a => normalize(a.name).includes("indrummy")) || list[1] || list[0];
     const goldRummy = list.find(a => normalize(a.name).includes("goldrummy")) || list[2] || list[0];
 
-    // Filter out these top 3 from the rest of the apps to avoid duplication in slider if desired, or keep them
     const remaining = list.filter(a => a.id !== rummyLudo?.id && a.id !== indRummy?.id && a.id !== goldRummy?.id);
 
     return [rummyLudo, indRummy, goldRummy, ...remaining].map(app => ({
