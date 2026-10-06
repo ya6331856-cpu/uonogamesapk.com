@@ -139,4 +139,47 @@ export default function Store() {
 
         <div className="p-4 space-y-4 flex-1">
           {/* STATS BAR */}
-          <div
+          <div className="grid grid-cols-3 gap-2 bg-white border border-[#E5E7EB] rounded-2xl p-3 shadow-sm text-center">
+            <div className="flex flex-col items-center">
+              <Download className="h-4 w-4 text-[#D97706] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">10M+</span>
+              <span className="text-[10px] text-[#777777]">Downloads</span>
+            </div>
+            <div className="flex flex-col items-center border-x border-[#E5E7EB]">
+              <ShieldCheck className="h-4 w-4 text-[#16A34A] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">74</span>
+              <span className="text-[10px] text-[#777777]">Verified</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Star className="h-4 w-4 text-[#FFC107] fill-[#FFC107] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">4.8</span>
+              <span className="text-[10px] text-[#777777]">Rating</span>
+            </div>
+          </div>
+
+          {/* FEATURED GAMES SLIDER */}
+          {topApps.length > 0 && !search && category === "All" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
+                </h3>
+                <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
+              </div>
+              
+              <div className="w-full overflow-x-auto pb-3 pt-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+                <div className="flex gap-2.5 px-1 w-max items-center">
+                  {topApps.map((app, idx) => {
+                    const rankNumber = idx + 1;
+                    const isTop1 = rankNumber === 1;
+                    return (
+                      <div 
+                        key={app.id || idx} 
+                        onClick={() => {
+                          if (window._adCooldown) return;
+                          window._adCooldown = true;
+                          setTimeout(() => { window._adCooldown = false; }, 2000);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                          navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } });
+                        }}
+                        className={`relative shrink-
