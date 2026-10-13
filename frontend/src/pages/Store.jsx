@@ -1,16 +1,24 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Star, BadgeCheck, Download, Gift, ArrowLeft, ShieldCheck, Zap, Wifi, Sparkles, CheckCircle2, Search, X, Flame, Home } from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Search, Download, Sparkles, TrendingUp, ShieldCheck, ArrowDownWideNarrow, X, Flame, Trophy, Gift, Star, BadgeCheck, Crown, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { API, resolveUrl } from "@/lib/api";
 import SEOHead from "@/components/SEOHead";
+import { useSettings, sectionEnabled } from "@/context/SettingsContext";
+import AppCard from "@/components/AppCard";
 import AppIcon from "@/components/AppIcon";
 import RippleButton from "@/components/RippleButton";
-import SiteFooter from "@/components/SiteFooter";
 import FaqSection from "@/components/FaqSection";
-import AppCard from "@/components/AppCard";
+import LegalSection from "@/components/LegalSection";
+import LegalDialog from "@/components/LegalDialog";
+import SiteFooter from "@/components/SiteFooter";
+import ReviewsSection from "@/components/ReviewsSection";
+import OptimizedImage from "@/components/OptimizedImage";
 import HowToInstallSection from "@/components/HowToInstallSection";
 import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 function normalize(s) {
   return String(s || "")
@@ -19,51 +27,16 @@ function normalize(s) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
-function getOrderedSimilarApps(allApps, currentAppId) {
-  if (!allApps || allApps.length === 0) return [];
-  
-  const seen = new Set();
-  let list = [];
-  
-  for (const a of allApps) {
-    if (String(a.id) === String(currentAppId)) continue;
-    const normName = normalize(a.name);
-    if (seen.has(normName)) continue;
-    seen.add(normName);
-    list.push({ ...a, version: "v2026 Latest" });
-  }
-  
-  const goldRummyIdx = list.findIndex(a => 
-    normalize(a.name).includes("goldrummy") || 
-    String(a.name).toLowerCase().includes("gold rummy")
-  );
+const SORTS = [
+  { value: "downloads", label: "Most Downloaded" },
+  { value: "rating", label: "Top Rated" },
+  { value: "newest", label: "Newest" },
+];
 
-  let goldRummyObj = null;
-  if (goldRummyIdx !== -1) {
-    goldRummyObj = list.splice(goldRummyIdx, 1)[0];
-  }
-
-  const seed = String(currentAppId || "yono").split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  for (let i = list.length - 1; i > 0; i--) {
-    const j = (seed + i) % (i + 1);
-    [list[i], list[j]] = [list[j], list[i]];
-  }
-
-  if (goldRummyObj) {
-    list.unshift(goldRummyObj);
-  }
-
-  return list;
-}
-
-export default function AppDetail() {
-  const { id, slug } = useParams();
-  const location = useLocation();
+export default function Store() {
+  const { settings } = useSettings();
   const navigate = useNavigate();
   
-  const pathSegments = location.pathname.split("/").filter(Boolean);
-  const identifier = slug || id || pathSegments[pathSegments.length - 1];
-
   const cachedData = typeof window !== "undefined" ? localStorage.getItem("yono_apps_perm_cache") : null;
   const parsedCache = useMemo(() => {
     try {
@@ -73,357 +46,323 @@ export default function AppDetail() {
     }
   }, [cachedData]);
 
-  const allCachedApps = useMemo(() => {
-    if (!parsedCache) return [];
-    const combined = [...(parsedCache.apps || []), ...(parsedCache.featured || []), ...(parsedCache.trending || [])];
-    return combined.map(app => ({ ...app, version: "v2026 Latest" }));
-  }, [parsedCache]);
+  const [data, setData] = useState(() => parsedCache);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("downloads");
+  const [legalId, setLegalId] = useState(null);
 
-  const fallbackApp = useMemo(() => {
-    const cleanName = identifier ? identifier.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : "Rummy Ludo";
-    return {
-      id: identifier || "rummy-ludo",
-      name: cleanName,
-      slug: identifier,
-      rating: 4.8,
-      size: "45 MB",
-      version: "v2026 Latest",
-      downloads: 4200000,
-      signup_bonus: "₹501",
-      icon_url: "https://images.unsplash.com/photo-1614680376593-902f749f7ffc?w=150&auto=format&fit=crop&q=80",
-      apk_url: "#"
-    };
-  }, [identifier]);
-
-  const initialApp = useMemo(() => {
-    if (location.state?.app) return { ...location.state.app, version: "v2026 Latest" };
-    if (allCachedApps.length > 0 && identifier && identifier !== "undefined") {
-      const found = allCachedApps.find(a => 
-        String(a.id) === String(identifier) || 
-        a.slug === identifier || 
-        normalize(a.name) === normalize(identifier)
-      );
-      if (found) return { ...found, version: "v2026 Latest" };
+  const fetchApps = async () => {
+    try {
+      const res = await api.get("/apps?limit=100");
+      if (res.data) {
+        setData(res.data);
+        localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
+      }
+    } catch (e) {
+      // Silent fail
     }
-    return allCachedApps[0] || fallbackApp;
-  }, [location.state, allCachedApps, identifier, fallbackApp]);
-
-  const [app, setApp] = useState(initialApp);
-  const [allStoreApps, setAllStoreApps] = useState(allCachedApps);
-  const [similarApps, setSimilarApps] = useState(() => {
-    const fallbackList = allCachedApps.length > 0 ? allCachedApps : (parsedCache?.apps || []);
-    return getOrderedSimilarApps(fallbackList, initialApp?.id);
-  });
-
-  const [searchQuery, setSearchQuery] = useState("");
+  };
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    let isMounted = true;
+    fetchApps();
+  }, []);
 
-    const fetchAppData = async () => {
-      try {
-        const res = await api.get("/apps?limit=100");
-        if (res.data && isMounted) {
-          const rawAll = [...(res.data.featured || []), ...(res.data.apps || []), ...(res.data.trending || [])];
-          const all = rawAll.map(a => ({ ...a, version: "v2026 Latest" }));
-          
-          setAllStoreApps(all);
-          localStorage.setItem("yono_apps_perm_cache", JSON.stringify(res.data));
-
-          if (all.length > 0) {
-            const found = identifier && identifier !== "undefined" 
-              ? all.find(a => String(a.id) === String(identifier) || a.slug === identifier || normalize(a.name) === normalize(identifier))
-              : null;
-            
-            const targetApp = found || initialApp || all[0] || fallbackApp;
-            setApp({ ...targetApp, version: "v2026 Latest" });
-            setSimilarApps(getOrderedSimilarApps(all, targetApp.id));
-          }
-        }
-      } catch (e) {
-        if (allCachedApps.length > 0 && isMounted) {
-          const targetApp = initialApp || allCachedApps[0] || fallbackApp;
-          setApp({ ...targetApp, version: "v2026 Latest" });
-          setSimilarApps(getOrderedSimilarApps(allCachedApps, targetApp.id));
-        }
-      }
-    };
-
-    fetchAppData();
-
-    return () => { isMounted = false; };
-  }, [identifier]);
-
-  const handleSmartClick = (e) => {
-    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
-      return;
-    }
-    const adUrl = "https://www.highratecpm.com/2/8825838"; 
-    window.open(adUrl, "_blank");
-  };
-
-  const handleDownload = (targetApp) => {
-    const currentApp = targetApp || app;
-    if (!currentApp) return;
-
-    toast.success(`Opening: ${currentApp.name}`, { description: `45 MB • v2026 Latest` });
-    
-    if (currentApp.apk_url && currentApp.apk_url.startsWith("http")) {
-      window.open(currentApp.apk_url, "_blank"); 
-      api.get(`/apps/${currentApp.id}/download`).catch(() => {});
+  const handleDownload = (app) => {
+    if (app.apk_url && app.apk_url.startsWith("http")) {
+      window.open(app.apk_url, "_blank"); 
+      api.get(`/apps/${app.id}/download`).catch(() => {});
     } else {
-      window.open(`${API}/apps/${currentApp.id}/download`, "_blank");
+      window.open(`${API}/apps/${app.id}/download`, "_blank");
     }
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/?search=${encodeURIComponent(searchQuery)}`);
+  const allAppsList = useMemo(() => {
+    const rawList = data?.apps || parsedCache?.apps || data?.featured || parsedCache?.featured || [];
+    return rawList.map(app => ({
+      ...app,
+      version: "v2026 Latest",
+      size: app.size || "45 MB"
+    }));
+  }, [data, parsedCache]);
+
+  const topApps = useMemo(() => {
+    const list = [...allAppsList];
+    if (list.length === 0) return [];
+
+    // Boss Rummy, Money Rummy aur Gold Rummy ko top par set kiya gaya hai
+    const bossRummy = list.find(a => normalize(a.name).includes("bossrummy")) || list[0];
+    const moneyRummy = list.find(a => normalize(a.name).includes("moneyrummy")) || list[1] || list[0];
+    const goldRummy = list.find(a => normalize(a.name).includes("goldrummy")) || list[2] || list[0];
+
+    const remaining = list.filter(a => a.id !== bossRummy?.id && a.id !== moneyRummy?.id && a.id !== goldRummy?.id);
+
+    return [bossRummy, moneyRummy, goldRummy, ...remaining].map(app => ({
+      ...app,
+      version: "v2026 Latest",
+      size: app.size || "45 MB"
+    }));
+  }, [allAppsList]);
+
+  const filteredApps = useMemo(() => {
+    let list = [...allAppsList];
+    if (category !== "All") {
+      list = list.filter(a => normalize(a.category) === normalize(category));
     }
-  };
-
-  const handleKeywordClick = (kw) => {
-    const cleanKw = kw.replace(/apk|download|2026|app|online|india|game|games/gi, "").trim();
-    navigate(`/?search=${encodeURIComponent(cleanKw)}`);
-  };
-
-  const gameKeywords = useMemo(() => {
-    const name = app?.name || "Game";
-    return [
-      `${name} APK Download`,
-      `${name} Latest Version 2026`,
-      `${name} Sign Up Bonus 501`,
-      `${name} Instant UPI Withdrawal`,
-      `${name} Mod APK`,
-      `${name} Online Play`,
-      `${name} Real Cash App`,
-      `All Yono Games List`,
-      `${name} Gold Rummy`,
-      `${name} Free Chips`
-    ];
-  }, [app]);
+    if (search.trim()) {
+      const q = normalize(search);
+      list = list.filter(a => normalize(a.name).includes(q) || normalize(a.description).includes(q) || normalize(a.category).includes(q));
+    }
+    
+    list.sort((a, b) => {
+      if (sort === "rating") return (b.rating || 0) - (a.rating || 0);
+      if (sort === "newest") return new Date(b.created_at || 0) - new Date(b.created_at || 0);
+      return (b.downloads || 0) - (a.downloads || 0);
+    });
+    return list;
+  }, [allAppsList, category, search, sort]);
 
   return (
-    <div onClick={handleSmartClick} className="app-shell pb-10 bg-[#FAFAFA] text-[#111111] min-h-screen cursor-pointer">
-      <SEOHead
-        title={`${app?.name || "Yono Games"} APK Download 2026 - 501 Bonus Latest Version`}
-        description={`Download ${app?.name || "Yono Games"} APK latest version with ₹501 sign-up bonus and instant UPI withdrawal on newyono.games.`}
-        canonical={`https://newyono.games/${app?.slug || `app/${app?.id}`}`}
-        image={app?.icon_url || "https://images.unsplash.com/photo-1614680376593-902f749f7ffc?w=150&auto=format&fit=crop&q=80"}
-      />
+    <div className="min-h-screen bg-[#F8F9FA] text-[#111111] pb-16">
+      <SEOHead title="New Yono Games Official - Download APK & Get ₹501 Bonus" description="Download official Yono Games apps. Enjoy fast UPI withdrawals and secure real-cash gaming." />
+      
+      <div className="max-w-md mx-auto bg-white min-h-screen shadow-sm flex flex-col">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-display font-extrabold text-lg bg-gradient-to-r from-[#FFC107] to-[#FF9800] bg-clip-text text-transparent">NewYono.Games</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#22C55E] bg-[#F0FDF4] px-2 py-1 rounded-full">
+              <ShieldCheck className="h-3.5 w-3.5" /> 100% Secure
+            </span>
+          </div>
+        </header>
 
-      <div className="sticky top-0 z-30 flex items-center justify-between bg-white/95 px-4 py-2.5 backdrop-blur-md border-b border-[#E5E7EB]">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white border border-[#E5E7EB] text-[#111111] shadow-sm hover:bg-[#F1F1F1]">
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <span className="truncate font-display text-xs sm:text-sm font-bold text-[#111111]">idhr aur bhi game hai 👈🏼</span>
-        </div>
-        <button 
-          onClick={() => navigate("/")} 
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFF8E1] border border-[#FFE082] text-[#B45309] shadow-sm hover:bg-[#FFECB3]"
-          title="Go to Homepage"
-        >
-          <Home className="h-4 w-4" />
-        </button>
-      </div>
-
-      <main className="max-w-2xl mx-auto space-y-4 px-4 pt-4">
-        <div className="flex items-start justify-between gap-4 rounded-[24px] border border-[#E5E7EB] bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-4 min-w-0 flex-1">
-            <div className="relative shrink-0">
-              <AppIcon src={resolveUrl(app?.icon_url)} alt={app?.name} className="h-16 w-16 sm:h-20 sm:w-20 rounded-[18px] sm:rounded-[20px] ring-1 ring-black/5 object-cover shadow-md" />
+        <div className="p-4 space-y-4 flex-1">
+          {/* STATS BAR */}
+          <div className="grid grid-cols-3 gap-2 bg-white border border-[#E5E7EB] rounded-2xl p-3 shadow-sm text-center">
+            <div className="flex flex-col items-center">
+              <Download className="h-4 w-4 text-[#D97706] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">10M+</span>
+              <span className="text-[10px] text-[#777777]">Downloads</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="font-display text-lg sm:text-xl font-extrabold leading-tight text-[#111111]">{app?.name}</h1>
-              <p className="mt-0.5 text-xs font-medium text-[#777777]">newyono.games official store</p>
-              <div className="mt-2.5 flex items-center gap-2">
-                <div className="flex items-center gap-1 rounded-full bg-[#FFF8E1] px-2.5 py-0.5 border border-[#FFE082]">
-                  <Star className="h-3.5 w-3.5 fill-[#FFC107] text-[#FFC107]" />
-                  <span className="text-xs font-bold text-[#111111]">{app?.rating?.toFixed(1) || "4.8"}</span>
-                </div>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#22C55E]">
-                  <BadgeCheck className="h-4 w-4" /> Verified Safe
-                </span>
+            <div className="flex flex-col items-center border-x border-[#E5E7EB]">
+              <ShieldCheck className="h-4 w-4 text-[#16A34A] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">74</span>
+              <span className="text-[10px] text-[#777777]">Verified</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Star className="h-4 w-4 text-[#FFC107] fill-[#FFC107] mb-0.5" />
+              <span className="text-xs font-bold text-[#111111]">4.8</span>
+              <span className="text-[10px] text-[#777777]">Rating</span>
+            </div>
+          </div>
+
+          {/* FEATURED GAMES SLIDER */}
+          {topApps.length > 0 && !search && category === "All" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="font-display font-bold text-sm text-[#111111] flex items-center gap-1.5">
+                  <Crown className="h-4 w-4 text-[#FFC107]" /> Trending Featured Games
+                </h3>
+                <span className="text-xs text-[#777777]">Swipe to explore ➔</span>
               </div>
-            </div>
-          </div>
+              
+              <div className="w-full overflow-x-auto pb-3 pt-1" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+                <div className="flex gap-2.5 px-1 w-max items-center">
+                  {topApps.map((app, idx) => {
+                    const rankNumber = idx + 1;
+                    const isTop1 = rankNumber === 1;
+                    return (
+                      <div 
+                        key={app.id || idx} 
+                        onClick={() => {
+                          if (window._adCooldown) return;
+                          window._adCooldown = true;
+                          setTimeout(() => { window._adCooldown = false; }, 2000);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                          navigate(`/${app.slug || `app/${app.id}`}`, { state: { app } });
+                        }}
+                        className={`relative shrink-0 cursor-pointer rounded-2xl border p-2.5 flex flex-col items-center text-center justify-between transition-all select-none ${
+                          isTop1 
+                            ? "w-[126px] min-h-[205px] border-2 border-[#FFC107] bg-gradient-to-b from-[#FFFDF5] to-white shadow-[0_4px_16px_rgba(255,193,7,0.2)] z-10" 
+                            : "w-[114px] min-h-[190px] border-[#E5E7EB] bg-white shadow-sm opacity-95"
+                        }`}
+                      >
+                        <div 
+                          className="absolute -left-1 -top-1.5 flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black text-white shadow-sm border border-white pointer-events-none"
+                          style={{
+                            background: rankNumber === 1 
+                              ? "linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)" 
+                              : rankNumber <= 3 
+                              ? "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)" 
+                              : "linear-gradient(135deg, #424242 0%, #212121 100%)"
+                          }}
+                        >
+                          <Crown className="h-2 w-2 text-white fill-white" />
+                          <span>#{rankNumber}</span>
+                        </div>
 
-          <div className="shrink-0 flex flex-col items-end gap-1.5 justify-center">
-            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FFC107] to-[#FF9800] px-3 py-1 text-[11px] font-extrabold text-white shadow-md animate-pulse">
-              🔥 No. 1 Trusted
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold text-red-600 border border-red-200">
-              🔞+ Only
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-              🤯 Unlimited Trick
-            </span>
-          </div>
-        </div>
+                        <div className="flex flex-col items-center w-full mt-1">
+                          <div className="relative">
+                            <AppIcon
+                              src={resolveUrl(app.icon_url)}
+                              alt={app.name}
+                              className={`${isTop1 ? "h-12 w-12" : "h-10 w-10"} rounded-[12px] ring-1 ring-black/5 object-cover shadow-sm`}
+                            />
+                            <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 py-0.2 text-[6px] font-extrabold text-white shadow-sm leading-none">
+                              HOT
+                            </span>
+                          </div>
 
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="rounded-[16px] border border-[#E5E7EB] bg-white p-3 shadow-sm">
-            <p className="text-[10px] text-[#777777]">Updated</p>
-            <p className="mt-0.5 font-display text-xs font-bold text-[#111111]">1 min ago</p>
-          </div>
-          <div className="rounded-[16px] border border-[#E5E7EB] bg-white p-3 shadow-sm">
-            <p className="text-[10px] text-[#777777]">Size</p>
-            <p className="mt-0.5 font-display text-xs font-bold text-[#111111]">45 MB</p>
-          </div>
-          <div className="rounded-[16px] border border-[#E5E7EB] bg-white p-3 shadow-sm">
-            <p className="text-[10px] text-[#777777]">Version</p>
-            <p className="mt-0.5 font-display text-xs font-bold text-[#111111]">v2026 Latest</p>
-          </div>
-          <div className="rounded-[16px] border border-[#E5E7EB] bg-white p-3 shadow-sm">
-            <p className="text-[10px] text-[#777777]">Platform</p>
-            <p className="mt-0.5 font-display text-xs font-bold text-[#111111]">Android 5.0+</p>
-          </div>
-        </div>
+                          <h4 className="mt-1.5 line-clamp-2 leading-tight font-display text-[10px] font-bold text-[#111111] w-full h-7 flex items-center justify-center">
+                            {app.name}
+                          </h4>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 rounded-[20px] bg-gradient-to-r from-[#FFF8E1] to-[#FFF3E0] p-3.5 border border-[#FFE082]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFC107] text-white shrink-0">
-              <Gift className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-[#B45309]">SIGN-UP BONUS</p>
-              <p className="font-display text-sm font-extrabold text-[#111111]">₹501 Free</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-[20px] bg-[#F0FDF4] p-3.5 border border-[#DCFCE7]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#22C55E] text-white shrink-0">
-              <ShieldCheck className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-[#166534]">INSTANT UPI</p>
-              <p className="font-display text-sm font-extrabold text-[#111111]">Fast Payout</p>
-            </div>
-          </div>
-        </div>
+                          <div className="mt-1 space-y-0.5 w-full">
+                            <div className="flex items-center justify-center gap-0.5 text-[9px] font-semibold text-[#555555]">
+                              <Star className="h-2.5 w-2.5 fill-[#FFC107] text-[#FFC107]" />
+                              <span>{app.rating?.toFixed(1) || "4.8"}</span>
+                            </div>
+                            {app.signup_bonus ? (
+                              <div className="flex items-center justify-center gap-0.5 text-[8.5px] font-extrabold text-[#D97706] truncate">
+                                <Gift className="h-2 w-2 shrink-0" /> {app.signup_bonus}
+                              </div>
+                            ) : (
+                              <div className="text-[8.5px] text-transparent">Bonus</div>
+                            )}
+                            {app.min_withdraw ? (
+                              <div className="text-[8.5px] font-bold text-[#16A34A] truncate">
+                                Min {app.min_withdraw}
+                              </div>
+                            ) : (
+                              <div className="text-[8.5px] text-transparent">Min W/D</div>
+                            )}
+                          </div>
+                        </div>
 
-        <div className="pt-2">
-          <RippleButton 
-            onClick={() => handleDownload(app)} 
-            className="w-full flex items-center justify-center gap-2.5 rounded-[22px] bg-[#FFC107] py-4 text-base font-extrabold text-[#111111] shadow-[0_8px_25px_rgba(255,193,7,0.45)] hover:bg-[#FFB300] animate-pulse"
-          >
-            <Download className="h-5 w-5" />
-            <span>Download APK (45 MB)</span>
-          </RippleButton>
-          <p className="mt-2 text-center text-xs text-[#777777]">🔒 100% Virus Free • Verified Secure Download</p>
-        </div>
-
-        <div className="relative pt-1">
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#777777]" />
-            <Input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search other games like ${app?.name}...`}
-              className="h-11 rounded-full border-[#E5E7EB] bg-white pl-10 pr-10 text-base shadow-[0_4px_14px_rgba(0,0,0,0.03)] focus-visible:ring-[#FFC107]"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#F1F1F1] text-[#777777] hover:bg-[#E5E7EB]"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </form>
-
-          {searchQuery.trim() && (
-            <div className="absolute left-0 right-0 top-full mt-2 z-50 max-h-60 overflow-y-auto rounded-2xl border border-[#E5E7EB] bg-white shadow-xl p-2 space-y-1">
-              {(() => {
-                const q = searchQuery.toLowerCase();
-                const sourceList = allStoreApps.length > 0 ? allStoreApps : (parsedCache?.apps || similarApps);
-                const matched = sourceList.filter(a => a.name.toLowerCase().includes(q)).slice(0, 6);
-                if (matched.length === 0) {
-                  return <div className="p-3 text-center text-xs text-[#777777]">No games found</div>;
-                }
-                return matched.map(item => (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setSearchQuery("");
-                      navigate(`/${item.slug || item.id}`, { state: { app: item } });
-                    }}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#FFF8E1] cursor-pointer transition-colors"
-                  >
-                    <AppIcon src={resolveUrl(item.icon_url)} alt={item.name} className="h-10 w-10 rounded-xl object-cover shadow-sm" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display text-xs font-bold text-[#111111] truncate">{item.name}</p>
-                      <p className="text-[10px] text-[#777777]">⭐ {item.rating?.toFixed(1) || "4.8"} • v2026 Latest</p>
-                    </div>
-                  </div>
-                ));
-              })()}
+                        <RippleButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window._adCooldown) return;
+                            window._adCooldown = true;
+                            setTimeout(() => { window._adCooldown = false; }, 2000);
+                            handleDownload(app);
+                          }}
+                          className={`mt-2 w-full flex items-center justify-center gap-1 rounded-full py-1 text-[9.5px] font-bold shadow-sm ${
+                            isTop1 
+                              ? "bg-gradient-to-r from-[#FFC107] to-[#FF9800] text-white hover:opacity-95 shadow-sm" 
+                              : "bg-[#FFC107] text-[#111111] hover:bg-[#FFB300]"
+                          }`}
+                        >
+                          <Download className="h-2.5 w-2.5" /> Get
+                        </RippleButton>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
-        </div>
 
-        {similarApps.length > 0 && (
-          <div className="rounded-[24px] border border-[#E5E7EB] bg-white p-5 shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
-                <Sparkles className="h-4 w-4 fill-[#FFC107]" />
-              </span>
+          {/* TELEGRAM JOIN BANNER */}
+          <div 
+            onClick={() => window.open("https://t.me/yonoagencynetworkofficial", "_blank")}
+            className="cursor-pointer bg-gradient-to-r from-[#E0F2FE50] to-[#E0F2FE] border border-[#BAE6FD] rounded-2xl p-3 flex items-center justify-between shadow-sm hover:shadow transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-[#0284C7] flex items-center justify-center text-white shadow-sm shrink-0">
+                <Send className="h-4 w-4" />
+              </div>
               <div>
-                <h2 className="font-display text-sm font-bold text-[#111111]">People Also Like (More Games)</h2>
-                <p className="text-[10px] text-[#888888]">Top trending gaming apps with ₹501 bonus</p>
+                <h4 className="font-display font-bold text-xs text-[#0369A1]">Join our Telegram</h4>
+                <p className="text-[10px] text-[#0284C7]">Get instant updates & new APK releases</p>
               </div>
             </div>
-            <div className="space-y-3 pt-1">
-              {similarApps.map((simApp, idx) => (
-                <AppCard key={simApp.id} app={{ ...simApp, version: "v2026 Latest" }} index={idx} onDownload={handleDownload} />
+            <span className="bg-[#0284C7] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
+              Join
+            </span>
+          </div>
+
+          {/* LIVE WINNERS TICKER */}
+          <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl p-2.5 flex items-center gap-2 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-1 bg-[#16A34A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 z-10">
+              <Trophy className="h-3 w-3" /> Live
+            </div>
+            <div className="overflow-hidden w-full relative">
+              <div className="flex whitespace-nowrap animate-marquee text-[11px] text-[#166534] font-medium items-center">
+                <span>🔥 <strong className="text-[#111]">Rahul</strong> won <strong className="text-[#15803D]">₹25,000</strong> in Boss Rummy &nbsp;&nbsp;•&nbsp;&nbsp; 🚀 <strong className="text-[#111]">Amit</strong> won <strong className="text-[#15803D]">₹10,500</strong> in Money Rummy &nbsp;&nbsp;•&nbsp;&nbsp; ⭐ <strong className="text-[#111]">Vikash</strong> won <strong className="text-[#15803D]">₹5,000</strong> in Gold Rummy &nbsp;&nbsp;•&nbsp;&nbsp;</span>
+                <span className="ml-8">🔥 <strong className="text-[#111]">Rahul</strong> won <strong className="text-[#15803D]">₹25,000</strong> in Boss Rummy &nbsp;&nbsp;•&nbsp;&nbsp; 🚀 <strong className="text-[#111]">Amit</strong> won <strong className="text-[#15803D]">₹10,500</strong> in Money Rummy &nbsp;&nbsp;•&nbsp;&nbsp; ⭐ <strong className="text-[#111]">Vikash</strong> won <strong className="text-[#15803D]">₹5,000</strong> in Gold Rummy &nbsp;&nbsp;•&nbsp;&nbsp;</span>
+              </div>
+            </div>
+          </div>
+
+          {/* SEARCH BAR */}
+          <div className="relative pt-1">
+            <Search className="absolute left-3.5 top-4 h-4 w-4 text-[#999999]" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search 100+ games..."
+              className="pl-10 rounded-2xl bg-[#F8F9FA] border-[#E5E7EB] text-sm py-2.5"
+            />
+          </div>
+
+          {/* ALL GAMES LIST */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-sm text-[#111111]">All Games</h3>
+              <span className="text-xs text-[#777777]">{filteredApps.length} games</span>
+            </div>
+            <div className="space-y-3">
+              {filteredApps.map((app, idx) => (
+                <AppCard key={app.id || idx} app={app} index={idx} onDownload={handleDownload} />
               ))}
             </div>
           </div>
-        )}
-
-        <div className="rounded-[24px] border border-[#E5E7EB] bg-white p-5 shadow-sm space-y-3">
-          <h2 className="font-display text-base font-bold text-[#111111] flex items-center gap-2">
-            <Zap className="h-5 w-5 text-[#FFC107] fill-[#FFC107]" /> About {app?.name}
-          </h2>
-          <p className="text-sm leading-relaxed text-[#555555]">
-            {app?.description || `${app?.name} is an ultimate card and slot gaming platform offering smooth 60 FPS performance, secure UPI cashouts, and an instant ₹501 sign-up bonus for all new players in 2026.`}
-          </p>
         </div>
 
-        <div className="rounded-[22px] border border-[#E5E7EB] bg-white p-4 shadow-sm space-y-2.5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF8E1] text-[#FFC107]">
-              <Flame className="h-4 w-4 fill-[#FFC107]" />
-            </span>
-            <div>
-              <h3 className="font-display text-xs sm:text-sm font-bold text-[#111111]">Keywords For {app?.name}</h3>
-              <p className="text-[9px] sm:text-[10px] text-[#888888]">Popular search tags for this specific game</p>
-            </div>
+        {/* DETAILED GOOGLE SEO KEYWORDS & RICH DESCRIPTION BLOCK */}
+        <div className="bg-white border-t border-[#E5E7EB] px-4 py-6 space-y-4 text-[11px] text-[#555555] leading-relaxed">
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">New Yono Games Official APK Download & Real Cash Platform 2026</h4>
+            <p>
+              NewYono.Games is the ultimate official hub for downloading top-performing Android gaming apps, Boss Rummy, Money Rummy, Gold Rummy, Dragon Tiger, 777 Slots, Ludo tournaments, and crash games. Designed for high-speed performance and absolute security, our platform brings together verified gaming operators offering instant UPI withdrawals, massive sign-up bonuses from ₹501 to ₹2501, and 24/7 customer support.
+            </p>
           </div>
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {gameKeywords.map((kw, i) => (
-              <button
-                key={i}
-                onClick={() => handleKeywordClick(kw)}
-                className="rounded-full border border-[#E5E7EB] bg-[#FAFAFA] px-3 py-1 text-[10px] sm:text-[11px] font-medium text-[#555555] hover:bg-[#FFF8E1] hover:border-[#FFE082] hover:text-[#B45309] transition-colors text-left cursor-pointer"
-              >
-                #{kw}
-              </button>
-            ))}
+
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">Targeted SEO Keywords & Search Terms Directory</h4>
+            <p className="text-[10px] text-[#666666] leading-relaxed bg-[#F9FAFB] p-3 rounded-xl border border-gray-100">
+              <strong>Core Keywords Index:</strong> Boss Rummy APK, Money Rummy download, Gold Rummy real cash app, Slots spin bonus apps, Yono agency program, online rummy referral commission, instant UPI cash withdrawal games, Android gaming store India, 777 slots apk download, Best rummy app with bonus, NewYono.Games official link.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">Privacy Policy, Terms of Service & Responsible Gaming Notice</h4>
+            <p>
+              Your privacy and security are paramount at NewYono.Games. We collect basic anonymous site analytics via Google Analytics and Search Console solely to improve user navigation and optimize download speeds. All external APK links redirect to official verified servers equipped with advanced encryption. Real-cash gaming involves financial risk; users must be 18+ and verify local state regulations before playing.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <h4 className="font-display font-bold text-xs text-[#111111]">DMCA Compliance & Copyright Protection</h4>
+            <p>
+              NewYono.Games operates strictly as an informational aggregator and APK review directory. We do not host hacked files or malicious software. In full compliance with the Digital Millennium Copyright Act (DMCA), we promptly address and resolve any copyright concerns or notices reported directly through our official Telegram network channels.
+            </p>
+          </div>
+
+          {/* HOW TO INSTALL SECTION PLACED AT THE BOTTOM */}
+          <div className="pt-3">
+            <HowToInstallSection />
           </div>
         </div>
 
-        {/* HOW TO INSTALL SECTION PLACED AT THE VERY BOTTOM OF GAME DETAILS */}
-        <HowToInstallSection />
+        {/* SITE FOOTER */}
+        <SiteFooter onOpenLegal={(id) => setLegalId(id)} />
+      </div>
 
-        <FaqSection />
-      </main>
-
-      <SiteFooter />
+      <LegalDialog legalId={legalId} onClose={() => setLegalId(null)} />
     </div>
   );
 }
